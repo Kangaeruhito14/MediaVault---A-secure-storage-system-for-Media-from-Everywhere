@@ -1,0 +1,175 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: origin + '/' },
+      { '@type': 'ListItem', position: 2, name: 'Privacy Policy', item: origin + '/privacy' },
+    ],
+  },
+];
+---
+
+<PublicLayout
+  title="Privacy Policy — Zero Tracking, Zero Data Collection"
+  description="MediaVault runs entirely on your own hardware: no analytics, no telemetry, no cookies beyond your login session, no third-party servers. Read exactly what data exists and where it lives."
+  jsonLd={jsonLd}
+>
+  <section class="legal-page">
+    <div class="container-sm">
+      <header class="legal-header">
+        <span class="page-eyebrow">Privacy Statement</span>
+        <h1 class="page-title">Privacy Policy.</h1>
+        <p class="last-updated">Last updated: June 9, 2026</p>
+      </header>
+
+      <div class="legal-content">
+        <section class="legal-section">
+          <h2>1. Overview</h2>
+          <p>
+            MediaVault is designed with a <strong>privacy-first mindset</strong>. We believe your personal media files belong entirely to you. Since MediaVault is self-hosted by you on your own systems, we have zero access to your files, passwords, configuration data, or access logs.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>2. Data Collection</h2>
+          <p>
+            The creators and maintainers of MediaVault:
+          </p>
+          <ul>
+            <li><strong>Collect zero personal data</strong>. There are no tracking scripts, analytics tools, or telemetry trackers in this Software.</li>
+            <li><strong>Do not host any centralized database</strong>. Your password hashes and files are saved exclusively on your own hard drive.</li>
+            <li><strong>Have no remote access</strong>. The Software does not contain backdoors or remote admin portals.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Cookies</h2>
+          <p>
+            MediaVault uses one functional cookie:
+          </p>
+          <ul>
+            <li><code>mv_session</code>: This cookie is used strictly to authenticate your browser session to access your private vault page. It is a cryptographic token that expires after 24 hours of inactivity.</li>
+            <li>We do not use advertising cookies, marketing trackers, or third-party analytical cookies.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Third-Party Services</h2>
+          <p>
+            The Software operates independently. By default, it does not send your data to third parties. If you configure custom media transcoders or run the application behind reverse proxies, please consult the privacy policies of those specific network providers.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Security of Stored Data</h2>
+          <p>
+            The files you upload are stored in your project's local directory. Access to files is protected by a session validation token. It is your responsibility to safeguard your master password, restrict physical access to your host machine, and configure secure HTTPS connections if serving the vault over the internet.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>6. GDPR & CCPA Compliance</h2>
+          <p>
+            Because the Software is completely local and does not store or process data on third-party servers, you are the absolute data controller and processor under GDPR and CCPA. You have complete ability to delete your data at any time by clearing the <code>data/</code> folder.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>7. Contact</h2>
+          <p>
+            For questions about this policy, contact us at <a href="mailto:fantasyfalcoon91@gmail.com">fantasyfalcoon91@gmail.com</a>.
+          </p>
+        </section>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  .container-sm {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .legal-page {
+    padding: 96px 0;
+  }
+
+  .legal-header {
+    text-align: left;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: clamp(32px, 5vw, 40px);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .last-updated {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .legal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .legal-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  .legal-section p {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-body);
+  }
+
+  .legal-section ul {
+    margin-left: 20px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-body);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .legal-section a {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .legal-section a:hover {
+    color: var(--accent-hover);
+  }
+</style>
