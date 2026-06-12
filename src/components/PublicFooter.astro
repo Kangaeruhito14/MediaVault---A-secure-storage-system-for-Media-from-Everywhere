@@ -1,0 +1,220 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="public-footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <!-- Brand column -->
+      <div class="footer-brand-col">
+        <a href="/" class="footer-logo" aria-label="MediaVault Home">
+          <div class="footer-logo-icon">
+            <svg width="12" height="12" viewBox="0 0 28 28" fill="none">
+              <rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
+              <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <circle cx="14" cy="18" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <span>MediaVault</span>
+        </a>
+        <p class="footer-tagline">
+          Your media, your vault, your rules. Secure personal storage with zero tracking.
+        </p>
+      </div>
+
+      <!-- Navigation column -->
+      <div class="footer-links-col">
+        <h3 class="footer-col-title">Platform</h3>
+        <ul class="footer-links-list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about">About & How It Works</a></li>
+          <li><a href="/faq">Common FAQ</a></li>
+          <li><a href="/contact">Support Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- Legal & Access column -->
+      <div class="footer-links-col">
+        <h3 class="footer-col-title">Legal & Access</h3>
+        <ul class="footer-links-list">
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/login" class="highlight-link">Access Your Vault</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="footer-bottom">
+      <div class="footer-copyright">
+        &copy; {currentYear} MediaVault. All rights reserved.
+      </div>
+      <div class="footer-status-pill">
+        <span class="status-dot"></span>
+        <span>All systems operational</span>
+      </div>
+      <div class="footer-meta">
+        Built for ultimate privacy. Zero tracking. 100% locally controlled.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .public-footer {
+    background: var(--bg-inset);
+    border-top: 1px solid var(--border);
+    padding: 64px 24px 48px;
+    margin-top: auto; /* Push to bottom of flex layout if needed */
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 64px;
+  }
+
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+
+  .footer-brand-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 320px;
+  }
+
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    letter-spacing: -0.03em;
+  }
+
+  .footer-logo-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--text-primary);
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .footer-tagline {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-body);
+  }
+
+  .footer-col-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+
+  .footer-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .footer-links-list a {
+    font-size: 13px;
+    color: var(--text-body);
+    transition: color 0.15s ease;
+  }
+
+  .footer-links-list a:hover {
+    color: var(--text-primary);
+  }
+
+  .footer-links-list .highlight-link {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .footer-links-list .highlight-link:hover {
+    color: var(--accent-hover);
+  }
+
+  .footer-bottom {
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-copyright {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .footer-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    color: var(--text-body);
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success, #00a854);
+    box-shadow: 0 0 6px var(--success, #00a854);
+    animation: status-pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes status-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .footer-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 100%;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  @media (min-width: 769px) {
+    .footer-meta {
+      width: auto;
+      margin-top: 0;
+    }
+  }
+</style>
