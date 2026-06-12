@@ -1,0 +1,42 @@
+{
+  "name": "mediavault",
+  "type": "module",
+  "version": "2.0.0",
+  "description": "Free, self-hosted, encrypted media vault — store private photos, videos, and audio on your own hardware with AES-256 sealed-at-rest encryption.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere.git"
+  },
+  "keywords": [
+    "self-hosted",
+    "encrypted-storage",
+    "media-vault",
+    "photo-storage",
+    "google-photos-alternative",
+    "privacy",
+    "aes-256",
+    "astro"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node --no-warnings ./dist/server/entry.mjs",
+    "migrate:legacy": "node scripts/migrate-legacy.mjs",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^10.1.3",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^6.4.4",
+    "busboy": "^1.6.0",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/busboy": "^1.5.4"
+  }
+}
