@@ -18,9 +18,39 @@ interface Props {
   image?: string;
   /** Suppress indexing (auth pages, app interior). */
   noindex?: boolean;
+  /** Page-specific keywords appended to the site-wide set. */
+  keywords?: string[];
   /** JSON-LD structured data objects, rendered one script tag each. */
   jsonLd?: Record<string, unknown>[];
 }
+
+// Site-wide keyword cluster — the core terms every page should rank for.
+const BASE_KEYWORDS = [
+  'MediaVault',
+  'OpenMediaVaults',
+  'Open Media Vault',
+  'media vault',
+  'media storage',
+  'open storage',
+  'open source media vault',
+  'self-hosted media storage',
+  'self-hosted photo storage',
+  'self-hosted video storage',
+  'encrypted media vault',
+  'encrypted photo storage',
+  'encrypted cloud storage',
+  'private media storage',
+  'private photo vault',
+  'personal media server',
+  'self-hosted Google Photos alternative',
+  'Google Photos alternative',
+  'iCloud alternative',
+  'AES-256 encrypted storage',
+  'secure media storage',
+  'private cloud storage',
+  'self-hosted gallery',
+  'home media server',
+];
 
 const {
   title,
@@ -29,8 +59,11 @@ const {
   type = 'website',
   image = '/og-image.png',
   noindex = false,
+  keywords = [],
   jsonLd = [],
 } = Astro.props;
+
+const keywordContent = [...new Set([...BASE_KEYWORDS, ...keywords])].join(', ');
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
 const canonical = new URL(path, origin).href;
@@ -39,6 +72,8 @@ const imageUrl = image.startsWith('http') ? image : new URL(image, origin).href;
 
 <link rel="canonical" href={canonical} />
 <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+<meta name="keywords" content={keywordContent} />
+<meta name="application-name" content="MediaVault (OpenMediaVaults)" />
 
 <!-- Open Graph -->
 <meta property="og:type" content={type} />
