@@ -1,0 +1,86 @@
+---
+// Toast.astro — toast notification container
+---
+<div id="toast-container" aria-live="polite" aria-atomic="false" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: 360px;
+"></div>
+
+<script>
+interface ToastAction { label: string; actionId: string }
+interface ToastEvent { type: 'success' | 'error' | 'info'; message: string; action?: ToastAction }
+
+const container = document.getElementById('toast-container')!;
+
+function showToast(type: ToastEvent['type'], message: string, action?: ToastAction) {
+  const toast = document.createElement('div');
+  toast.classList.add('toast-item');
+
+  const colors: Record<string, { bg: string; border: string; icon: string }> = {
+    success: { bg: 'var(--surface, #fff)', border: 'var(--border, #ebebeb)', icon: '#0070f3' },
+    error:   { bg: 'var(--surface, #fff)', border: '#f7d4d6', icon: '#ee0000' },
+    info:    { bg: 'var(--surface, #fff)', border: 'var(--border, #ebebeb)', icon: 'var(--text, #171717)' },
+  };
+  const c = colors[type] ?? colors.info;
+
+  const icons: Record<string, string> = {
+    success: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="${c.icon}" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="${c.icon}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    error:   `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="${c.icon}" stroke-width="1.3"/><path d="M8 5v4M8 11v.5" stroke="${c.icon}" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    info:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="${c.icon}" stroke-width="1.3"/><path d="M8 7v5M8 5v.5" stroke="${c.icon}" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  };
+
+  toast.style.cssText = `
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: ${c.bg};
+    border: 1px solid ${c.border};
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: 0px 2px 2px rgba(0,0,0,0.04), 0px 8px 16px -4px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.05);
+    pointer-events: all;
+    font-size: 14px;
+    color: var(--text, #171717);
+    font-family: inherit;
+    max-width: 360px;
+    animation: toast-in 0.25s ease forwards;
+    line-height: 1.45;
+  `;
+  // Icon markup is a static template (safe); the message is attacker-influenced
+  // (file names) so it must go through textContent, never innerHTML.
+  toast.innerHTML = icons[type] ?? icons.info;
+  const messageSpan = document.createElement('span');
+  messageSpan.style.cssText = 'flex:1; min-width: 0; word-break: break-all; overflow-wrap: anywhere;';
+  messageSpan.textContent = message;
+  if (action) {
+    // Action buttons are built as DOM nodes, not markup — labels stay inert text
+    const btn = document.createElement('button');
+    btn.className = 'toast-undo-btn no-nav';
+    btn.dataset.actionId = action.actionId;
+    btn.textContent = action.label;
+    btn.style.cssText =
+      'background:none;border:none;color:var(--accent,#0070f3);text-decoration:underline;cursor:pointer;padding:0;margin-left:8px;font-weight:600;font-family:inherit;font-size:inherit;';
+    messageSpan.appendChild(btn);
+  }
+  toast.appendChild(messageSpan);
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'toast-out 0.2s ease forwards';
+    setTimeout(() => toast.remove(), 200);
+  }, 4000);
+}
+
+document.addEventListener('toast', (e: Event) => {
+  const { type, message, action } = (e as CustomEvent<ToastEvent>).detail;
+  showToast(type, message, action);
+});
+</script>
