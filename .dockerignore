@@ -1,0 +1,14 @@
+node_modules
+dist
+.astro
+data
+uploads
+graphify-out
+.git
+.env
+*.log
+.claude
+.agents
+.kilocode
+.gemini
+.vscode
