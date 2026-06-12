@@ -1,0 +1,63 @@
+---
+/**
+ * Seo.astro — central SEO head block: canonical, robots, Open Graph,
+ * Twitter Cards, and JSON-LD structured data.
+ *
+ * Canonical URLs derive from the live request origin (with optional
+ * PUBLIC_SITE_URL override), so every self-hosted instance gets correct
+ * absolute URLs without configuration.
+ */
+interface Props {
+  title: string;
+  description: string;
+  /** Pathname for the canonical URL; defaults to the current request path. */
+  path?: string;
+  /** OG type, e.g. "website" or "article". */
+  type?: string;
+  /** Absolute or root-relative OG image. Defaults to the brand card. */
+  image?: string;
+  /** Suppress indexing (auth pages, app interior). */
+  noindex?: boolean;
+  /** JSON-LD structured data objects, rendered one script tag each. */
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  type = 'website',
+  image = '/og-image.png',
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+const canonical = new URL(path, origin).href;
+const imageUrl = image.startsWith('http') ? image : new URL(image, origin).href;
+---
+
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="MediaVault" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="MediaVault — self-hosted encrypted media vault" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+
+{jsonLd.map((schema) => (
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+))}
