@@ -24,6 +24,7 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'MediaVault',
+    alternateName: ['OpenMediaVaults', 'Open Media Vault'],
     url: origin,
     description:
       'Free, self-hosted, encrypted media vault — a private Google Photos alternative that stores photos, videos, and audio on your own hardware.',
@@ -32,6 +33,7 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'MediaVault',
+    alternateName: 'OpenMediaVaults',
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Linux, macOS, Windows (Node.js 22+)',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -75,7 +77,8 @@ const jsonLd = [
 
       <!-- Description -->
       <p class="hero-description" data-aos="fade-up">
-        A premium, self-hosted space for your images, videos, and audio files. 
+        MediaVault — the <strong>OpenMediaVaults</strong> project — is a free, self-hosted, open-source
+        space for your images, videos, and audio files, sealed with AES-256 encryption.
         Zero third-party analytics, zero cloud leaks. Just pure, secure ownership of your memories.
       </p>
 
