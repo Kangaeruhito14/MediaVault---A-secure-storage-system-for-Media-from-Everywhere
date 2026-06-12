@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <style>
+    .frame { fill: #0a0a0a; }
+    .stroke { stroke: #fafafa; }
+    .dot { fill: #fafafa; }
+    @media (prefers-color-scheme: light) {
+      .frame { fill: #171717; }
+    }
+  </style>
+  <rect class="frame" width="28" height="28" rx="7"/>
+  <rect class="stroke" x="7" y="12.5" width="14" height="10" rx="2.5" stroke-width="1.6" fill="none"/>
+  <path class="stroke" d="M10 12.5V9.5a4 4 0 0 1 8 0v3" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  <circle class="dot" cx="14" cy="17.5" r="1.6"/>
+</svg>
