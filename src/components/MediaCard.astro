@@ -1,0 +1,348 @@
+---
+import type { MediaItem } from '../lib/storage';
+import { formatBytes, mediaTypeFromMime } from '../lib/storage';
+
+interface Props { item: MediaItem }
+const { item } = Astro.props;
+const type      = mediaTypeFromMime(item.mimeType);
+const size      = formatBytes(item.size);
+const mediaUrl  = `/api/media/${item.id}`;
+const detailUrl = `/vault/${item.id}`;
+
+const relDate = (() => {
+  const ms  = Date.now() - new Date(item.uploadedAt).getTime();
+  const min = Math.floor(ms / 60000);
+  const hr  = Math.floor(min / 60);
+  const day = Math.floor(hr  / 24);
+  if (min < 2)   return 'Just now';
+  if (min < 60)  return `${min}m ago`;
+  if (hr  < 24)  return `${hr}h ago`;
+  if (day < 30)  return `${day}d ago`;
+  return new Date(item.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+})();
+
+const badgeClass = `badge badge-${type}`;
+const typeLabel  = type === 'other' ? 'FILE' : type.toUpperCase();
+---
+
+<!--
+  Selector is a DIRECT child of <article> so `position: absolute; top/left`
+  is always relative to the article boundary (which starts at the thumbnail).
+  All interactive elements have onclick="event.stopPropagation()" to prevent
+  the article's inline navigation handler from firing.
+-->
+<article
+  class="media-card animate-fade-in"
+  data-id={item.id}
+  data-type={type}
+  data-name={item.originalName.toLowerCase()}
+  data-size={item.size}
+  data-date={new Date(item.uploadedAt).getTime()}
+  data-bookmarked={String(!!item.bookmarked)}
+  onclick={`if(!event.target.closest('.no-nav'))window.location.href='${detailUrl}'`}
+  style="cursor: pointer;"
+>
+
+  <!-- ── Selector checkbox — lives on the article, top-left of thumbnail ── -->
+  <label
+    class="card-selector no-nav"
+    title="Select file"
+  >
+    <input
+      type="checkbox"
+      class="select-file-check"
+      data-id={item.id}
+    />
+    <span class="checkmark"></span>
+  </label>
+
+  <!-- ── Thumbnail ─────────────────────────────────────────────── -->
+  <div class="card-thumb-wrap">
+    {type === 'image' && (
+      <img
+        class="card-thumb"
+        src={mediaUrl}
+        alt={item.originalName}
+        loading="lazy"
+        decoding="async"
+      />
+    )}
+
+    {type === 'video' && (
+      <div class="card-thumb-placeholder" style="position: relative;">
+        <div style="
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+          display: flex; align-items: center; justify-content: center;
+        ">
+          <div style="
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+          ">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M5 3.5l9 4.5-9 4.5V3.5z" fill="white"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {type === 'audio' && (
+      <div class="card-thumb-placeholder">
+        <div style="
+          width: 100%; height: 100%;
+          background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #111 100%);
+          display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px;
+        ">
+          <div style="display: flex; align-items: flex-end; gap: 3px; height: 28px;">
+            {[0.6, 1, 0.8, 0.4, 0.9, 0.7, 0.5, 1, 0.6].map((h, i) => (
+              <div style={`width: 3px; height: ${Math.round(h*28)}px; background: #34d399; border-radius: 2px; opacity: 0.7; animation: sound-bar 1.2s ease-in-out ${i * 0.1}s infinite alternate;`}></div>
+            ))}
+          </div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="opacity: 0.4;">
+            <path d="M9 18V6l12-3v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" stroke="#34d399" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    )}
+
+    {type === 'other' && (
+      <div class="card-thumb-placeholder">
+        <div style="
+          width: 100%; height: 100%;
+          background: var(--bg-inset);
+          display: flex; align-items: center; justify-content: center;
+        ">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M10 6h16l8 8v20a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" stroke="var(--border-strong)" stroke-width="1.4"/>
+            <path d="M26 6v8h8" stroke="var(--border-strong)" stroke-width="1.4"/>
+          </svg>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <!-- ── Card info ─────────────────────────────────────────────── -->
+  <div class="card-info">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class={badgeClass}>{typeLabel}</span>
+        <svg class="star-badge" width="12" height="12" viewBox="0 0 16 16" fill="#fbbf24" stroke="#fbbf24" stroke-width="1" style={`display: ${item.bookmarked ? 'inline-block' : 'none'}; vertical-align: middle;`}>
+          <path d="M8 12.05l-3.8 2.3.7-4.27-3.1-3 4.3-.63L8 2.5l1.9 3.95 4.3.63-3.1 3 .7 4.27z"/>
+        </svg>
+      </div>
+      <span style="font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace;">{size}</span>
+    </div>
+    <p class="card-name" title={item.originalName}>{item.originalName}</p>
+    <p class="card-meta">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink: 0;">
+        <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1"/>
+        <path d="M5 3v2l1.5 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      {relDate}
+    </p>
+  </div>
+
+  <!-- ── Hover overlay with action buttons ──────────────── -->
+  <!--
+    pointer-events:none on overlay so gradient bg passes clicks to article.
+    Inner row div has pointer-events:auto so buttons ARE clickable.
+    All interactive elements carry class="no-nav" so the article onclick
+    guard `if(!event.target.closest('.no-nav'))` stops navigation.
+  -->
+  <div class="card-overlay" style="pointer-events: none;">
+    <div class="no-nav" style="display: flex; flex-direction: row; gap: 6px; pointer-events: auto;">
+      <a
+        class="no-nav overlay-btn"
+        href={mediaUrl}
+        download={item.originalName}
+        aria-label="Download"
+        title="Download"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 2v7M4.5 6.5L7 9 9.5 6.5M2 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <button
+        type="button"
+        class={`no-nav bookmark-btn overlay-btn${item.bookmarked ? ' overlay-btn--bookmarked' : ''}`}
+        data-id={item.id}
+        data-bookmarked={String(!!item.bookmarked)}
+        aria-label="Toggle bookmark"
+        title={item.bookmarked ? "Remove bookmark" : "Bookmark file"}
+      >
+        <svg class="star-icon" width="14" height="14" viewBox="0 0 16 16" fill={item.bookmarked ? "#fbbf24" : "none"} stroke={item.bookmarked ? "#fbbf24" : "currentColor"} stroke-width="1.3">
+          <path d="M8 12.05l-3.8 2.3.7-4.27-3.1-3 4.3-.63L8 2.5l1.9 3.95 4.3.63-3.1 3 .7 4.27z"/>
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="no-nav delete-btn overlay-btn overlay-btn--danger"
+        data-id={item.id}
+        data-name={item.originalName}
+        aria-label="Delete"
+        title="Delete"
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 3.5h9M5 3.5v-1.5h3v1.5M5.5 5.5v4M7.5 5.5v4M3 3.5l.5 7.5h6l.5-7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</article>
+
+<style>
+@keyframes sound-bar {
+  from { transform: scaleY(0.4); }
+  to   { transform: scaleY(1); }
+}
+
+/* ── Thumbnail wrapper ── */
+.card-thumb-wrap {
+  overflow: hidden;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+/* ── Hover overlay ── */
+/* global.css handles position:absolute; inset:0; opacity:0; transition */
+/* We only add pointer-events here; layout is done via inline style on inner div */
+.card-overlay {
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+}
+
+/* ── Overlay action buttons ── */
+.overlay-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.12);
+  color: white;
+}
+.overlay-btn:hover {
+  background: rgba(255,255,255,0.22);
+  transform: scale(1.08);
+}
+.overlay-btn--danger {
+  background: rgba(248,113,113,0.15);
+  border-color: rgba(248,113,113,0.35);
+  color: #f87171;
+}
+.overlay-btn--danger:hover {
+  background: rgba(248,113,113,0.32);
+  transform: scale(1.08);
+}
+/* Bookmarked star — amber tint only, no position change */
+.overlay-btn--bookmarked {
+  background: rgba(251,191,36,0.15);
+  border-color: rgba(251,191,36,0.4);
+  color: #fbbf24;
+}
+.overlay-btn--bookmarked:hover {
+  background: rgba(251,191,36,0.28);
+  border-color: rgba(251,191,36,0.6);
+}
+
+/* ── Selector checkbox ──────────────────────────────────────────
+   Direct child of <article> (which has position:relative).
+   top/left positions it inside the THUMBNAIL area (top of card).
+   Hidden by default; shown only on hover or in selection-mode.
+   pointer-events:none when hidden prevents invisible click-eating.
+   ─────────────────────────────────────────────────────────────── */
+.card-selector {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 30;          /* above overlay */
+  display: block;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  user-select: none;
+
+  /* Hidden until hover or selection-mode */
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Reveal on hover */
+.media-card:hover .card-selector {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+/* Reveal in selection mode (one or more cards selected) */
+body.selection-mode .card-selector {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+/* Hide the real input; we style the span */
+.card-selector input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+/* The visible checkbox box */
+.card-selector .checkmark {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 8, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.13s, border-color 0.13s, box-shadow 0.13s;
+}
+.card-selector:hover .checkmark {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+.card-selector input:checked ~ .checkmark {
+  background: var(--accent, #6366f1);
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+/* Tick mark */
+.card-selector .checkmark::after {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.card-selector input:checked ~ .checkmark::after {
+  display: block;
+}
+@media (hover: none) {
+  .card-selector {
+    opacity: 0.8 !important;
+    pointer-events: auto !important;
+    transform: scale(1) !important;
+  }
+}
+</style>
