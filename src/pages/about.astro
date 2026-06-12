@@ -1,0 +1,261 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: origin + '/' },
+      { '@type': 'ListItem', position: 2, name: 'About', item: origin + '/about' },
+    ],
+  },
+];
+---
+
+<PublicLayout
+  title="About MediaVault — How Self-Hosted Encrypted Media Storage Works"
+  description="How MediaVault keeps private photos and videos safe: sealed-at-rest AES-256 encryption, self-hosting on your own hardware, recovery-key resets, and a zero-tracking design. Step-by-step setup guide included."
+  jsonLd={jsonLd}
+>
+  <article class="about-page">
+    <!-- Hero Header -->
+    <header class="about-hero">
+      <div class="container-sm">
+        <span class="page-eyebrow">Our Philosophy</span>
+        <h1 class="page-title">Ownership of your digital life.</h1>
+        <p class="page-lead">
+          MediaVault is a self-hosted private media repository. We believe your private photos, videos, and voice memos shouldn't live in a corporate cloud database scanning your files.
+        </p>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="about-content container-sm">
+      
+      <!-- Core Architecture -->
+      <section class="about-section">
+        <h2>How MediaVault Works</h2>
+        <p>
+          MediaVault is built on a <strong>local-first architectural pattern</strong>. Unlike mainstream file storages that sync your data to centralized corporate networks, MediaVault operates directly on the machine you run it on.
+        </p>
+        
+        <div class="info-card-list">
+          <div class="info-card">
+            <h4>📁 Zero Cloud Dependency</h4>
+            <p>Your media uploads are written directly to your local file system, structured in standard directories inside process memory boundaries. Your files never cross the public internet unless you request to access them.</p>
+          </div>
+          <div class="info-card">
+            <h4>🔑 Secure Local Auth</h4>
+            <p>We use industry-grade <code>scrypt</code> cryptographic password hashing. When you set up your vault, a physical cryptographic recovery key is generated. Without this physical key, your password cannot be reset.</p>
+          </div>
+          <div class="info-card">
+            <h4>⚡ Partial Byte Streaming</h4>
+            <p>Our custom HTTP streaming handler serves videos and audios using chunked byte ranges. This means your browser only downloads the parts of files it needs to play, reducing CPU overhead and loading large media instantly.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step by step How to Use -->
+      <section class="about-section guide-section">
+        <h2>How to Use MediaVault</h2>
+        <p>Setting up and operating your vault takes less than two minutes. Follow these simple steps:</p>
+        
+        <div class="steps-flow">
+          <div class="step-item">
+            <div class="step-num">01</div>
+            <div class="step-text">
+              <h4>Create Your Master Password</h4>
+              <p>When running MediaVault for the first time, navigate to the portal to set up your master key. A 64-character recovery key will be generated. Copy and save it offline.</p>
+            </div>
+          </div>
+          
+          <div class="step-item">
+            <div class="step-num">02</div>
+            <div class="step-text">
+              <h4>Drag & Drop Upload</h4>
+              <p>Once logged in, click the Upload Zone or drag files onto the browser window. MediaVault supports batch uploading of images, videos (MP4, WebM, etc.), and audio files (MP3, WAV, etc.).</p>
+            </div>
+          </div>
+          
+          <div class="step-item">
+            <div class="step-num">03</div>
+            <div class="step-text">
+              <h4>Organize, Sort & Play</h4>
+              <p>Rename files, sort them by upload date, name, or size, and toggle bookmarks. Click on any file to open the responsive preview drawer for seamless playback or downloading.</p>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">04</div>
+            <div class="step-text">
+              <h4>5-Second Delete Undo</h4>
+              <p>Accidentally deleted a file? Use the built-in undo banner. When you click delete, the card is hidden from search and stats immediately, but we wait 5 seconds before permanently wiping it from storage.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security details -->
+      <section class="about-section warning-box">
+        <h3>🔒 Security & Privacy Notice</h3>
+        <p>
+          Because MediaVault does not upload your files to any remote backup servers, <strong>your data is strictly local to your machine</strong>. If your host device fails and you do not have backups, your files could be lost. We highly recommend configuring a local cron job or backup system to duplicate your <code>data/</code> folder onto external offline disks periodically.
+        </p>
+      </section>
+      
+    </div>
+  </article>
+</PublicLayout>
+
+<style>
+  .container-sm {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .about-hero {
+    padding: 96px 0 64px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-inset);
+  }
+
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+
+  .page-lead {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-body);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .about-content {
+    padding: 64px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+
+  .about-section h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    letter-spacing: -0.03em;
+  }
+
+  .about-section p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-body);
+    margin-bottom: 24px;
+  }
+
+  .info-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .info-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .info-card p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-body);
+    margin-bottom: 0;
+  }
+
+  /* Guide flow steps */
+  .steps-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 24px;
+  }
+
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .step-text h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .step-text p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-body);
+    margin-bottom: 0;
+  }
+
+  /* Warning container card */
+  .warning-box {
+    background: rgba(245, 166, 35, 0.06);
+    border: 1px solid rgba(245, 166, 35, 0.25);
+    padding: 24px;
+    border-radius: 12px;
+  }
+
+  .warning-box h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .warning-box p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-body);
+    margin: 0;
+  }
+</style>
