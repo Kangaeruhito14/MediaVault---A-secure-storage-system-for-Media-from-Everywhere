@@ -1,0 +1,54 @@
+---
+import Seo from '../components/Seo.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description = 'MediaVault is a free, self-hosted, encrypted media vault — store private photos, videos, and audio on your own hardware with AES-256 sealed-at-rest encryption.',
+  image,
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+// Pages that already brand themselves keep their exact title;
+// everything else gets the suffix for consistent SERP display.
+const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`;
+---
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="MediaVault" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Seo title={fullTitle} description={description} image={image} noindex={noindex} jsonLd={jsonLd} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+    <!-- Apply saved theme before page renders to avoid flash -->
+    <script is:inline>
+      (function() {
+        const saved = localStorage.getItem('mv-theme');
+        const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', saved || preferred);
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  @import "../styles/global.css";
+</style>
