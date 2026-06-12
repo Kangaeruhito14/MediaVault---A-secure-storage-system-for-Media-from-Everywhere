@@ -1,0 +1,333 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+/**
+ * FAQ content doubles as the FAQPage JSON-LD source, so the structured data
+ * Google reads always matches the text visitors see — a hard requirement for
+ * rich-result eligibility. Questions mirror real search queries ("People Also
+ * Ask") around self-hosted photo storage, encrypted vaults, and Google Photos
+ * alternatives.
+ */
+const faqSections = [
+  {
+    category: 'Getting Started',
+    items: [
+      {
+        q: 'What is MediaVault?',
+        a: 'MediaVault is a free, open-source, self-hosted media vault — a private alternative to Google Photos and iCloud. It stores your photos, videos, and audio on your own computer or server, encrypts every file with AES-256, and serves them through a fast web interface only you can unlock.',
+      },
+      {
+        q: 'Is MediaVault really free? What is the catch?',
+        a: 'Yes — completely free, with no subscriptions, no premium tiers, no ads, and no data collection. There is no catch: because MediaVault runs on your own hardware, there are no cloud storage bills for anyone to pass on to you. You provide the disk space; the software is free.',
+      },
+      {
+        q: 'How is MediaVault different from Google Photos or iCloud?',
+        a: 'Google Photos and iCloud store your media on company servers, scan it with automated systems, and charge subscriptions once you outgrow the free tier. MediaVault stores media on hardware you own, encrypts it so that even a stolen disk reveals nothing, has no scanning or telemetry, and never charges you. The trade-off: you are responsible for your own backups.',
+      },
+      {
+        q: 'How is MediaVault different from Immich, PhotoPrism, or Ente?',
+        a: 'Immich and PhotoPrism are excellent self-hosted photo managers, but they store files as plaintext on disk and typically require Docker and a database server. MediaVault is radically simpler — one Node.js process, zero external dependencies, no Docker required — and it is sealed by default: every file is AES-256 encrypted at rest, and the decryption key only exists in memory while you are logged in.',
+      },
+      {
+        q: 'Do I need a NAS or special hardware to run MediaVault?',
+        a: 'No. Any machine that runs Node.js 22 or newer works: an old laptop, a desktop, a Raspberry Pi, or a $5 VPS. There is no database server to install and no Docker requirement — clone, npm install, npm start, done.',
+      },
+    ],
+  },
+  {
+    category: 'Security & Encryption',
+    items: [
+      {
+        q: 'Is self-hosted photo storage safe?',
+        a: 'It is as safe as the software and your setup make it. MediaVault is designed defensively: files are AES-256 encrypted at rest, passwords are hashed with scrypt, login is rate-limited against brute force, sessions are revocable, and every response carries hardened security headers. Keep your system updated, use a strong password, and store the recovery key offline.',
+      },
+      {
+        q: 'How does MediaVault encryption work?',
+        a: 'MediaVault uses envelope encryption. Each file gets its own random AES-256 key; file keys are wrapped by a 256-bit master key; and the master key is itself wrapped twice — once by a key derived from your password, once by a key derived from your recovery key (both via scrypt). Files are encrypted with AES-256-CTR, which keeps video seeking instant even on encrypted data.',
+      },
+      {
+        q: 'What does "sealed at rest" mean?',
+        a: 'When the server is off, restarts, or you press Lock Vault, the master key is wiped from memory. Everything on disk — every photo, video, and song — is unreadable ciphertext until someone enters the password again. Even a full copy of your hard drive reveals nothing.',
+      },
+      {
+        q: 'Can MediaVault, or anyone else, see my files?',
+        a: 'No. There is no MediaVault company server — the software runs entirely on your machine and makes no outbound connections. Files on disk are encrypted, so even someone with physical access to the drive cannot view them without your password or recovery key.',
+      },
+      {
+        q: 'How is my password stored?',
+        a: 'Your password is never stored. MediaVault keeps only an scrypt hash (a deliberately slow, memory-hard function designed to resist GPU cracking) with a unique random salt. The password also derives the key that unwraps your master encryption key — which is why no one can reset it without the recovery key.',
+      },
+      {
+        q: 'What happens if I forget my password?',
+        a: 'Use your recovery key. During setup MediaVault generates a 64-character recovery key and shows it exactly once. On the login page, choose "Forgot password? Use recovery key", enter it, and set a new password. A new recovery key is issued and the old one is permanently invalidated.',
+      },
+      {
+        q: 'What happens if I lose both my password and my recovery key?',
+        a: 'Your files are unrecoverable — by design. The encryption has no backdoor, and MediaVault has no company server that could let you "reset by email". This is the price of real privacy, so print the recovery key and keep it somewhere physically safe.',
+      },
+      {
+        q: 'Can someone brute-force my vault password?',
+        a: 'Realistically no. Five failed attempts lock the vault for 15 minutes — globally, not per-IP, so attackers cannot bypass it with proxies or spoofed headers. The lockout counter survives server restarts, and scrypt hashing makes each guess deliberately expensive.',
+      },
+      {
+        q: 'What happens if my computer or server is stolen?',
+        a: 'The thief gets ciphertext. Files on disk are AES-256 encrypted and the master key is not stored in usable form anywhere on the device — it only exists in memory while the vault is unlocked. Without your password or recovery key, the data is mathematically out of reach.',
+      },
+    ],
+  },
+  {
+    category: 'Files & Storage',
+    items: [
+      {
+        q: 'What file types does MediaVault support?',
+        a: 'Images: JPEG, PNG, GIF, WebP, AVIF, SVG. Video: MP4, WebM, OGG, QuickTime/MOV, AVI. Audio: MP3, WAV, OGG, FLAC, AAC, M4A. Uploads are verified by content — a renamed executable pretending to be a photo is rejected before it ever lands on disk.',
+      },
+      {
+        q: 'Is there a file size or storage limit?',
+        a: 'Single files can be up to 5 GB, streamed to disk in chunks so memory use stays flat. Total storage is limited only by your drive; self-hosters can optionally set a hard quota with the MEDIAVAULT_MAX_STORAGE environment variable.',
+      },
+      {
+        q: 'Does MediaVault compress my photos and videos?',
+        a: 'Never. You get back the exact bytes you uploaded — no recompression, no quality loss, no stripped metadata. Encryption preserves file content perfectly.',
+      },
+      {
+        q: 'How does video streaming work on encrypted files?',
+        a: 'MediaVault answers HTTP Range requests (206 Partial Content) and uses AES-256-CTR encryption, which can decrypt from any byte offset. When you skip to minute 40 of a movie, the server decrypts only the bytes the player asks for — seeking stays instant, and the whole file never loads into memory.',
+      },
+      {
+        q: 'How do I back up my vault?',
+        a: 'Copy two folders: data/ (the SQLite database holding metadata and wrapped keys) and uploads/ (your encrypted files). Backups are safe to put on any external drive or cloud storage, because everything in uploads/ is ciphertext — useless without your password or recovery key.',
+      },
+    ],
+  },
+  {
+    category: 'Access & Devices',
+    items: [
+      {
+        q: 'Can I access MediaVault from my phone or other devices?',
+        a: 'Yes. The interface is fully responsive. By default the server listens on localhost; bind it to your LAN address to reach it from phones and tablets on your network, or use a VPN like Tailscale or WireGuard for secure remote access. If you expose it publicly, put it behind HTTPS.',
+      },
+      {
+        q: 'Can I share files with other people?',
+        a: 'MediaVault is intentionally a single-owner vault — there are no public share links or guest accounts, which keeps the attack surface minimal. To share something, download the original and send it through any channel you trust.',
+      },
+      {
+        q: 'Do I need an internet connection to use MediaVault?',
+        a: 'No. MediaVault is fully functional offline — uploads, playback, search, everything runs on your machine. The only network it needs is the one between your browser and your own server.',
+      },
+    ],
+  },
+  {
+    category: 'Features & Support',
+    items: [
+      {
+        q: 'How does the delete Undo feature work?',
+        a: 'Deleting a file (or a bulk selection) hides it immediately and shows an Undo toast for 5 seconds. Click Undo to restore instantly; let the timer run out and the encrypted file is permanently erased from disk.',
+      },
+      {
+        q: 'What browsers are supported?',
+        a: 'Every modern browser: Chrome, Firefox, Safari, Edge, and their mobile versions. Playback of specific video codecs depends on the browser, exactly as it would for any local video file.',
+      },
+      {
+        q: 'How do I report a bug or security issue?',
+        a: 'Email fantasyfalcoon91@gmail.com. Security reports are especially welcome — the project also publishes a security.txt at /.well-known/security.txt following RFC 9116.',
+      },
+    ],
+  },
+];
+
+const allFaqs = faqSections.flatMap((s) => s.items);
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: allFaqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+---
+
+<PublicLayout
+  title="FAQ — Self-Hosted Encrypted Media Storage Questions Answered"
+  description="Is self-hosted photo storage safe? How does AES-256 vault encryption work? What happens if you forget your password? Every common question about MediaVault, answered clearly."
+  jsonLd={jsonLd}
+>
+  <section class="faq-page">
+    <div class="container-sm">
+      <!-- Header -->
+      <header class="faq-header">
+        <span class="page-eyebrow">FAQ Help</span>
+        <h1 class="page-title">Frequently Asked Questions.</h1>
+        <p class="page-lead">
+          Everything people ask about self-hosted, encrypted media storage — security, recovery keys, file formats, devices, and more. If you don't find what you need, <a href="/contact" class="lead-link">contact us</a>.
+        </p>
+      </header>
+
+      <!-- Accordion, grouped by category -->
+      {faqSections.map((section) => (
+        <div class="faq-section">
+          <h2 class="faq-category">{section.category}</h2>
+          <div class="faq-accordion-list">
+            {section.items.map((faq) => (
+              <details class="faq-details">
+                <summary class="faq-summary">
+                  <span>{faq.q}</span>
+                  <svg class="summary-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </summary>
+                <div class="faq-content">
+                  <p>{faq.a}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  .container-sm {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .faq-page {
+    padding: 96px 0;
+  }
+
+  .faq-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+
+  .page-lead {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-body);
+  }
+
+  .lead-link {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .lead-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Category sections */
+  .faq-section {
+    margin-bottom: 48px;
+  }
+
+  .faq-category {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  /* Accordion styling */
+  .faq-accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .faq-details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+  }
+
+  .faq-details:hover {
+    border-color: var(--border-strong);
+  }
+
+  .faq-details[open] {
+    border-color: var(--border-strong);
+  }
+
+  .faq-summary {
+    padding: 20px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none; /* Hide default triangle */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    user-select: none;
+  }
+
+  /* Hide default summary arrow in Webkit/Firefox */
+  .faq-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .summary-arrow {
+    color: var(--text-muted);
+    transition: transform 0.2s ease, color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .faq-summary:hover .summary-arrow {
+    color: var(--text-primary);
+  }
+
+  .faq-details[open] .summary-arrow {
+    transform: rotate(180deg);
+    color: var(--text-primary);
+  }
+
+  .faq-content {
+    padding: 0 24px 20px;
+    border-top: 1px solid transparent;
+  }
+
+  .faq-details[open] .faq-content {
+    border-top-color: var(--border);
+  }
+
+  .faq-content p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-body);
+    margin: 0;
+  }
+</style>
