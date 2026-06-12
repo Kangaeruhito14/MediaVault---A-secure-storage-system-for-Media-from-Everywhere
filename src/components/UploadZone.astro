@@ -1,0 +1,172 @@
+---
+// UploadZone.astro — drag-and-drop uploader with multi-file batch support
+---
+
+<div
+  id="upload-zone"
+  class="upload-zone"
+  role="button"
+  tabindex="0"
+  aria-label="Upload files"
+>
+  <!-- Icon -->
+  <div id="upload-icon" style="
+    width: 52px; height: 52px;
+    background: var(--bg); border: 1px solid var(--border-med);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+  ">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 15V4M8 8L12 4L16 8" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div>
+    <p style="font-size: 15px; font-weight: 500; color: var(--text-primary); margin: 0 0 4px; letter-spacing: -0.02em;">
+      Drop files here or <span style="color: var(--accent);">browse</span>
+    </p>
+    <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+      Images, videos, audio · Up to 5 GB per file · Multiple files supported
+    </p>
+  </div>
+
+  <!-- Progress section (hidden by default) -->
+  <div id="upload-progress-section" style="display: none; width: 100%; max-width: 400px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <span id="upload-status-text" style="font-size: 13px; color: var(--text-body); font-weight: 500;"></span>
+      <span id="upload-count-text" style="font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;"></span>
+    </div>
+    <div class="progress-bar">
+      <div id="upload-progress-fill" class="progress-fill" style="width: 0%;"></div>
+    </div>
+    <div id="upload-file-name" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; font-family: 'JetBrains Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+  </div>
+
+  <!-- Hidden file input -->
+  <input
+    id="file-input"
+    type="file"
+    accept="image/*,video/*,audio/*"
+    multiple
+    style="display: none;"
+    aria-hidden="true"
+  />
+</div>
+
+<script>
+const zone         = document.getElementById('upload-zone')!;
+const fileInput    = document.getElementById('file-input') as HTMLInputElement;
+const progressSec  = document.getElementById('upload-progress-section')!;
+const statusText   = document.getElementById('upload-status-text')!;
+const countText    = document.getElementById('upload-count-text')!;
+const progressFill = document.getElementById('upload-progress-fill') as HTMLElement;
+const fileNameEl   = document.getElementById('upload-file-name')!;
+const uploadIcon   = document.getElementById('upload-icon')!;
+
+function showToast(type: 'success' | 'error' | 'info', message: string) {
+  document.dispatchEvent(new CustomEvent('toast', { detail: { type, message } }));
+}
+
+// Click to browse
+zone.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('input')) return;
+  fileInput.click();
+});
+zone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files?.length) uploadFiles(Array.from(fileInput.files));
+});
+
+// Drag and drop
+zone.addEventListener('dragover',  (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', (e) => { if (!zone.contains(e.relatedTarget as Node)) zone.classList.remove('drag-over'); });
+zone.addEventListener('drop',      (e) => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer?.files ?? []).filter(f =>
+    f.type.startsWith('image/') || f.type.startsWith('video/') || f.type.startsWith('audio/')
+  );
+  if (files.length) uploadFiles(files);
+  else showToast('error', 'Only images, videos, and audio files are supported.');
+});
+
+// ── UPLOAD LOGIC ──────────────────────────────────────────────────────────────
+// Upload files ONE BY ONE sequentially. Only reload the page once ALL are done.
+
+async function uploadFiles(files: File[]) {
+  const total = files.length;
+  let succeeded = 0;
+  let failed = 0;
+
+  // Show progress UI
+  const defaultContent = zone.querySelector('.upload-zone > div:not(#upload-progress-section):not(#upload-icon):not(#file-input)') as HTMLElement | null;
+  if (defaultContent) defaultContent.style.display = 'none';
+  uploadIcon.style.display = 'none';
+  progressSec.style.display = 'block';
+  zone.style.cursor = 'default';
+  zone.style.pointerEvents = 'none';
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    statusText.textContent = `Uploading ${i + 1} of ${total}…`;
+    countText.textContent  = `${succeeded} done · ${failed} failed`;
+    fileNameEl.textContent = file.name;
+    progressFill.style.width = `${Math.round(((i) / total) * 100)}%`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/media/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        showToast('error', `"${file.name}": ${err.error ?? 'Upload failed.'}`);
+        failed++;
+      } else {
+        succeeded++;
+      }
+    } catch {
+      showToast('error', `"${file.name}": Network error.`);
+      failed++;
+    }
+  }
+
+  // Final progress
+  progressFill.style.width = '100%';
+  statusText.textContent = 'Done!';
+  countText.textContent  = `${succeeded} uploaded · ${failed} failed`;
+  fileNameEl.textContent = '';
+
+  // Show summary toast
+  if (succeeded > 0 && failed === 0) {
+    showToast('success', `${succeeded} file${succeeded > 1 ? 's' : ''} uploaded successfully.`);
+  } else if (succeeded > 0 && failed > 0) {
+    showToast('info', `${succeeded} uploaded, ${failed} failed.`);
+  } else {
+    showToast('error', 'All uploads failed.');
+  }
+
+  // Reset input so same files can be uploaded again if needed
+  fileInput.value = '';
+
+  // Reload ONCE after all files are done to refresh the grid
+  if (succeeded > 0) {
+    await new Promise(r => setTimeout(r, 800));
+    window.location.reload();
+  } else {
+    // Reset UI without reload
+    if (defaultContent) defaultContent.style.display = '';
+    uploadIcon.style.display = 'flex';
+    progressSec.style.display = 'none';
+    progressFill.style.width = '0%';
+    zone.style.cursor = 'pointer';
+    zone.style.pointerEvents = '';
+  }
+}
+</script>
