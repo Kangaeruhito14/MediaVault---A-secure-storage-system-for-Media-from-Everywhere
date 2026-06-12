@@ -38,5 +38,8 @@
   },
   "devDependencies": {
     "@types/busboy": "^1.5.4"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
