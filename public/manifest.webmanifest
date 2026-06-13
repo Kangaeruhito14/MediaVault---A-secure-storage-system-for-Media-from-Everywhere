@@ -1,0 +1,22 @@
+{
+  "name": "MediaVault — Encrypted Media Vault",
+  "short_name": "MediaVault",
+  "description": "Free, self-hosted, encrypted media vault. Your photos, videos, and audio — sealed with AES-256 on hardware you own.",
+  "id": "/",
+  "start_url": "/vault",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["photo", "utilities", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open Vault", "url": "/vault" },
+    { "name": "Security & Proof", "url": "/security" }
+  ]
+}
