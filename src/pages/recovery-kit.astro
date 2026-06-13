@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+/**
+ * /recovery-kit — a print-optimized "Emergency Kit" (à la 1Password). The
+ * recovery key is handed over client-side via sessionStorage from the setup
+ * screen and NEVER sent to the server. A QR code is generated locally in the
+ * browser. Designed to be printed or saved as PDF and stored offline.
+ */
+---
+<BaseLayout title="Recovery Kit" description="Your MediaVault recovery kit — print and store offline." noindex={true}>
+  <main class="kit-wrap">
+    <div id="kit-empty" class="kit-empty">
+      <h1>No recovery key found</h1>
+      <p>Open this page from the vault setup screen, right after your key is generated. For your security, the key is never stored on a server and cannot be retrieved here directly.</p>
+      <a href="/login" class="kit-btn">Go to login</a>
+    </div>
+
+    <article id="kit-sheet" class="kit-sheet" hidden>
+      <header class="kit-head">
+        <div class="kit-brand">
+          <div class="kit-logo">
+            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+              <rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="14" cy="18" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <span>MediaVault · Recovery Kit</span>
+        </div>
+        <div class="kit-date" id="kit-date"></div>
+      </header>
+
+      <h1 class="kit-title">Your Emergency Recovery Key</h1>
+      <p class="kit-intro">
+        This key is the <strong>only way</strong> to reset your password if you forget it. Anyone who has it can reset your vault — so store it offline, somewhere only you can reach. MediaVault has no copy of it and cannot recover it for you.
+      </p>
+
+      <div class="kit-keybox">
+        <div class="kit-key-label">Recovery key</div>
+        <div class="kit-key" id="kit-key"></div>
+        <div class="kit-qr" id="kit-qr" aria-label="Recovery key QR code"></div>
+      </div>
+
+      <ol class="kit-steps">
+        <li><strong>Print this sheet</strong> or save it as a PDF and keep it offline (a drawer, a safe, a password manager's secure note).</li>
+        <li><strong>Do not store it</strong> in the same place as your vault, or in plain email/chat.</li>
+        <li>To use it: go to your login page → <em>Forgot password? Use recovery key</em> → enter this key → set a new password.</li>
+        <li>After a reset, a <strong>new</strong> key is issued and this one stops working. Print the new sheet.</li>
+      </ol>
+
+      <div class="kit-actions no-print">
+        <button id="kit-print" class="kit-btn">Print / Save as PDF</button>
+        <a href="/vault" class="kit-btn kit-btn--ghost">I've saved it — go to my vault</a>
+      </div>
+      <p class="kit-warn no-print">For your safety, this key is cleared from browser memory when you leave or reload this page.</p>
+    </article>
+  </main>
+</BaseLayout>
+
+<script src="/vendor/qrcode.js" is:inline></script>
+<script>
+  const KEY_STORE = 'mv_recovery_key';
+  const key = sessionStorage.getItem(KEY_STORE);
+
+  if (key) {
+    (document.getElementById('kit-empty') as HTMLElement).hidden = true;
+    (document.getElementById('kit-sheet') as HTMLElement).hidden = false;
+    (document.getElementById('kit-key') as HTMLElement).textContent = key;
+    (document.getElementById('kit-date') as HTMLElement).textContent =
+      'Generated ' + new Date().toLocaleString();
+
+    // QR generated locally from the key — never transmitted.
+    try {
+      // @ts-ignore — vendored UMD global
+      const qr = qrcode(0, 'M');
+      qr.addData(key);
+      qr.make();
+      // @ts-ignore
+      (document.getElementById('kit-qr') as HTMLElement).innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0 });
+    } catch {
+      (document.getElementById('kit-qr') as HTMLElement).remove();
+    }
+
+    document.getElementById('kit-print')?.addEventListener('click', () => window.print());
+
+    // Clear the key from memory when the user navigates away or reloads.
+    window.addEventListener('pagehide', () => sessionStorage.removeItem(KEY_STORE));
+  }
+</script>
+
+<style>
+  .kit-wrap { max-width: 680px; margin: 0 auto; padding: 48px 24px; min-height: 100vh; }
+  .kit-empty { text-align: center; padding: 80px 0; }
+  .kit-empty h1 { font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+  .kit-empty p { font-size: 14px; line-height: 1.6; color: var(--text-body); max-width: 420px; margin: 0 auto 24px; }
+
+  .kit-sheet {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px;
+  }
+  .kit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+  .kit-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px; }
+  .kit-logo {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--text-primary); color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .kit-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .kit-title { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; color: var(--text-primary); margin-bottom: 12px; }
+  .kit-intro { font-size: 14px; line-height: 1.65; color: var(--text-body); margin-bottom: 28px; }
+
+  .kit-keybox {
+    border: 2px dashed var(--border-strong); border-radius: 12px; padding: 24px;
+    text-align: center; margin-bottom: 28px;
+  }
+  .kit-key-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px;
+  }
+  .kit-key {
+    font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500;
+    color: var(--text-primary); word-break: break-all; line-height: 1.8; margin-bottom: 20px;
+  }
+  .kit-qr { display: flex; justify-content: center; }
+  .kit-qr :global(svg) { width: 140px; height: 140px; }
+
+  .kit-steps { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .kit-steps li { font-size: 13.5px; line-height: 1.6; color: var(--text-body); }
+  .kit-steps strong { color: var(--text-primary); }
+
+  .kit-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .kit-btn {
+    background: var(--text-primary); color: var(--bg); border: none; border-radius: 8px;
+    padding: 11px 18px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+    display: inline-block; font-family: inherit;
+  }
+  .kit-btn--ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-strong); }
+  .kit-warn { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+
+  @media print {
+    .no-print { display: none !important; }
+    .kit-wrap { padding: 0; }
+    .kit-sheet { border: none; box-shadow: none; padding: 0; }
+    :global(body) { background: #fff; }
+  }
+</style>
