@@ -8,7 +8,10 @@ import type { APIRoute } from 'astro';
 const PAGES: { path: string; priority: string; changefreq: string }[] = [
   { path: '/', priority: '1.0', changefreq: 'weekly' },
   { path: '/about', priority: '0.8', changefreq: 'monthly' },
+  { path: '/security', priority: '0.9', changefreq: 'monthly' },
+  { path: '/compare', priority: '0.9', changefreq: 'monthly' },
   { path: '/faq', priority: '0.9', changefreq: 'weekly' },
+  { path: '/glossary', priority: '0.7', changefreq: 'monthly' },
   { path: '/contact', priority: '0.6', changefreq: 'yearly' },
   { path: '/terms', priority: '0.3', changefreq: 'yearly' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },

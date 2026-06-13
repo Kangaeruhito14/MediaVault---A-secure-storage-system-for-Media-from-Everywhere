@@ -22,24 +22,35 @@ const currentYear = new Date().getFullYear();
         </p>
       </div>
 
-      <!-- Navigation column -->
+      <!-- Product column -->
       <div class="footer-links-col">
-        <h3 class="footer-col-title">Platform</h3>
+        <h3 class="footer-col-title">Product</h3>
         <ul class="footer-links-list">
           <li><a href="/">Home</a></li>
           <li><a href="/about">About & How It Works</a></li>
+          <li><a href="/compare">Compare Alternatives</a></li>
+          <li><a href="/login" class="highlight-link">Access Your Vault</a></li>
+        </ul>
+      </div>
+
+      <!-- Learn column -->
+      <div class="footer-links-col">
+        <h3 class="footer-col-title">Learn & Trust</h3>
+        <ul class="footer-links-list">
+          <li><a href="/security">Security & Proof</a></li>
           <li><a href="/faq">Common FAQ</a></li>
+          <li><a href="/glossary">Glossary</a></li>
           <li><a href="/contact">Support Contact</a></li>
         </ul>
       </div>
 
-      <!-- Legal & Access column -->
+      <!-- Legal column -->
       <div class="footer-links-col">
-        <h3 class="footer-col-title">Legal & Access</h3>
+        <h3 class="footer-col-title">Legal</h3>
         <ul class="footer-links-list">
           <li><a href="/terms">Terms of Service</a></li>
           <li><a href="/privacy">Privacy Policy</a></li>
-          <li><a href="/login" class="highlight-link">Access Your Vault</a></li>
+          <li><a href="/.well-known/security.txt">Security.txt</a></li>
         </ul>
       </div>
     </div>
@@ -76,9 +87,13 @@ const currentYear = new Date().getFullYear();
 
   .footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: 48px;
     margin-bottom: 64px;
+  }
+
+  @media (max-width: 920px) and (min-width: 769px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; }
   }
 
   @media (max-width: 768px) {
