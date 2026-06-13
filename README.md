@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" alt="MediaVault" width="240" /></p>
+
 # MediaVault 🔐
 
 **Free, self-hosted, encrypted media vault — your private Google Photos alternative.**
@@ -31,6 +33,10 @@ Store photos, videos, and audio on hardware *you* own. Every file is sealed with
 - 🔑 **Recovery-key reset** — forget your password and recover with a one-time 256-bit key; lose both and *nobody* can read your files (that's the point)
 - 🛡️ **Hardened by default** — scrypt password hashing, revocable DB-backed sessions, global brute-force lockout that can't be bypassed with spoofed headers, magic-byte upload verification, strict security headers on every response
 - ⬆️ **5 GB uploads** — streamed and encrypted chunk-by-chunk with flat memory use
+- 🧭 **EXIF/GPS stripping** — remove location and camera metadata from photos on upload
+- 🪪 **Printable Recovery Kit** — a 1Password-style emergency sheet (key + QR) generated at setup
+- 🔍 **Verify-it-yourself** — a live in-browser encryption demo on the [security page](src/pages/security.astro); don't trust, verify
+- 📱 **Installable PWA** — add to home screen, offline-capable shell (never caches your media)
 - ⭐ Bookmarks, search, filters, bulk delete with 5-second undo, dark/light themes, fully responsive
 - 🗃️ **Zero external dependencies** — metadata in SQLite via Node's built-in driver; no database server, no Docker required (but a Dockerfile is included if you want one)
 
