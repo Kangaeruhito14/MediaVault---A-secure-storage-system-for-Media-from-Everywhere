@@ -1,0 +1,244 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+/**
+ * /security — the "verify it yourself" transparency page. A live, in-browser
+ * encryption demo (Web Crypto, nothing leaves the page) lets visitors SEE
+ * plaintext become ciphertext and watch a wrong password fail — mirroring how
+ * MediaVault seals files on disk. No competitor lets you do this. It is the
+ * single most trust-building and citable page on the site.
+ */
+const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: 'MediaVault Security Model — Verify It Yourself',
+    description:
+      'MediaVault’s threat model and a live in-browser demonstration of AES encryption, showing why a stolen disk reveals nothing without your password.',
+    author: { '@type': 'Organization', name: 'MediaVault' },
+    publisher: { '@type': 'Organization', name: 'MediaVault' },
+    mainEntityOfPage: origin + '/security',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: origin + '/' },
+      { '@type': 'ListItem', position: 2, name: 'Security', item: origin + '/security' },
+    ],
+  },
+];
+
+const threats = [
+  { attack: 'Someone steals your laptop or hard drive', result: 'They get AES-256 ciphertext. Without your password or recovery key, the files are unreadable.' },
+  { attack: 'Your server is hacked or seized', result: 'The master key lives only in memory while unlocked. A powered-off or freshly-booted server holds only ciphertext.' },
+  { attack: 'A backup of uploads/ leaks', result: 'Backups are ciphertext too — safe to store on any untrusted disk or cloud.' },
+  { attack: 'Someone brute-forces your password', result: 'Five wrong tries lock the vault for 15 minutes globally; scrypt makes each guess deliberately slow.' },
+  { attack: 'You forget your password', result: 'Reset with your one-time recovery key. Lose both and the data is gone — there is no backdoor, by design.' },
+  { attack: 'The developer wants to read your files', result: 'Impossible. There is no MediaVault server; the code runs only on your machine and phones home to no one.' },
+];
+---
+
+<PublicLayout
+  title="Security — See the Encryption Work Yourself"
+  description="MediaVault’s plain-language threat model plus a live, in-browser AES encryption demo. Watch plaintext turn into ciphertext and a wrong password fail — proof that a stolen disk reveals nothing."
+  keywords={["is self-hosted photo storage safe", "AES-256 encryption demo", "encrypted media vault security", "encryption at rest proof", "zero knowledge media storage"]}
+  jsonLd={jsonLd}
+>
+  <section class="sec-page">
+    <div class="container-md">
+      <header class="sec-header">
+        <span class="page-eyebrow">Security · Transparency</span>
+        <h1 class="page-title">Don't trust us. Verify it.</h1>
+        <p class="page-lead">
+          Most "secure" apps ask you to take their word for it. MediaVault lets you watch the encryption happen in your own browser — right here, with nothing sent to any server.
+        </p>
+      </header>
+
+      <!-- Live demo -->
+      <div class="demo-card">
+        <div class="demo-badge"><span class="demo-dot"></span> Live · runs entirely in your browser</div>
+        <h2 class="demo-title">Encrypt something, then watch a wrong password fail</h2>
+        <p class="demo-sub">This uses the same family of AES encryption MediaVault uses to seal your files. Type anything — it never leaves this page.</p>
+
+        <div class="demo-grid">
+          <label class="demo-field">
+            <span>Your secret</span>
+            <input id="demo-plain" type="text" value="My private vault note 🔒" autocomplete="off" />
+          </label>
+          <label class="demo-field">
+            <span>Password</span>
+            <input id="demo-pass" type="text" value="correct horse battery" autocomplete="off" />
+          </label>
+        </div>
+        <button id="demo-encrypt" class="demo-btn">Encrypt it →</button>
+
+        <div id="demo-output" class="demo-output" hidden>
+          <div class="demo-row">
+            <span class="demo-label">On disk, MediaVault would store this (ciphertext):</span>
+            <code id="demo-cipher" class="demo-cipher"></code>
+          </div>
+          <div class="demo-decrypt">
+            <label class="demo-field">
+              <span>Try to decrypt — enter a password</span>
+              <input id="demo-trypass" type="text" placeholder="try the wrong one first…" autocomplete="off" />
+            </label>
+            <button id="demo-decrypt" class="demo-btn demo-btn--ghost">Attempt decrypt</button>
+            <div id="demo-result" class="demo-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threat model -->
+      <div class="threat-section">
+        <h2 class="section-h2">What happens if…</h2>
+        <div class="threat-list">
+          {threats.map((t) => (
+            <div class="threat-item">
+              <div class="threat-attack">{t.attack}</div>
+              <div class="threat-result">{t.result}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="sec-foot">
+        <p>
+          Want the deep technical detail? Read <a href="/about">how it works</a>, the <a href="/glossary">glossary</a>, or the <a href="https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">source code</a> — the encryption is open for anyone to audit. Report issues via <a href="/.well-known/security.txt">security.txt</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<script>
+  // Everything here is client-side Web Crypto. No network, no server — the
+  // whole point is that the visitor can confirm nothing is transmitted.
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+    const base = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+      base,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt'],
+    );
+  }
+
+  const toHex = (buf: ArrayBuffer) =>
+    [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+  let state: { salt: Uint8Array; iv: Uint8Array; cipher: ArrayBuffer } | null = null;
+
+  const $ = (id: string) => document.getElementById(id);
+
+  $('demo-encrypt')?.addEventListener('click', async () => {
+    const plain = ($('demo-plain') as HTMLInputElement).value;
+    const pass = ($('demo-pass') as HTMLInputElement).value;
+    if (!plain || !pass) return;
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(pass, salt);
+    const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plain));
+    state = { salt, iv, cipher };
+
+    ($('demo-cipher') as HTMLElement).textContent = toHex(cipher);
+    ($('demo-output') as HTMLElement).hidden = false;
+    ($('demo-result') as HTMLElement).textContent = '';
+    ($('demo-trypass') as HTMLInputElement).value = '';
+  });
+
+  $('demo-decrypt')?.addEventListener('click', async () => {
+    if (!state) return;
+    const tryPass = ($('demo-trypass') as HTMLInputElement).value;
+    const result = $('demo-result') as HTMLElement;
+    try {
+      const key = await deriveKey(tryPass, state.salt);
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: state.iv }, key, state.cipher);
+      result.textContent = '✓ Unlocked: "' + dec.decode(plain) + '"';
+      result.className = 'demo-result demo-result--ok';
+    } catch {
+      result.textContent = '✗ Wrong password — the bytes stay locked. This is exactly what an attacker sees.';
+      result.className = 'demo-result demo-result--fail';
+    }
+  });
+</script>
+
+<style>
+  .container-md { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  .sec-page { padding: 96px 0; }
+  .sec-header { text-align: center; margin-bottom: 48px; }
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em;
+    display: block; margin-bottom: 12px;
+  }
+  .page-title {
+    font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.04em;
+    color: var(--text-primary); line-height: 1.1; margin-bottom: 24px;
+  }
+  .page-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); max-width: 620px; margin: 0 auto; }
+
+  .demo-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px; margin-bottom: 64px;
+  }
+  .demo-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--success, #00a854);
+    background: color-mix(in srgb, var(--success, #00a854) 12%, transparent);
+    padding: 4px 10px; border-radius: 100px; margin-bottom: 16px;
+  }
+  .demo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success, #00a854); animation: status-pulse 2s infinite; }
+  .demo-title { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.02em; }
+  .demo-sub { font-size: 14px; color: var(--text-body); margin-bottom: 24px; line-height: 1.6; }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 560px) { .demo-grid { grid-template-columns: 1fr; } }
+  .demo-field { display: flex; flex-direction: column; gap: 6px; }
+  .demo-field span { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .demo-field input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; color: var(--text-primary); font-size: 14px; font-family: inherit;
+  }
+  .demo-field input:focus { outline: none; border-color: var(--accent); }
+  .demo-btn {
+    background: var(--text-primary); color: var(--bg); border: none; border-radius: 8px;
+    padding: 11px 18px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: opacity 0.15s ease;
+  }
+  .demo-btn:hover { opacity: 0.85; }
+  .demo-btn--ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-strong); }
+  .demo-output { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .demo-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .demo-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .demo-cipher {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6;
+    color: #fb923c; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; word-break: break-all; display: block;
+  }
+  .demo-decrypt { display: flex; flex-direction: column; gap: 12px; }
+  .demo-decrypt .demo-btn { align-self: flex-start; }
+  .demo-result { font-size: 14px; font-weight: 500; min-height: 20px; line-height: 1.5; }
+  .demo-result--ok { color: var(--success, #00a854); }
+  .demo-result--fail { color: #ef4444; }
+
+  .threat-section { margin-bottom: 56px; }
+  .section-h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 24px; }
+  .threat-list { display: flex; flex-direction: column; gap: 12px; }
+  .threat-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; align-items: start;
+  }
+  @media (max-width: 640px) { .threat-item { grid-template-columns: 1fr; gap: 8px; } }
+  .threat-attack { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .threat-result { font-size: 13.5px; line-height: 1.6; color: var(--text-body); }
+
+  .sec-foot { font-size: 14px; line-height: 1.7; color: var(--text-body); }
+  .sec-foot a { color: var(--accent); text-decoration: none; }
+  .sec-foot a:hover { text-decoration: underline; }
+</style>
