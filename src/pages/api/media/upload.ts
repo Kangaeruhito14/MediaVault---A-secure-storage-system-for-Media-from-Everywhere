@@ -1,9 +1,14 @@
 import type { APIRoute } from 'astro';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, writeFileSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import Busboy from 'busboy';
 import { abortUpload, ensureDirs, finalizeMedia, prepareUpload, totalStorageUsed } from '../../../lib/storage';
 import { createEncryptStream } from '../../../lib/crypto';
+import { STRIPPABLE, stripImageMetadata } from '../../../lib/strip-metadata';
+
+// Cap for buffering an image in memory to strip metadata. Larger images skip
+// stripping concerns by being rejected with a clear message (rare in practice).
+const STRIP_BUFFER_CAP = 64 * 1024 * 1024; // 64 MB
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB per file
 // Optional total-vault quota (bytes) via env; 0 = unlimited (it's your own disk)
@@ -73,6 +78,9 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Vault storage quota reached. Delete files to free space.' }, 507);
   }
 
+  // Opt-in EXIF/GPS stripping, requested via ?strip=1 (order-independent).
+  const wantStrip = new URL(request.url).searchParams.get('strip') === '1';
+
   return new Promise<Response>((resolve) => {
     let settled = false;
     let sawFile = false;
@@ -109,12 +117,69 @@ export const POST: APIRoute = async ({ request }) => {
         return;
       }
       const { id, filePath, fileKey, iv } = prepared;
+      let failed = false;
+      let sniffed = false;
 
+      const commit = (size: number) => {
+        if (MAX_TOTAL_STORAGE > 0 && totalStorageUsed() + size > MAX_TOTAL_STORAGE) {
+          return false;
+        }
+        return finalizeMedia(id, size);
+      };
+
+      // Whether we buffer the whole image to strip metadata before encrypting.
+      const stripping = wantStrip && STRIPPABLE.has(mimeType);
+
+      if (stripping) {
+        // ── Buffered path: collect → strip EXIF/GPS → encrypt → write ──
+        const parts: Buffer[] = [];
+        let bufSize = 0;
+        const failB = (r: Response) => {
+          if (failed) return;
+          failed = true;
+          fileStream.destroy();
+          abortUpload(id, filePath);
+          finish(r);
+        };
+        fileStream.on('data', (chunk: Buffer) => {
+          if (failed) return;
+          if (!sniffed) {
+            sniffed = true;
+            if (!sniffMatches(mimeType, chunk)) {
+              failB(json({ error: 'File content does not match its declared type.' }, 415));
+              return;
+            }
+          }
+          bufSize += chunk.length;
+          if (bufSize > STRIP_BUFFER_CAP) {
+            failB(json({ error: 'Image too large for metadata stripping (64 MB max). Disable stripping for this file.' }, 413));
+            return;
+          }
+          parts.push(chunk);
+        });
+        fileStream.on('limit', () => failB(json({ error: 'File exceeds the 5 GB limit.' }, 413)));
+        fileStream.on('error', () => failB(json({ error: 'Upload interrupted.' }, 400)));
+        fileStream.on('end', () => {
+          if (failed) return;
+          try {
+            const cleaned = stripImageMetadata(Buffer.concat(parts), mimeType);
+            const cipher = createEncryptStream(fileKey, iv);
+            const ciphertext = Buffer.concat([cipher.update(cleaned), cipher.final()]);
+            writeFileSync(filePath, ciphertext);
+            const item = commit(cleaned.length);
+            if (!item) { abortUpload(id, filePath); finish(json({ error: 'Vault storage quota reached. Delete files to free space.' }, 507)); return; }
+            finish(json(item, 201));
+          } catch {
+            failB(json({ error: 'Failed to process image.' }, 500));
+          }
+        });
+        return;
+      }
+
+      // ── Streaming path: encrypt chunk-by-chunk straight to disk ──
       const cipher = createEncryptStream(fileKey, iv);
       const writeStream = createWriteStream(filePath);
       let size = 0;
-      let sniffed = false;
-      let failed = false;
 
       const fail = (response: Response) => {
         if (failed) return;
@@ -156,14 +221,10 @@ export const POST: APIRoute = async ({ request }) => {
 
       writeStream.on('finish', () => {
         if (failed) return;
-        if (MAX_TOTAL_STORAGE > 0 && totalStorageUsed() + size > MAX_TOTAL_STORAGE) {
-          fail(json({ error: 'Vault storage quota reached. Delete files to free space.' }, 507));
-          return;
-        }
         // Metadata is committed only now — no phantom entries from failed uploads
-        const item = finalizeMedia(id, size);
+        const item = commit(size);
         if (!item) {
-          fail(json({ error: 'Failed to register file.' }, 500));
+          fail(json({ error: 'Vault storage quota reached. Delete files to free space.' }, 507));
           return;
         }
         finish(json(item, 201));
