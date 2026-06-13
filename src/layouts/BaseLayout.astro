@@ -31,6 +31,11 @@ const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`
     <meta name="author" content="MediaVault" />
     <meta name="theme-color" content="#0a0a0a" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MediaVault" />
     <Seo title={fullTitle} description={description} image={image} noindex={noindex} jsonLd={jsonLd} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -46,6 +51,14 @@ const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`
   </head>
   <body>
     <slot />
+    <!-- PWA: register the offline-capable service worker (never caches /api or /vault) -->
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>
 
