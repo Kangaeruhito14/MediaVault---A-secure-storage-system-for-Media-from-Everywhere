@@ -56,6 +56,18 @@
   />
 </div>
 
+<!-- Privacy toggle: strip EXIF/GPS metadata from photos on upload -->
+<label id="strip-toggle" style="
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px auto 0; max-width: 400px; cursor: pointer;
+  font-size: 12.5px; color: var(--text-body);
+" title="Removes camera, timestamp, and GPS location data from photos before storing.">
+  <input type="checkbox" id="strip-exif" checked style="
+    width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+  " />
+  <span>Strip location &amp; camera metadata (EXIF/GPS) from photos</span>
+</label>
+
 <script>
 const zone         = document.getElementById('upload-zone')!;
 const fileInput    = document.getElementById('file-input') as HTMLInputElement;
@@ -122,8 +134,11 @@ async function uploadFiles(files: File[]) {
     const formData = new FormData();
     formData.append('file', file);
 
+    const stripExif = (document.getElementById('strip-exif') as HTMLInputElement | null)?.checked;
+    const uploadUrl = stripExif ? '/api/media/upload?strip=1' : '/api/media/upload';
+
     try {
-      const res = await fetch('/api/media/upload', { method: 'POST', body: formData });
+      const res = await fetch(uploadUrl, { method: 'POST', body: formData });
       if (!res.ok) {
         const err = await res.json() as { error?: string };
         showToast('error', `"${file.name}": ${err.error ?? 'Upload failed.'}`);
