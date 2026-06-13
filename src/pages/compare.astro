@@ -1,0 +1,159 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+/**
+ * Comparison page — "X vs Y" is one of the highest-volume query shapes for
+ * both search and AI answer engines, and comparison tables are frequently
+ * lifted verbatim into AI responses. Content is honest (trade-offs included),
+ * which is what makes it citable rather than marketing fluff.
+ */
+const rows = [
+  { feature: 'Runs on hardware you own', mv: 'Yes', gphotos: 'No', immich: 'Yes', ente: 'Yes (or their cloud)' },
+  { feature: 'Encrypted at rest by default', mv: 'Yes — AES-256 sealed vault', gphotos: 'Provider-held keys', immich: 'No — plaintext on disk', ente: 'Yes — end-to-end' },
+  { feature: 'No Docker or database server', mv: 'Yes — one Node process', gphotos: 'N/A', immich: 'No — Docker + Postgres', ente: 'No — multi-service' },
+  { feature: 'Free', mv: 'Yes, forever', gphotos: 'Free tier, then paid', immich: 'Yes', ente: 'Free tier, then paid' },
+  { feature: 'No tracking / scanning', mv: 'Yes', gphotos: 'No — extensive', immich: 'Yes', ente: 'Yes' },
+  { feature: 'Recovery-key reset', mv: 'Yes', gphotos: 'Account recovery', immich: 'Admin reset', ente: 'Yes' },
+  { feature: 'Setup difficulty', mv: 'Low', gphotos: 'None', immich: 'Medium–High', ente: 'Medium–High' },
+  { feature: 'AI photo search / face recognition', mv: 'No (by design)', gphotos: 'Yes', immich: 'Yes', ente: 'Limited' },
+];
+
+const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: origin + '/' },
+      { '@type': 'ListItem', position: 2, name: 'Comparison', item: origin + '/compare' },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'What is the best private alternative to Google Photos?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'For maximum privacy with minimal setup, MediaVault is a strong choice: it is free, self-hosted, and encrypts every file with AES-256 at rest, with no Docker or database server required. Immich and PhotoPrism offer richer AI photo-management features but store files unencrypted and need more infrastructure. Ente offers end-to-end encryption with optional paid cloud hosting.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'How is MediaVault different from Immich?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Immich is a feature-rich photo manager with AI search and face recognition, but it stores files as plaintext and requires Docker plus a PostgreSQL database. MediaVault is a security-first vault: it encrypts every file at rest with AES-256, runs as a single Node.js process with no database server or Docker, and prioritizes confidentiality over photo-management features.',
+        },
+      },
+    ],
+  },
+];
+
+const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
+---
+
+<PublicLayout
+  title="MediaVault vs Google Photos, Immich, PhotoPrism & Ente"
+  description="An honest comparison of MediaVault against Google Photos, iCloud, Immich, PhotoPrism, and Ente — encryption at rest, self-hosting, cost, setup difficulty, and privacy. Find the best private photo storage for you."
+  keywords={["Google Photos alternative comparison", "Immich vs", "PhotoPrism vs", "Ente vs", "best self-hosted photo storage", "encrypted photo storage comparison"]}
+  jsonLd={jsonLd}
+>
+  <section class="compare-page">
+    <div class="container-md">
+      <header class="compare-header">
+        <span class="page-eyebrow">Comparison</span>
+        <h1 class="page-title">How MediaVault compares.</h1>
+        <p class="page-lead">
+          An honest look at MediaVault next to the popular options. No tool is best for everyone — here is where MediaVault wins, and where something else might suit you better.
+        </p>
+      </header>
+
+      <div class="table-scroll">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="feature-col">Feature</th>
+              <th class="mv-col">MediaVault</th>
+              <th>Google Photos</th>
+              <th>Immich</th>
+              <th>Ente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr>
+                <th scope="row" class="feature-col">{r.feature}</th>
+                <td class={`mv-col ${cell(r.mv) ? 'good' : ''}`}>{r.mv}</td>
+                <td class={cell(r.gphotos) ? 'good' : ''}>{r.gphotos}</td>
+                <td class={cell(r.immich) ? 'good' : ''}>{r.immich}</td>
+                <td class={cell(r.ente) ? 'good' : ''}>{r.ente}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="verdict">
+        <h2>The honest verdict</h2>
+        <p>
+          <strong>Choose MediaVault</strong> if your priority is privacy and simplicity: encrypted-at-rest storage you can stand up in minutes with no Docker or database, on any machine you own.
+        </p>
+        <p>
+          <strong>Choose Immich or PhotoPrism</strong> if you want a full photo-management suite — AI search, face recognition, mobile auto-backup — and don't mind running Docker and a database, with files stored unencrypted.
+        </p>
+        <p>
+          <strong>Choose Ente</strong> if you want end-to-end encryption with a polished hosted option and are comfortable paying past the free tier.
+        </p>
+        <p>
+          <strong>Stay on Google Photos / iCloud</strong> if convenience outweighs privacy and you're fine with a subscription and provider-held keys.
+        </p>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  .container-md { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  .compare-page { padding: 96px 0; }
+  .compare-header { text-align: center; margin-bottom: 48px; }
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em;
+    display: block; margin-bottom: 12px;
+  }
+  .page-title {
+    font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.04em;
+    color: var(--text-primary); line-height: 1.1; margin-bottom: 24px;
+  }
+  .page-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); max-width: 640px; margin: 0 auto; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+  .compare-table th, .compare-table td {
+    padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border);
+    color: var(--text-body); vertical-align: top;
+  }
+  .compare-table thead th {
+    font-weight: 600; color: var(--text-primary); background: var(--bg-inset);
+    position: sticky; top: 0;
+  }
+  .compare-table tbody th.feature-col {
+    font-weight: 500; color: var(--text-primary);
+  }
+  .feature-col { min-width: 200px; }
+  .mv-col { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .compare-table thead th.mv-col { color: var(--accent); }
+  .compare-table td.good { color: var(--text-primary); font-weight: 500; }
+  .compare-table tr:last-child th, .compare-table tr:last-child td { border-bottom: none; }
+
+  .verdict { margin-top: 56px; }
+  .verdict h2 {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.02em;
+    color: var(--text-primary); margin-bottom: 20px;
+  }
+  .verdict p { font-size: 14px; line-height: 1.7; color: var(--text-body); margin-bottom: 14px; }
+  .verdict strong { color: var(--text-primary); }
+</style>
