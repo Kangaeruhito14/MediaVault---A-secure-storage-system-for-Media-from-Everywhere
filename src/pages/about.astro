@@ -11,6 +11,19 @@ const jsonLd = [
       { '@type': 'ListItem', position: 2, name: 'About', item: origin + '/about' },
     ],
   },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to set up and use MediaVault',
+    description: 'Set up a self-hosted, encrypted media vault in under two minutes.',
+    totalTime: 'PT2M',
+    step: [
+      { '@type': 'HowToStep', position: 1, name: 'Create your master password', text: 'On first run, set your master password. A one-time recovery key is generated — save it offline.' },
+      { '@type': 'HowToStep', position: 2, name: 'Drag & drop upload', text: 'Log in and drop images, videos, or audio onto the upload zone. Each file is encrypted before it touches disk.' },
+      { '@type': 'HowToStep', position: 3, name: 'Organize, sort & play', text: 'Sort by date, name, or size, bookmark favorites, and click any file to view, stream, or download it.' },
+      { '@type': 'HowToStep', position: 4, name: 'Delete with 5-second undo', text: 'Deleting hides a file instantly but waits 5 seconds before permanently erasing it, so accidents are recoverable.' },
+    ],
+  },
 ];
 ---
 
