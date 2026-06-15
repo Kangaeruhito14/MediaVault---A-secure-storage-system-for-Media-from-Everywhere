@@ -1,0 +1,37 @@
+{
+  // MediaVault — Cloudflare Workers config (validated with the wrangler skill
+  // before any `wrangler` command is run; resource IDs filled at provision time).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mediavault",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Astro Cloudflare adapter emits the Worker entry + static assets here.
+  "main": "./dist/_worker.js/index.js",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+
+  // Encrypted metadata index (no media, no readable user data).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mediavault",
+      "database_id": "PLACEHOLDER_FILL_AT_PROVISION",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Sessions + per-account rate-limit counters (fast edge reads).
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "PLACEHOLDER_FILL_AT_PROVISION"
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}
