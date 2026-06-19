@@ -1,59 +1,33 @@
 import type { APIRoute } from 'astro';
-import { isPasswordSet, unlockWithPassword } from '../../../lib/vault';
-import {
-  clearAttempts,
-  createSession,
-  isRateLimited,
-  recordFailedAttempt,
-  sessionCookie,
-} from '../../../lib/auth';
+import { clientIp, getServerContext } from '../../../lib/server/context';
+import { login } from '../../../lib/server/auth-service';
+import { SESSION_COOKIE, cookieOptions, json } from '../../../lib/server/http';
 
-const json = (body: unknown, status: number, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...headers },
-  });
-
-export const POST: APIRoute = async ({ request }) => {
-  if (!isPasswordSet()) {
-    return json({ error: 'No password set. Complete setup first.' }, 403);
-  }
-
-  // Global lockout — not keyed on spoofable client headers
-  if (isRateLimited()) {
-    return json({ error: 'Too many failed attempts. Try again in 15 minutes.', locked: true }, 429);
-  }
-
-  let body: { password?: string };
+// Step 2 of login: client posts its derived auth key. The session token is set
+// as an httpOnly cookie (never returned in the body). The wrapped account key
+// is returned so the client can unlock it locally — the server can't.
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
+  let body: { email?: string; authKeyB64?: string };
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'Invalid JSON.' }, 400);
+    return json({ error: 'invalid_json' }, 400);
   }
 
-  const password = body.password?.trim();
-  if (!password) {
-    return json({ error: 'Password required.' }, 400);
-  }
+  const ctx = getServerContext(locals);
+  const r = await login(ctx, {
+    email: String(body.email ?? ''),
+    authKeyB64: String(body.authKeyB64 ?? ''),
+    ipKey: clientIp(request),
+  });
+  if (!r.ok) return json({ error: r.error }, r.error === 'rate_limited' ? 429 : 401);
 
-  // Verifies the password AND unseals the vault (master key into memory)
-  const ok = await unlockWithPassword(password);
-  if (!ok) {
-    const { remaining, locked } = recordFailedAttempt();
-    return json(
-      {
-        error: locked
-          ? 'Too many failed attempts. Locked for 15 minutes.'
-          : `Incorrect password. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
-        remaining,
-        locked,
-      },
-      401,
-    );
-  }
-
-  clearAttempts();
-  const token = createSession();
-
-  return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(token, request) });
+  cookies.set(SESSION_COOKIE, r.result.token, cookieOptions(new URL(request.url)));
+  return json({
+    ok: true,
+    wrappedAccountKey: r.result.wrappedAccountKey,
+    kdfSalt: r.result.kdfSalt,
+    kdfParams: r.result.kdfParams,
+    emailVerified: r.result.emailVerified,
+  });
 };
