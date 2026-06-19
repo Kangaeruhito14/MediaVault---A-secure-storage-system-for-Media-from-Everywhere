@@ -1,0 +1,79 @@
+/**
+ * Server-side data contracts. Auth logic depends on these interfaces, not on
+ * Cloudflare directly — so it is unit-testable with in-memory fakes and the
+ * real D1/KV implementations stay thin. The server only ever handles opaque,
+ * encrypted blobs; it can never derive an account key or read a file.
+ */
+import type { KdfParams } from '../e2ee/account';
+
+export interface AccountRow {
+  id: string;
+  email: string;
+  email_verified: number;
+  kdf: string;
+  kdf_salt: string;
+  kdf_params: string; // JSON-encoded KdfParams
+  login_hash: string; // server-side hash of the client-sent auth key
+  wrapped_account_key: string;
+  wrapped_account_key_recovery: string;
+  recovery_key_hash: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface SessionRow {
+  id: string;
+  account_id: string;
+  token_hash: string;
+  created_at: number;
+  expires_at: number;
+}
+
+/** Secrets the client produces at signup; the server stores them verbatim. */
+export interface SignupSecrets {
+  kdfSalt: string;
+  kdfParams: KdfParams;
+  recoverySalt: string;
+  authKeyB64: string;
+  wrappedAccountKey: string;
+  wrappedAccountKeyRecovery: string;
+  recoveryKeyHash: string;
+}
+
+export interface AccountStore {
+  getByEmail(email: string): Promise<AccountRow | null>;
+  getById(id: string): Promise<AccountRow | null>;
+  insert(row: AccountRow): Promise<void>;
+  updateSecrets(
+    id: string,
+    fields: Pick<
+      AccountRow,
+      'kdf_salt' | 'kdf_params' | 'login_hash' | 'wrapped_account_key' | 'wrapped_account_key_recovery' | 'recovery_key_hash' | 'updated_at'
+    >,
+  ): Promise<void>;
+}
+
+export interface SessionStore {
+  insert(row: SessionRow): Promise<void>;
+  getByTokenHash(tokenHash: string): Promise<SessionRow | null>;
+  deleteByTokenHash(tokenHash: string): Promise<void>;
+  deleteAllForAccount(accountId: string): Promise<void>;
+}
+
+/** Minimal Cloudflare KV surface used for rate limiting. */
+export interface KVLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+/** Minimal Cloudflare D1 surface used by the real stores. */
+export interface D1Like {
+  prepare(query: string): D1Stmt;
+}
+export interface D1Stmt {
+  bind(...values: unknown[]): D1Stmt;
+  first<T = unknown>(): Promise<T | null>;
+  run(): Promise<unknown>;
+  all<T = unknown>(): Promise<{ results: T[] }>;
+}
