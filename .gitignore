@@ -2,6 +2,10 @@
 dist/
 # generated types
 .astro/
+# Cloudflare local emulation state (Miniflare D1/KV) — never commit
+.wrangler/
+# wrangler types output
+worker-configuration.d.ts
 
 # dependencies
 node_modules/
