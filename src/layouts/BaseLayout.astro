@@ -6,6 +6,7 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
+  keywords?: string[];
   jsonLd?: Record<string, unknown>[];
 }
 
@@ -14,6 +15,7 @@ const {
   description = 'MediaVault is a free, self-hosted, encrypted media vault — store private photos, videos, and audio on your own hardware with AES-256 sealed-at-rest encryption.',
   image,
   noindex = false,
+  keywords = [],
   jsonLd = [],
 } = Astro.props;
 
@@ -36,7 +38,7 @@ const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MediaVault" />
-    <Seo title={fullTitle} description={description} image={image} noindex={noindex} jsonLd={jsonLd} />
+    <Seo title={fullTitle} description={description} image={image} noindex={noindex} keywords={keywords} jsonLd={jsonLd} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />

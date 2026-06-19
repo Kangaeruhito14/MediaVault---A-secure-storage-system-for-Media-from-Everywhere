@@ -8,12 +8,13 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
+  keywords?: string[];
   jsonLd?: Record<string, unknown>[];
 }
-const { title, description, image, noindex, jsonLd } = Astro.props;
+const { title, description, image, noindex, keywords, jsonLd } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} image={image} noindex={noindex} jsonLd={jsonLd}>
+<BaseLayout title={title} description={description} image={image} noindex={noindex} keywords={keywords} jsonLd={jsonLd}>
   <div class="public-layout-wrapper">
     <PublicHeader />
     <main class="public-main-content">
