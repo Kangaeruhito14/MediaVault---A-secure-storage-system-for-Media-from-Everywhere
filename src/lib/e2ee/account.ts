@@ -28,15 +28,10 @@ import {
   encryptFile,
   decryptFile,
 } from './crypto';
+import { DEFAULT_KDF, type KdfParams } from './params';
 
-// OWASP-leaning Argon2id parameters (tunable; stored per-account so we can
-// raise them later without breaking existing accounts).
-export interface KdfParams {
-  m: number; // memory in KiB
-  t: number; // iterations
-  p: number; // parallelism
-}
-export const DEFAULT_KDF: KdfParams = { m: 19456, t: 2, p: 1 };
+// Re-export so existing importers of ./account keep a stable surface.
+export { DEFAULT_KDF, type KdfParams } from './params';
 
 const enc = new TextEncoder();
 
