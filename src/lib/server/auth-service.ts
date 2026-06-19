@@ -11,7 +11,7 @@
  *      unknown emails, to prevent account enumeration),
  *   2) client derives the auth key locally and posts it; the server verifies.
  */
-import { DEFAULT_KDF, type KdfParams } from '../e2ee/account';
+import { DEFAULT_KDF, type KdfParams } from '../e2ee/params';
 import { b64decode, sha256Hex, timingSafeEqual } from '../e2ee/crypto';
 import type { AccountStore, KVLike, SessionStore, SignupSecrets } from './types';
 import { checkRateLimit, resetRateLimit } from './ratelimit';
@@ -121,15 +121,7 @@ export async function login(
   await resetRateLimit(deps.kv, `login:e:${email}`);
   await resetRateLimit(deps.kv, `login:i:${input.ipKey}`);
 
-  const token = newToken();
-  const now = Date.now();
-  await deps.sessions.insert({
-    id: uuid(),
-    account_id: acct.id,
-    token_hash: await tokenHashHex(token),
-    created_at: now,
-    expires_at: now + SESSION_TTL_MS,
-  });
+  const token = await startSession(deps.sessions, acct.id);
 
   return {
     ok: true,
@@ -142,6 +134,20 @@ export async function login(
       kdfParams: JSON.parse(acct.kdf_params) as KdfParams,
     },
   };
+}
+
+/** Create a session and return the raw token (the cookie value). */
+export async function startSession(sessions: SessionStore, accountId: string): Promise<string> {
+  const token = newToken();
+  const now = Date.now();
+  await sessions.insert({
+    id: uuid(),
+    account_id: accountId,
+    token_hash: await tokenHashHex(token),
+    created_at: now,
+    expires_at: now + SESSION_TTL_MS,
+  });
+  return token;
 }
 
 export async function validateSession(

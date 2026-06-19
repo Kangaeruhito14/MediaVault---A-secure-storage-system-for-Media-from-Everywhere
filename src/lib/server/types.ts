@@ -4,7 +4,7 @@
  * real D1/KV implementations stay thin. The server only ever handles opaque,
  * encrypted blobs; it can never derive an account key or read a file.
  */
-import type { KdfParams } from '../e2ee/account';
+import type { KdfParams } from '../e2ee/params';
 
 export interface AccountRow {
   id: string;
