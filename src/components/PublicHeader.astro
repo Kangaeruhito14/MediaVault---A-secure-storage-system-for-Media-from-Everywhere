@@ -1,8 +1,6 @@
 ---
-import { isAuthenticated, isPasswordSet } from '../lib/auth';
-
-const authed = isAuthenticated(Astro.request);
-const passwordSet = isPasswordSet();
+// Marketing header is fully static/public — auth state is determined
+// client-side in the /app area (E2EE), never server-rendered here.
 const currentPath = Astro.url.pathname;
 
 const navLinks = [
@@ -13,15 +11,8 @@ const navLinks = [
   { name: 'Contact', path: '/contact' }
 ];
 
-let ctaText = 'Get Started';
-let ctaPath = '/login';
-if (authed) {
-  ctaText = 'Go to Vault';
-  ctaPath = '/vault';
-} else if (!passwordSet) {
-  ctaText = 'Set Up Vault';
-  ctaPath = '/login?setup=1';
-}
+const ctaText = 'Open Vault';
+const ctaPath = '/login';
 ---
 
 <header class="public-header">

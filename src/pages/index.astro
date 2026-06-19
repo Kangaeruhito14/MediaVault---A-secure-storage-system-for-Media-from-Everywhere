@@ -1,22 +1,11 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
-import { isAuthenticated, isPasswordSet } from '../lib/auth';
 
-const authed = isAuthenticated(Astro.request);
-const passwordSet = isPasswordSet();
-
-let primaryCtaText = 'Get Started';
-let primaryCtaPath = '/login';
-let secondaryCtaText = 'How it works';
-let secondaryCtaPath = '/about';
-
-if (authed) {
-  primaryCtaText = 'Access Vault';
-  primaryCtaPath = '/vault';
-} else if (!passwordSet) {
-  primaryCtaText = 'Set Up Vault';
-  primaryCtaPath = '/login?setup=1';
-}
+// Static CTAs — auth happens client-side in the /app area (E2EE).
+const primaryCtaText = 'Get Started';
+const primaryCtaPath = '/login';
+const secondaryCtaText = 'How it works';
+const secondaryCtaPath = '/about';
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
 const jsonLd = [
