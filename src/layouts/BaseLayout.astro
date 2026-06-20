@@ -48,8 +48,10 @@ const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`
         const saved = localStorage.getItem('mv-theme');
         const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', saved || preferred);
+        document.documentElement.classList.add('js'); // gates reveal animations (content visible without JS)
       })();
     </script>
+    <slot name="head" />
   </head>
   <body>
     <slot />
