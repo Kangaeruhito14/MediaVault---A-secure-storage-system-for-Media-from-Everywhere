@@ -1,9 +1,9 @@
 /**
- * Bridge from Astro's request context to the server stores. Reads the
- * Cloudflare runtime bindings (D1 + KV) off `Astro.locals.runtime.env` and
- * wires up the concrete D1/KV-backed stores the auth service depends on.
+ * Bridge from the Cloudflare runtime to the server stores. In Astro v6 +
+ * adapter v13, bindings come from the `cloudflare:workers` module (request-
+ * scoped), not from Astro.locals.runtime.
  */
-import type { APIContext } from 'astro';
+import { env } from 'cloudflare:workers';
 import { D1AccountStore, D1SessionStore } from './stores';
 import type { AccountStore, KVLike, SessionStore } from './types';
 
@@ -13,15 +13,15 @@ export interface ServerContext {
   kv: KVLike;
 }
 
-export function getServerContext(locals: APIContext['locals']): ServerContext {
-  const env = locals.runtime?.env;
-  if (!env?.DB || !env?.KV) {
+export function getServerContext(): ServerContext {
+  const e = env as unknown as { DB?: unknown; KV?: unknown };
+  if (!e?.DB || !e?.KV) {
     throw new Error('Cloudflare bindings (DB, KV) are not available in this context');
   }
   return {
-    accounts: new D1AccountStore(env.DB),
-    sessions: new D1SessionStore(env.DB),
-    kv: env.KV as unknown as KVLike,
+    accounts: new D1AccountStore(e.DB as never),
+    sessions: new D1SessionStore(e.DB as never),
+    kv: e.KV as unknown as KVLike,
   };
 }
 
