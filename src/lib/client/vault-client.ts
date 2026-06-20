@@ -17,8 +17,9 @@ import {
   type FileMetadata,
   type KdfParams,
 } from '../e2ee/account';
-import { decryptJson, encryptJson } from '../e2ee/crypto';
+import { decryptJson, encryptJson, unwrapKey, type FileHeader } from '../e2ee/crypto';
 import { S3Client, type S3Config } from '../storage/s3';
+import { fetchHeader } from './stream';
 
 type ApiFetch = (path: string, init?: RequestInit) => Promise<Response>;
 type MakeS3 = (cfg: S3Config) => Pick<S3Client, 'put' | 'get' | 'del' | 'testConnection'>;
@@ -240,6 +241,33 @@ export class VaultClient {
     const res = await this.makeS3(conn.config).get(objectKey);
     const ciphertext = new Uint8Array(await res.arrayBuffer());
     return decryptDownloaded(ciphertext, wrappedItemKey, this.accountKey!);
+  }
+
+  /**
+   * Everything the streaming Service Worker needs to serve seekable, decrypted
+   * media for one item. The file key is unwrapped here (in the page) and handed
+   * to the SW in memory — it is never persisted or sent to the server.
+   */
+  async getStreamParams(item: VaultItem, conn: Connection): Promise<{
+    objectKey: string;
+    config: S3Config;
+    fileKey: Uint8Array;
+    header: FileHeader;
+    plaintextSize: number;
+    mime: string;
+  }> {
+    this.requireKey();
+    const fileKey = await unwrapKey(item.wrappedItemKey, this.accountKey!);
+    if (!fileKey) throw new Error('Cannot unwrap file key');
+    const header = await fetchHeader(this.makeS3(conn.config) as { get: S3Client['get'] }, item.objectKey);
+    return {
+      objectKey: item.objectKey,
+      config: conn.config,
+      fileKey,
+      header,
+      plaintextSize: item.metadata.size,
+      mime: item.metadata.mime,
+    };
   }
 
   async remove(item: VaultItem, conn: Connection): Promise<void> {
