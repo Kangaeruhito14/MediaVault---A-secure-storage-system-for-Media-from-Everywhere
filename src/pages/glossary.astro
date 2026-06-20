@@ -9,43 +9,43 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 const terms = [
   {
     term: 'Media Vault',
-    def: 'A media vault is a private, access-controlled application for storing and viewing personal photos, videos, and audio. Unlike a public gallery, a vault requires authentication and is designed to keep media confidential. MediaVault adds AES-256 encryption so files are unreadable on disk without the owner’s password.',
+    def: 'A media vault is a private, access-controlled application for storing and viewing personal photos, videos, and audio. Unlike a public gallery, a vault requires authentication and keeps media confidential. MediaVault encrypts your media end-to-end in the browser, so it stays unreadable to anyone but you.',
   },
   {
-    term: 'Self-Hosting',
-    def: 'Self-hosting means running software on hardware you own and control — a home server, desktop, Raspberry Pi, or rented VPS — instead of using a company’s cloud service. Self-hosting gives you full ownership of your data, no subscription fees, and no third-party scanning, in exchange for managing your own setup and backups.',
+    term: 'End-to-End Encryption (E2EE)',
+    def: 'End-to-end encryption means data is encrypted on your device and can only be decrypted on your device — no server in between can read it. In MediaVault, files are encrypted in your browser before upload, and the keys never leave it, so neither the operator nor your storage provider can see your media.',
+  },
+  {
+    term: 'Bring Your Own Storage',
+    def: 'Instead of keeping your files on the provider’s servers, MediaVault stores your encrypted media in cloud storage you connect and control — your own Cloudflare R2, Backblaze B2, Wasabi, or S3 bucket. Your bytes live in your account; the app never holds them.',
+  },
+  {
+    term: 'Zero-Knowledge',
+    def: 'A zero-knowledge service has no knowledge of your content. MediaVault stores only an encrypted index and your encrypted storage settings — never your files, your keys, or your storage credentials. There is nothing readable for it to leak, scan, or hand over.',
   },
   {
     term: 'Encryption at Rest',
-    def: 'Encryption at rest means data is stored on disk in encrypted form, so the raw files are unreadable without the decryption key. If someone steals the drive or copies the files, they get ciphertext, not your photos. MediaVault encrypts every file with AES-256 before writing it to disk.',
-  },
-  {
-    term: 'Sealed Vault',
-    def: 'A sealed vault is MediaVault’s security model where the master decryption key exists only in server memory while you are logged in. When the server stops or you lock the vault, the key is erased and all files revert to unreadable ciphertext. The vault is "sealed" until a password unlocks it again.',
+    def: 'Encryption at rest means stored data sits in encrypted form, so the raw files are unreadable without the key. Because MediaVault encrypts in your browser before upload, your files are at rest as ciphertext in your own cloud — readable only with keys that never left your device.',
   },
   {
     term: 'AES-256',
-    def: 'AES-256 (Advanced Encryption Standard with a 256-bit key) is a symmetric encryption algorithm trusted by governments and banks. It is considered infeasible to brute-force with current or foreseeable technology. MediaVault uses AES-256-CTR for file contents and AES-256-GCM for wrapping keys.',
+    def: 'AES-256 (Advanced Encryption Standard with a 256-bit key) is a symmetric encryption algorithm trusted by governments and banks, infeasible to brute-force with current or foreseeable technology. MediaVault uses AES-256-CTR for file contents and AES-256-GCM for wrapping keys.',
+  },
+  {
+    term: 'Argon2id',
+    def: 'Argon2id is a modern password key-derivation function, deliberately slow and memory-hard to resist GPU/ASIC cracking. MediaVault runs it in your browser to turn your password into the key that unlocks your account — the password itself never reaches the server.',
   },
   {
     term: 'Envelope Encryption',
-    def: 'Envelope encryption is a layered scheme where data is encrypted with a per-file key, and that key is itself encrypted ("wrapped") by a master key. It lets you change your password by re-wrapping one small key instead of re-encrypting every file. MediaVault wraps its master key with both your password and your recovery key.',
+    def: 'Envelope encryption is a layered scheme: each file is encrypted with its own key, and those keys are wrapped by an account key. It lets you change your password by re-wrapping one small key instead of re-encrypting every file. MediaVault also wraps the account key with your recovery key.',
   },
   {
     term: 'Recovery Key',
-    def: 'A recovery key is a long, randomly generated secret — in MediaVault, 256 bits — shown once at setup. It can reset your password if you forget it, because it independently unwraps the master key. If you lose both your password and recovery key, encrypted data cannot be recovered, since there is no backdoor.',
-  },
-  {
-    term: 'scrypt',
-    def: 'scrypt is a password-based key derivation function deliberately designed to be slow and memory-intensive, which makes large-scale password guessing expensive even with specialized hardware. MediaVault uses scrypt to hash passwords and to derive encryption keys from passwords and recovery keys.',
-  },
-  {
-    term: 'Zero-Knowledge / Zero-Tracking',
-    def: 'A zero-tracking application collects no analytics, telemetry, or behavioral data about its users. MediaVault makes no outbound connections, runs entirely on your own machine, and has no company server that could observe or store anything about you or your files.',
+    def: 'A recovery key is a long, randomly generated secret — in MediaVault, 256 bits — shown once at signup. It can reset your password because it independently unwraps your account key. If you lose both your password and recovery key, encrypted data cannot be recovered, since there is no backdoor.',
   },
   {
     term: 'HTTP Range Request',
-    def: 'An HTTP Range request lets a client ask a server for only part of a file (for example, bytes for the part of a video you skipped to). MediaVault supports Range requests even on encrypted files, using AES-256-CTR so any byte offset can be decrypted on demand — which is why video seeking stays instant.',
+    def: 'An HTTP Range request asks for only part of a file (for example, the bytes for the part of a video you skipped to). MediaVault streams encrypted media by mapping range requests to encrypted chunks, fetching only those from your bucket and decrypting them in the browser — so seeking stays instant.',
   },
   {
     term: 'PWA (Progressive Web App)',
@@ -63,7 +63,7 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'DefinedTermSet',
     name: 'MediaVault Glossary',
-    description: 'Definitions of key terms in self-hosted, encrypted media storage.',
+    description: 'Definitions of key terms in end-to-end encrypted, bring-your-own-storage media storage.',
     url: origin + '/glossary',
     hasDefinedTerm: terms.map((t) => ({
       '@type': 'DefinedTerm',
@@ -84,9 +84,9 @@ const jsonLd = [
 ---
 
 <PublicLayout
-  title="Glossary — Self-Hosted & Encrypted Media Storage Terms"
-  description="Plain-language definitions: what is a media vault, encryption at rest, self-hosting, a sealed vault, envelope encryption, a recovery key, scrypt, EXIF data, and more."
-  keywords={["what is a media vault", "what is encryption at rest", "what is self-hosting", "sealed vault meaning", "envelope encryption", "AES-256 explained"]}
+  title="Glossary — End-to-End Encrypted Media Storage Terms"
+  description="Plain-language definitions: what is a media vault, end-to-end encryption, zero-knowledge, bring-your-own-storage, encryption at rest, envelope encryption, a recovery key, Argon2id, and more."
+  keywords={["what is end-to-end encryption", "what is zero-knowledge storage", "what is a media vault", "bring your own storage", "envelope encryption", "AES-256 explained"]}
   jsonLd={jsonLd}
 >
   <section class="glossary-page">
@@ -95,7 +95,7 @@ const jsonLd = [
         <span class="page-eyebrow">Glossary</span>
         <h1 class="page-title">Media Storage & Encryption Terms.</h1>
         <p class="page-lead">
-          Clear definitions of the concepts behind MediaVault and self-hosted, encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
+          Clear definitions of the concepts behind MediaVault and end-to-end encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
         </p>
       </header>
 
