@@ -150,7 +150,7 @@ export async function decryptJson<T = unknown>(blobB64: string, key: Uint8Array)
 
 export const DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024; // 4 MiB
 const MAGIC = te.encode('MV1');
-const HEADER_LEN = 3 + 4 + 8;
+export const HEADER_LEN = 3 + 4 + 8; // magic(3) + chunkSize(4) + baseNonce(8)
 
 function chunkIv(baseNonce: Uint8Array, counter: number): Uint8Array {
   const iv = new Uint8Array(GCM_IV_LEN);
