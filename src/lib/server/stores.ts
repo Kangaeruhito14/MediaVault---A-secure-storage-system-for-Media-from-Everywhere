@@ -94,11 +94,11 @@ export class D1VaultItemStore implements VaultItemStore {
     await this.db
       .prepare(
         `INSERT INTO vault_items
-         (id, account_id, enc_metadata, wrapped_item_key, iv, connection_id, object_key, thumb_key, size, bookmarked, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+         (id, account_id, enc_metadata, wrapped_item_key, connection_id, object_key, thumb_key, size, bookmarked, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .bind(
-        r.id, r.account_id, r.enc_metadata, r.wrapped_item_key, r.iv, r.connection_id,
+        r.id, r.account_id, r.enc_metadata, r.wrapped_item_key, r.connection_id,
         r.object_key, r.thumb_key, r.size, r.bookmarked, r.created_at, r.updated_at,
       )
       .run();

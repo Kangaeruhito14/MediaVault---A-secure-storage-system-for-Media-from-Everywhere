@@ -24,7 +24,6 @@ function uuid(): string {
 export interface CreateItemInput {
   encMetadata: string;
   wrappedItemKey: string;
-  iv: string;
   connectionId: string;
   objectKey: string;
   thumbKey?: string | null;
@@ -35,7 +34,6 @@ export interface PublicItem {
   id: string;
   encMetadata: string;
   wrappedItemKey: string;
-  iv: string;
   connectionId: string;
   objectKey: string;
   thumbKey: string | null;
@@ -49,7 +47,6 @@ function toPublic(r: VaultItemRow): PublicItem {
     id: r.id,
     encMetadata: r.enc_metadata,
     wrappedItemKey: r.wrapped_item_key,
-    iv: r.iv,
     connectionId: r.connection_id,
     objectKey: r.object_key,
     thumbKey: r.thumb_key,
@@ -77,7 +74,7 @@ export async function createItem(
   accountId: string,
   input: CreateItemInput,
 ): Promise<{ ok: true; id: string; createdAt: number } | { ok: false; error: string }> {
-  if (!input.encMetadata || !input.wrappedItemKey || !input.iv || !input.connectionId || !input.objectKey) {
+  if (!input.encMetadata || !input.wrappedItemKey || !input.connectionId || !input.objectKey) {
     return { ok: false, error: 'missing_fields' };
   }
   if ((await items.countForAccount(accountId)) >= LIMITS.MAX_ITEMS_PER_ACCOUNT) {
@@ -90,7 +87,6 @@ export async function createItem(
     account_id: accountId,
     enc_metadata: input.encMetadata,
     wrapped_item_key: input.wrappedItemKey,
-    iv: input.iv,
     connection_id: input.connectionId,
     object_key: input.objectKey,
     thumb_key: input.thumbKey ?? null,

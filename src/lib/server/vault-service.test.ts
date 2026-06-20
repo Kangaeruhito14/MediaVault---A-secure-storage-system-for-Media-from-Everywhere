@@ -75,7 +75,6 @@ function seed(store: MemItems, account: string, n: number) {
       account_id: account,
       enc_metadata: 'm',
       wrapped_item_key: 'k',
-      iv: 'iv',
       connection_id: 'c1',
       object_key: 'mv/' + i,
       thumb_key: null,
@@ -90,7 +89,6 @@ function seed(store: MemItems, account: string, n: number) {
 const goodItem = {
   encMetadata: 'enc',
   wrappedItemKey: 'wk',
-  iv: 'iv',
   connectionId: 'c1',
   objectKey: 'mv/x',
   size: 10,

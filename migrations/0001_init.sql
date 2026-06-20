@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS vault_items (
   id                TEXT PRIMARY KEY,
   account_id        TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   enc_metadata      TEXT NOT NULL,
-  wrapped_item_key  TEXT NOT NULL,
-  iv                TEXT NOT NULL,
+  wrapped_item_key  TEXT NOT NULL,  -- per-file key wrapped by the account key (carries its own IV)
   connection_id     TEXT NOT NULL REFERENCES storage_connections(id) ON DELETE CASCADE,
   object_key        TEXT NOT NULL,         -- path/key in the user's bucket
   thumb_key         TEXT,                  -- encrypted thumbnail object key

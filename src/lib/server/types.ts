@@ -65,8 +65,7 @@ export interface VaultItemRow {
   id: string;
   account_id: string;
   enc_metadata: string;     // encrypted JSON {name, mime, size, ...}
-  wrapped_item_key: string;
-  iv: string;
+  wrapped_item_key: string; // per-file key wrapped by the account key (carries its own IV)
   connection_id: string;
   object_key: string;       // key in the USER's bucket
   thumb_key: string | null;
