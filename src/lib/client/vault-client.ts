@@ -4,8 +4,8 @@
  * and the server's encrypted index. The server never receives plaintext, keys,
  * or storage credentials.
  *
- * Dependencies (apiFetch, makeS3) are injectable so the whole flow is testable
- * without a browser, a server, or a real bucket.
+ * Dependencies (apiFetch, makeStore) are injectable so the whole flow is
+ * testable without a browser, a server, or a real bucket.
  */
 import {
   createAccount,
@@ -18,22 +18,22 @@ import {
   type KdfParams,
 } from '../e2ee/account';
 import { decryptJson, encryptJson, unwrapKey, type FileHeader } from '../e2ee/crypto';
-import { S3Client, type S3Config } from '../storage/s3';
+import { makeStore, type ObjectStore, type ProviderConfig } from '../storage/object-store';
 import { fetchHeader } from './stream';
 
 type ApiFetch = (path: string, init?: RequestInit) => Promise<Response>;
-type MakeS3 = (cfg: S3Config) => Pick<S3Client, 'put' | 'get' | 'del' | 'testConnection'>;
+type MakeStore = (config: ProviderConfig) => ObjectStore;
 
 export interface VaultClientDeps {
   apiFetch?: ApiFetch;
-  makeS3?: MakeS3;
+  makeStore?: MakeStore;
 }
 
 export interface Connection {
   id: string;
   provider: string;
   label: string | null;
-  config: S3Config; // decrypted locally
+  config: ProviderConfig; // decrypted locally
 }
 
 export interface VaultItem {
@@ -60,11 +60,11 @@ async function asJson(res: Response): Promise<any> {
 export class VaultClient {
   private accountKey: Uint8Array | null = null;
   private api: ApiFetch;
-  private makeS3: MakeS3;
+  private store: MakeStore;
 
   constructor(deps: VaultClientDeps = {}) {
     this.api = deps.apiFetch ?? ((path, init) => fetch(path, { ...init, credentials: 'same-origin' }));
-    this.makeS3 = deps.makeS3 ?? ((cfg) => new S3Client(cfg));
+    this.store = deps.makeStore ?? ((config) => makeStore(config));
   }
 
   isUnlocked(): boolean {
@@ -114,17 +114,16 @@ export class VaultClient {
   }
 
   // ── Storage connections ─────────────────────────────────────────────────────
-  async addConnection(config: S3Config, label?: string): Promise<{ id: string }> {
+  async addConnection(config: ProviderConfig, label?: string): Promise<{ id: string }> {
     this.requireKey();
-    const probe = this.makeS3(config);
-    const test = await probe.testConnection();
+    const test = await this.store(config).test();
     if (!test.ok) throw new Error(test.error || 'connection_test_failed');
 
-    const encConfig = await encryptJson({ kind: 's3', ...config }, this.accountKey!);
+    const encConfig = await encryptJson(config, this.accountKey!);
     const res = await this.api('/api/vault/connections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: 's3', encConfig, label }),
+      body: JSON.stringify({ provider: config.kind, encConfig, label }),
     });
     if (!res.ok) throw new Error((await asJson(res)).error || 'add_connection_failed');
     return { id: (await asJson(res)).id };
@@ -135,7 +134,7 @@ export class VaultClient {
     const data = await asJson(await this.api('/api/vault/connections'));
     const out: Connection[] = [];
     for (const c of data.connections ?? []) {
-      const cfg = await decryptJson<{ kind: string } & S3Config>(c.encConfig, this.accountKey!);
+      const cfg = await decryptJson<ProviderConfig>(c.encConfig, this.accountKey!);
       out.push({ id: c.id, provider: c.provider, label: c.label, config: cfg });
     }
     return out;
@@ -150,16 +149,15 @@ export class VaultClient {
     const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.bytes.length };
     const enc = await encryptForUpload(file.bytes, meta, this.accountKey!, file.thumbnail ?? undefined);
     const base = `mv/${globalThis.crypto.randomUUID()}`;
-    const objectKey = `${base}.enc`;
-    const s3 = this.makeS3(conn.config);
+    const store = this.store(conn.config);
 
-    await s3.put(objectKey, enc.ciphertext);
+    // put() returns the canonical key/id to persist (S3: our key, Drive: file id).
+    const objectKey = await store.put(`${base}.enc`, enc.ciphertext);
 
     let thumbKey: string | null = null;
     if (enc.encThumbnail) {
-      thumbKey = `${base}.thumb.enc`;
       try {
-        await s3.put(thumbKey, enc.encThumbnail);
+        thumbKey = await store.put(`${base}.thumb.enc`, enc.encThumbnail);
       } catch {
         thumbKey = null; // a thumbnail is optional — never fail the upload over it
       }
@@ -179,8 +177,8 @@ export class VaultClient {
     });
     if (!res.ok) {
       // best-effort: don't leave orphan objects if the index write failed
-      await s3.del(objectKey).catch(() => {});
-      if (thumbKey) await s3.del(thumbKey).catch(() => {});
+      await store.del(objectKey).catch(() => {});
+      if (thumbKey) await store.del(thumbKey).catch(() => {});
       throw new Error((await asJson(res)).error || 'index_write_failed');
     }
     return { id: (await asJson(res)).id };
@@ -238,7 +236,7 @@ export class VaultClient {
 
   private async fetchDecrypt(conn: Connection, objectKey: string, wrappedItemKey: string): Promise<Uint8Array> {
     this.requireKey();
-    const res = await this.makeS3(conn.config).get(objectKey);
+    const res = await this.store(conn.config).get(objectKey);
     const ciphertext = new Uint8Array(await res.arrayBuffer());
     return decryptDownloaded(ciphertext, wrappedItemKey, this.accountKey!);
   }
@@ -250,7 +248,7 @@ export class VaultClient {
    */
   async getStreamParams(item: VaultItem, conn: Connection): Promise<{
     objectKey: string;
-    config: S3Config;
+    config: ProviderConfig;
     fileKey: Uint8Array;
     header: FileHeader;
     plaintextSize: number;
@@ -259,7 +257,7 @@ export class VaultClient {
     this.requireKey();
     const fileKey = await unwrapKey(item.wrappedItemKey, this.accountKey!);
     if (!fileKey) throw new Error('Cannot unwrap file key');
-    const header = await fetchHeader(this.makeS3(conn.config) as { get: S3Client['get'] }, item.objectKey);
+    const header = await fetchHeader(this.store(conn.config), item.objectKey);
     return {
       objectKey: item.objectKey,
       config: conn.config,
@@ -272,9 +270,9 @@ export class VaultClient {
 
   async remove(item: VaultItem, conn: Connection): Promise<void> {
     this.requireKey();
-    const s3 = this.makeS3(conn.config);
-    await s3.del(item.objectKey).catch(() => {}); // remove bytes from the user's bucket
-    if (item.thumbKey) await s3.del(item.thumbKey).catch(() => {}); // and its thumbnail
+    const store = this.store(conn.config);
+    await store.del(item.objectKey).catch(() => {}); // remove bytes from the user's bucket
+    if (item.thumbKey) await store.del(item.thumbKey).catch(() => {}); // and its thumbnail
     const res = await this.api(`/api/vault/items/${item.id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('delete_failed');
   }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { VaultClient } from './vault-client';
 import type { KdfParams } from '../e2ee/account';
-import type { S3Config } from '../storage/s3';
+import type { ProviderConfig } from '../storage/object-store';
 import {
   getLoginParams, signup, login, logout, validateSession, startSession,
 } from '../server/auth-service';
@@ -109,30 +109,28 @@ function makeFakeApi() {
   return { apiFetch, stores: { accounts, items, conns } };
 }
 
-// ── Fake S3 bucket (in-memory) ─────────────────────────────────────────────────
-function makeFakeS3() {
+// ── Fake bucket (in-memory ObjectStore) ────────────────────────────────────────
+function makeFakeStore() {
   const store = new Map<string, Uint8Array>();
-  const makeS3 = () => ({
-    async put(key: string, body: Uint8Array | Blob) {
-      store.set(key, body instanceof Uint8Array ? body : new Uint8Array(await (body as Blob).arrayBuffer()));
-    },
+  const makeStore = () => ({
+    async put(key: string, body: Uint8Array) { store.set(key, body); return key; },
     async get(key: string) { return new Response(store.get(key) ?? new Uint8Array()); },
     async del(key: string) { store.delete(key); },
-    async testConnection() { return { ok: true as const }; },
+    async test() { return { ok: true as const }; },
   });
-  return { makeS3, store };
+  return { makeStore, store };
 }
 
-const S3CFG: S3Config = {
-  endpoint: 'https://x.r2.cloudflarestorage.com', region: 'auto', bucket: 'b',
+const S3CFG: ProviderConfig = {
+  kind: 's3', endpoint: 'https://x.r2.cloudflarestorage.com', region: 'auto', bucket: 'b',
   accessKeyId: 'AK', secretAccessKey: 'sk-sk-sk-sk-sk-sk-sk-sk-sk-sk-sk',
 };
 
 describe('VaultClient full lifecycle (real services + crypto, fake transport)', () => {
   it('signup → connect → upload → list → download → bookmark → delete → relogin', async () => {
     const { apiFetch } = makeFakeApi();
-    const { makeS3, store } = makeFakeS3();
-    const client = new VaultClient({ apiFetch, makeS3 });
+    const { makeStore, store } = makeFakeStore();
+    const client = new VaultClient({ apiFetch, makeStore });
 
     // signup
     const { recoveryKey } = await client.signup('alice@example.com', 'password-123', FAST);
@@ -144,7 +142,8 @@ describe('VaultClient full lifecycle (real services + crypto, fake transport)', 
     const conns = await client.getConnections();
     expect(conns).toHaveLength(1);
     expect(conns[0].id).toBe(connId);
-    expect(conns[0].config.bucket).toBe('b'); // decrypted locally
+    expect(conns[0].config.kind).toBe('s3');
+    if (conns[0].config.kind === 's3') expect(conns[0].config.bucket).toBe('b'); // decrypted locally
 
     // upload (with an encrypted thumbnail)
     const original = new Uint8Array([10, 20, 30, 40, 50, 60]);
@@ -189,8 +188,8 @@ describe('VaultClient full lifecycle (real services + crypto, fake transport)', 
 
   it('a wrong password cannot log in', async () => {
     const { apiFetch } = makeFakeApi();
-    const { makeS3 } = makeFakeS3();
-    const client = new VaultClient({ apiFetch, makeS3 });
+    const { makeStore } = makeFakeStore();
+    const client = new VaultClient({ apiFetch, makeStore });
     await client.signup('bob@example.com', 'correct-pw-1', FAST);
     await client.logout();
     await expect(client.login('bob@example.com', 'wrong-pw-2')).rejects.toBeDefined();
