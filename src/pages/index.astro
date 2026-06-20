@@ -16,25 +16,25 @@ const jsonLd = [
     alternateName: ['OpenMediaVaults', 'Open Media Vault'],
     url: origin,
     description:
-      'Free, self-hosted, encrypted media vault — a private Google Photos alternative that stores photos, videos, and audio on your own hardware.',
+      'Free, open-source, end-to-end encrypted media vault — a private Google Photos alternative that encrypts photos, videos, and audio in your browser and stores them in cloud storage you own.',
   },
   {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'MediaVault',
-    alternateName: 'OpenMediaVaults',
+    alternateName: ['OpenMediaVaults', 'Open Media Vault'],
     applicationCategory: 'MultimediaApplication',
-    operatingSystem: 'Linux, macOS, Windows (Node.js 22+)',
+    operatingSystem: 'Any modern web browser',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Self-hosted encrypted photo, video, and audio vault with AES-256 sealed-at-rest encryption, recovery-key reset, and streaming playback.',
+      'End-to-end encrypted photo, video, and audio vault. Files are encrypted in the browser and stored in your own S3-compatible cloud; the operator can never read them. Includes seekable encrypted streaming and recovery-key reset.',
     featureList: [
-      'AES-256 encryption at rest (sealed vault)',
-      'Self-hosted — your hardware, your data',
-      'Encrypted video & audio streaming with seeking',
-      'Recovery-key password reset',
-      'Drag & drop uploads up to 5 GB per file',
-      'Dark & light themes, responsive on all devices',
+      'End-to-end encryption — keys never leave your device',
+      'Bring your own storage (Cloudflare R2, Backblaze B2, Wasabi, S3)',
+      'Zero-knowledge: the operator stores only ciphertext',
+      'Seekable encrypted video & audio streaming',
+      'Encrypted thumbnails for fast galleries',
+      'Recovery-key password reset; multi-device; installable PWA',
     ],
     url: origin,
   },
@@ -46,7 +46,7 @@ const jsonLd = [
     url: origin,
     logo: origin + '/og-image.png',
     description:
-      'Free, open-source, self-hosted encrypted media vault — a private alternative to Google Photos.',
+      'Free, open-source, end-to-end encrypted media vault — a private alternative to Google Photos that stores your files in storage you own.',
     sameAs: [
       'https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere',
     ],
@@ -55,37 +55,38 @@ const jsonLd = [
 ---
 
 <PublicLayout
-  title="MediaVault — Free Self-Hosted Encrypted Photo & Video Vault"
-  description="Store private photos, videos, and audio on your own hardware with AES-256 sealed-at-rest encryption. MediaVault is the free, open-source, self-hosted Google Photos alternative that cannot read your files."
+  title="MediaVault — End-to-End Encrypted Media, on Storage You Own"
+  description="MediaVault encrypts your photos, videos, and audio in your browser, then stores them in your own cloud (Cloudflare R2, Backblaze B2, Wasabi, S3). The keys never leave your device — so not even we can read your files. Free, open-source, multi-device."
   jsonLd={jsonLd}
 >
-  
+
   <!-- ── HERO SECTION ── -->
   <section class="hero-section mesh-gradient">
     <!-- Atmospheric Blurred Orbs for Premium Depth -->
     <div class="glow-orb orb-1"></div>
     <div class="glow-orb orb-2"></div>
-    
+
     <div class="section-container hero-container">
       <!-- Eyebrow Pill -->
-      <div class="eyebrow-pill" data-aos="fade-up">
-        <span class="mono-badge">SECURE · LOCAL · ZERO TRACKING</span>
+      <div class="eyebrow-pill" data-reveal>
+        <span class="mono-badge">END-TO-END ENCRYPTED · YOUR STORAGE · ZERO KNOWLEDGE</span>
       </div>
 
       <!-- Headline -->
-      <h1 class="hero-title" data-aos="fade-up">
-        Your personal media vault.
+      <h1 class="hero-title" data-reveal data-reveal-delay="60">
+        Encrypted media, on storage you control.
       </h1>
 
       <!-- Description -->
-      <p class="hero-description" data-aos="fade-up">
-        MediaVault — the <strong>OpenMediaVaults</strong> project — is a free, self-hosted, open-source
-        space for your images, videos, and audio files, sealed with AES-256 encryption.
-        Zero third-party analytics, zero cloud leaks. Just pure, secure ownership of your memories.
+      <p class="hero-description" data-reveal data-reveal-delay="120">
+        MediaVault — the <strong>OpenMediaVaults</strong> project — encrypts your photos, videos,
+        and audio <strong>in your browser</strong>, then stores them in your own cloud bucket.
+        The keys never leave your device, so not even we can read your files. Free, open-source,
+        and works across all your devices.
       </p>
 
       <!-- Action Button Row -->
-      <div class="cta-row" data-aos="fade-up">
+      <div class="cta-row" data-reveal data-reveal-delay="180">
         <a href={primaryCtaPath} class="btn-primary-hero">
           {primaryCtaText}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -99,7 +100,7 @@ const jsonLd = [
       </div>
 
       <!-- Floating App Mockup (Visual wow factor) -->
-      <div class="mockup-frame" data-aos="fade-up">
+      <div class="mockup-frame" data-reveal data-reveal-delay="240">
         <div class="mockup-header">
           <div class="mockup-dots">
             <span class="dot-red"></span>
@@ -111,7 +112,7 @@ const jsonLd = [
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
-            <span>localhost:4321/vault</span>
+            <span>your encrypted vault</span>
           </div>
           <div class="mockup-spacer"></div>
         </div>
@@ -171,17 +172,17 @@ const jsonLd = [
   <!-- ── STATS SECTION ── -->
   <section class="stats-section">
     <div class="section-container stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" data-reveal>
         <h3 class="stat-num">0</h3>
-        <p class="stat-label">Cloud database dependency. Fully local storage.</p>
+        <p class="stat-label">Files we can read. Your keys never leave your device.</p>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" data-reveal data-reveal-delay="80">
         <h3 class="stat-num">100%</h3>
-        <p class="stat-label">Privacy standard. No external tracking scripts.</p>
+        <p class="stat-label">End-to-end encrypted — before anything is uploaded.</p>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" data-reveal data-reveal-delay="160">
         <h3 class="stat-num">&infin;</h3>
-        <p class="stat-label">Media formats supported. Clean previews instantly.</p>
+        <p class="stat-label">Bring your own storage — any S3-compatible cloud.</p>
       </div>
     </div>
   </section>
@@ -189,47 +190,47 @@ const jsonLd = [
   <!-- ── FEATURES GRID ── -->
   <section class="features-section">
     <div class="section-container">
-      <div class="section-header">
-        <span class="section-eyebrow">Enterprise Grade</span>
-        <h2 class="section-title">Designed for privacy, built for speed.</h2>
+      <div class="section-header" data-reveal>
+        <span class="section-eyebrow">How it protects you</span>
+        <h2 class="section-title">Private by architecture, not by promise.</h2>
       </div>
 
       <div class="features-grid">
         <!-- Feature 1 -->
-        <div class="feature-card">
+        <div class="feature-card" data-reveal>
           <div class="feature-icon">🔒</div>
-          <h3 class="feature-name">Local Authentication</h3>
-          <p class="feature-desc">Protected by cryptographically hashed passwords and a physical recovery key you print or save locally.</p>
+          <h3 class="feature-name">End-to-end encrypted</h3>
+          <p class="feature-desc">Every file is encrypted in your browser with AES-256 before it's uploaded. We only ever store ciphertext we cannot read.</p>
         </div>
         <!-- Feature 2 -->
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3 class="feature-name">Instant Streams</h3>
-          <p class="feature-desc">Integrated partial byte-range streaming. Skip forward instantly in heavy HD videos or high-res audio tracks.</p>
+        <div class="feature-card" data-reveal data-reveal-delay="60">
+          <div class="feature-icon">☁️</div>
+          <h3 class="feature-name">Your own storage</h3>
+          <p class="feature-desc">Connect your own Cloudflare R2, Backblaze B2, Wasabi, or S3 bucket. Your files live in your account — never on our servers.</p>
         </div>
         <!-- Feature 3 -->
-        <div class="feature-card">
-          <div class="feature-icon">📁</div>
-          <h3 class="feature-name">Universal Files</h3>
-          <p class="feature-desc">Accepts all standard media types. Easily view metadata, download original copies, or delete with undo support.</p>
+        <div class="feature-card" data-reveal data-reveal-delay="120">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-name">Seekable streaming</h3>
+          <p class="feature-desc">Range-based streaming decrypts only the part you're watching, so you can jump anywhere in a large video instantly.</p>
         </div>
         <!-- Feature 4 -->
-        <div class="feature-card">
-          <div class="feature-icon">🎨</div>
-          <h3 class="feature-name">Aesthetic Control</h3>
-          <p class="feature-desc">Stunning responsive layout with micro-animations, glassmorphism filters, and a dark/light mode toggle.</p>
+        <div class="feature-card" data-reveal>
+          <div class="feature-icon">🖼️</div>
+          <h3 class="feature-name">Encrypted thumbnails</h3>
+          <p class="feature-desc">Fast galleries with previews generated and encrypted in your browser — browse your library without downloading full files.</p>
         </div>
         <!-- Feature 5 -->
-        <div class="feature-card">
-          <div class="feature-icon">🔄</div>
-          <h3 class="feature-name">Smooth Sorting</h3>
-          <p class="feature-desc">Sort by size, date added, file names, or filter by specific media categories instantly with zero page reloads.</p>
+        <div class="feature-card" data-reveal data-reveal-delay="60">
+          <div class="feature-icon">🔑</div>
+          <h3 class="feature-name">Recovery key</h3>
+          <p class="feature-desc">Forget your password? A one-time recovery key restores access. Lose both and not even we can help — that's the point.</p>
         </div>
         <!-- Feature 6 -->
-        <div class="feature-card">
-          <div class="feature-icon">🌐</div>
-          <h3 class="feature-name">Self-Hosted</h3>
-          <p class="feature-desc">Runs entirely on Node.js inside Astro. You deploy it on your local network, your VPS, or behind your home router.</p>
+        <div class="feature-card" data-reveal data-reveal-delay="120">
+          <div class="feature-icon">📱</div>
+          <h3 class="feature-name">Every device</h3>
+          <p class="feature-desc">Sign in from any device; your encrypted library syncs through a tiny metadata index. Installable as an app (PWA).</p>
         </div>
       </div>
     </div>
@@ -238,26 +239,26 @@ const jsonLd = [
   <!-- ── WORKFLOW / HOW IT WORKS ── -->
   <section class="workflow-section">
     <div class="section-container">
-      <div class="section-header">
+      <div class="section-header" data-reveal>
         <span class="section-eyebrow">Quick Start</span>
-        <h2 class="section-title">Three steps to peace of mind.</h2>
+        <h2 class="section-title">Three steps to a private library.</h2>
       </div>
 
       <div class="workflow-steps">
-        <div class="workflow-step">
+        <div class="workflow-step" data-reveal>
           <div class="step-badge">1</div>
-          <h3 class="step-title">Initialize Password</h3>
-          <p class="step-desc">Establish your master password. Print or download your secure recovery key in case you lose it.</p>
+          <h3 class="step-title">Create your account</h3>
+          <p class="step-desc">Sign up — your password derives your encryption key right in the browser. Save your one-time recovery key.</p>
         </div>
-        <div class="workflow-step">
+        <div class="workflow-step" data-reveal data-reveal-delay="80">
           <div class="step-badge">2</div>
-          <h3 class="step-title">Upload Media</h3>
-          <p class="step-desc">Drag and drop images, video clips, or audio files into the drag-zone. Uploads stream directly to local disk.</p>
+          <h3 class="step-title">Connect your storage</h3>
+          <p class="step-desc">Link your own cloud bucket (R2, Backblaze B2, Wasabi, S3). Files go straight there — never through us.</p>
         </div>
-        <div class="workflow-step">
+        <div class="workflow-step" data-reveal data-reveal-delay="160">
           <div class="step-badge">3</div>
-          <h3 class="step-title">Organize & Enjoy</h3>
-          <p class="step-desc">Bookmark favorites, filter by type, play audio files inline, and inspect media details inside clean dialog drawers.</p>
+          <h3 class="step-title">Upload &amp; enjoy</h3>
+          <p class="step-desc">Drag in photos and videos — encrypted locally, then streamed, searched, and viewed across all your devices.</p>
         </div>
       </div>
     </div>
@@ -265,9 +266,9 @@ const jsonLd = [
 
   <!-- ── CTA BANNER ── -->
   <section class="cta-banner-section">
-    <div class="section-container cta-banner-container">
-      <h2 class="cta-banner-title">Start protecting your media today.</h2>
-      <p class="cta-banner-desc">Take back control of your photos, home videos, and recordings from tech giants.</p>
+    <div class="section-container cta-banner-container" data-reveal>
+      <h2 class="cta-banner-title">Take back your memories.</h2>
+      <p class="cta-banner-desc">Free, open-source, end-to-end encrypted. Your media, your cloud, your keys — not the tech giants'.</p>
       <div class="cta-banner-actions">
         <a href={primaryCtaPath} class="btn-primary-hero invert">
           {primaryCtaText}
