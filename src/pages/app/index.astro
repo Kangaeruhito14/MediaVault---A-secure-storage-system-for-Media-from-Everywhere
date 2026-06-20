@@ -1,0 +1,426 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/Toast.astro';
+
+// The authenticated SPA. The account key is derived and held only in the
+// browser; the server only ever sees encrypted blobs. This page is a static
+// shell — all state (signed-out / locked / connected / vault) is decided by the
+// client script below based on /api/auth/me and the in-memory key.
+---
+<BaseLayout title="Your Vault" description="Your end-to-end encrypted MediaVault." noindex={true}>
+  <div class="appbar">
+    <a href="/" class="appbar-logo" aria-label="MediaVault home">
+      <span class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 28 28" fill="none"><rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="18" r="1.5" fill="currentColor"/></svg>
+      </span>
+      MediaVault
+    </a>
+    <div id="appbar-actions" hidden>
+      <span id="storage-label" class="storage-label"></span>
+      <button id="lock-btn" class="btn-ghost">Lock</button>
+    </div>
+  </div>
+
+  <main class="app-main">
+    <!-- Signed out: sign in / create account -->
+    <section id="auth-view" class="centered" hidden>
+      <div class="card">
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="signin">Sign in</button>
+          <button type="button" class="tab" data-tab="signup">Create account</button>
+        </div>
+        <form id="auth-form" class="stack">
+          <input id="email" class="inp" type="email" placeholder="Email" autocomplete="username" required />
+          <div class="pw-wrap">
+            <input id="password" class="inp" type="password" placeholder="Password" autocomplete="current-password" required minlength="8" />
+          </div>
+          <input id="password2" class="inp" type="password" placeholder="Confirm password" autocomplete="new-password" hidden />
+          <button id="auth-submit" class="btn-primary" type="submit">Sign in</button>
+        </form>
+        <p id="auth-hint" class="hint">Your password derives your encryption key on this device. We never see it.</p>
+        <p id="auth-error" class="error" hidden></p>
+      </div>
+    </section>
+
+    <!-- After signup: show recovery key once -->
+    <section id="recovery-view" class="centered" hidden>
+      <div class="card">
+        <h2 class="card-h">Save your recovery key</h2>
+        <p class="muted">This is the <strong>only</strong> way to reset your password — we can't recover it for you. Store it offline.</p>
+        <code id="recovery-key" class="reckey"></code>
+        <div class="row">
+          <button id="copy-key" type="button" class="btn-ghost">Copy</button>
+          <a id="print-kit" href="/recovery-kit" target="_blank" rel="noopener" class="btn-ghost">Print kit</a>
+        </div>
+        <button id="recovery-continue" class="btn-primary">I've saved it — continue</button>
+      </div>
+    </section>
+
+    <!-- Session present but key not in memory (e.g. after reload) -->
+    <section id="unlock-view" class="centered" hidden>
+      <div class="card">
+        <h2 class="card-h">Unlock your vault</h2>
+        <p class="muted">Enter your password to decrypt your library on this device.</p>
+        <form id="unlock-form" class="stack">
+          <input id="unlock-email" class="inp" type="email" placeholder="Email" autocomplete="username" required />
+          <input id="unlock-password" class="inp" type="password" placeholder="Password" autocomplete="current-password" required />
+          <button class="btn-primary" type="submit">Unlock</button>
+        </form>
+        <p id="unlock-error" class="error" hidden></p>
+        <button id="unlock-logout" type="button" class="link">Sign out instead</button>
+      </div>
+    </section>
+
+    <!-- Connect storage -->
+    <section id="connect-view" class="centered" hidden>
+      <div class="card card-wide">
+        <h2 class="card-h">Connect your storage</h2>
+        <p class="muted">Files live in <strong>your own</strong> S3-compatible bucket (Cloudflare R2, Backblaze B2, Wasabi, AWS S3). They're encrypted in your browser first — we never receive your files or these credentials in readable form.</p>
+        <form id="connect-form" class="stack">
+          <input id="c-endpoint" class="inp" placeholder="Endpoint URL (https://…)" required />
+          <div class="row">
+            <input id="c-region" class="inp" placeholder="Region" value="auto" required />
+            <input id="c-bucket" class="inp" placeholder="Bucket name" required />
+          </div>
+          <input id="c-key" class="inp" placeholder="Access key ID" required />
+          <input id="c-secret" class="inp" type="password" placeholder="Secret access key" autocomplete="off" required />
+          <input id="c-label" class="inp" placeholder="Label (optional)" />
+          <button class="btn-primary" type="submit">Test &amp; connect</button>
+        </form>
+        <p id="connect-error" class="error" hidden></p>
+      </div>
+    </section>
+
+    <!-- Vault -->
+    <section id="vault-view" hidden>
+      <div class="vault-toolbar">
+        <input id="search" class="inp search" placeholder="Search your files…" />
+        <label class="btn-primary upload-label">
+          Upload
+          <input id="file-input" type="file" multiple accept="image/*,video/*,audio/*" hidden />
+        </label>
+      </div>
+      <div id="upload-status" class="upload-status" hidden></div>
+      <div id="grid" class="grid"></div>
+      <p id="empty" class="muted empty" hidden>No files yet — upload your first one.</p>
+      <div class="center"><button id="load-more" class="btn-ghost" hidden>Load more</button></div>
+    </section>
+  </main>
+
+  <Toast />
+</BaseLayout>
+
+<script>
+  import { VaultClient, type Connection, type VaultItem } from '../../lib/client/vault-client';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const toast = (type: 'success' | 'error' | 'info', message: string) =>
+    document.dispatchEvent(new CustomEvent('toast', { detail: { type, message } }));
+
+  const client = new VaultClient();
+  const VIEWS = ['auth-view', 'recovery-view', 'unlock-view', 'connect-view', 'vault-view'];
+  function show(view: string) {
+    for (const v of VIEWS) $(v).hidden = v !== view;
+    $('appbar-actions').hidden = view !== 'vault-view';
+  }
+
+  let connections: Connection[] = [];
+  let connMap: Record<string, Connection> = {};
+  let items: VaultItem[] = [];
+  let cursor: string | null = null;
+  let mode: 'signin' | 'signup' = 'signin';
+
+  function fmtBytes(n: number): string {
+    if (n < 1024) return `${n} B`;
+    if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`;
+    if (n < 1073741824) return `${(n / 1048576).toFixed(1)} MB`;
+    return `${(n / 1073741824).toFixed(2)} GB`;
+  }
+
+  // ── Boot ────────────────────────────────────────────────────────────────────
+  async function boot() {
+    let authed = false;
+    try {
+      authed = (await (await fetch('/api/auth/me')).json()).authenticated === true;
+    } catch {}
+    if (authed) {
+      ($('unlock-email') as HTMLInputElement).value = localStorage.getItem('mv_email') ?? '';
+      show('unlock-view');
+    } else {
+      show('auth-view');
+    }
+  }
+
+  // ── Auth tabs ─────────────────────────────────────────────────────────────
+  document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) =>
+    t.addEventListener('click', () => {
+      mode = t.dataset.tab as 'signin' | 'signup';
+      document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
+      ($('password2') as HTMLInputElement).hidden = mode !== 'signup';
+      ($('password') as HTMLInputElement).autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
+      $('auth-submit').textContent = mode === 'signup' ? 'Create account' : 'Sign in';
+    }),
+  );
+
+  $('auth-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('auth-error').hidden = true;
+    const email = ($('email') as HTMLInputElement).value.trim();
+    const pw = ($('password') as HTMLInputElement).value;
+    const btn = $('auth-submit') as HTMLButtonElement;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = mode === 'signup' ? 'Creating…' : 'Signing in…';
+    try {
+      if (mode === 'signup') {
+        if (pw !== ($('password2') as HTMLInputElement).value) throw new Error('Passwords do not match.');
+        const { recoveryKey } = await client.signup(email, pw);
+        localStorage.setItem('mv_email', email);
+        $('recovery-key').textContent = recoveryKey;
+        try { sessionStorage.setItem('mv_recovery_key', recoveryKey); } catch {}
+        show('recovery-view');
+      } else {
+        await client.login(email, pw);
+        localStorage.setItem('mv_email', email);
+        await afterUnlock();
+      }
+    } catch (err) {
+      showErr('auth-error', err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  $('recovery-continue').addEventListener('click', () => afterUnlock());
+  $('copy-key').addEventListener('click', () => {
+    navigator.clipboard?.writeText($('recovery-key').textContent ?? '').then(() => toast('success', 'Recovery key copied'));
+  });
+
+  // ── Unlock ──────────────────────────────────────────────────────────────────
+  $('unlock-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('unlock-error').hidden = true;
+    try {
+      await client.login(($('unlock-email') as HTMLInputElement).value.trim(), ($('unlock-password') as HTMLInputElement).value);
+      localStorage.setItem('mv_email', ($('unlock-email') as HTMLInputElement).value.trim());
+      await afterUnlock();
+    } catch (err) {
+      showErr('unlock-error', err);
+    }
+  });
+  $('unlock-logout').addEventListener('click', async () => { await client.logout(); show('auth-view'); });
+  $('lock-btn').addEventListener('click', async () => { await client.logout(); show('auth-view'); });
+
+  // ── After unlock: connections then vault ────────────────────────────────────
+  async function afterUnlock() {
+    try {
+      connections = await client.getConnections();
+    } catch {
+      connections = [];
+    }
+    connMap = Object.fromEntries(connections.map((c) => [c.id, c]));
+    if (connections.length === 0) {
+      show('connect-view');
+      return;
+    }
+    $('storage-label').textContent = connections[0].label || connections[0].provider.toUpperCase();
+    show('vault-view');
+    await loadFirstPage();
+  }
+
+  $('connect-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('connect-error').hidden = true;
+    const cfg = {
+      endpoint: ($('c-endpoint') as HTMLInputElement).value.trim(),
+      region: ($('c-region') as HTMLInputElement).value.trim() || 'auto',
+      bucket: ($('c-bucket') as HTMLInputElement).value.trim(),
+      accessKeyId: ($('c-key') as HTMLInputElement).value.trim(),
+      secretAccessKey: ($('c-secret') as HTMLInputElement).value,
+    };
+    const label = ($('c-label') as HTMLInputElement).value.trim();
+    try {
+      await client.addConnection(cfg, label || undefined);
+      toast('success', 'Storage connected');
+      await afterUnlock();
+    } catch (err) {
+      showErr('connect-error', err);
+    }
+  });
+
+  // ── Vault: list / upload / view / delete / bookmark ─────────────────────────
+  async function loadFirstPage() {
+    items = [];
+    cursor = null;
+    $('grid').innerHTML = '';
+    await loadMore();
+  }
+  async function loadMore() {
+    const page = await client.listPage({ cursor });
+    items.push(...page.items);
+    cursor = page.nextCursor;
+    render();
+    ($('load-more') as HTMLButtonElement).hidden = !cursor;
+  }
+  $('load-more').addEventListener('click', () => loadMore());
+
+  $('search').addEventListener('input', render);
+
+  function render() {
+    const q = ($('search') as HTMLInputElement).value.toLowerCase();
+    const visible = q ? items.filter((i) => i.metadata.name.toLowerCase().includes(q)) : items;
+    $('empty').hidden = items.length !== 0;
+    const grid = $('grid');
+    grid.innerHTML = '';
+    for (const item of visible) {
+      const card = document.createElement('div');
+      card.className = 'file-card';
+      const name = document.createElement('div');
+      name.className = 'file-name';
+      name.textContent = item.metadata.name; // textContent — never innerHTML (XSS-safe)
+      const meta = document.createElement('div');
+      meta.className = 'file-meta';
+      meta.textContent = `${item.metadata.mime} · ${fmtBytes(item.metadata.size)}`;
+      const actions = document.createElement('div');
+      actions.className = 'file-actions';
+      const open = btn('Open', () => view(item));
+      const star = btn(item.bookmarked ? '★' : '☆', () => toggleStar(item));
+      const del = btn('Delete', () => remove(item));
+      del.classList.add('danger');
+      actions.append(open, star, del);
+      card.append(name, meta, actions);
+      grid.append(card);
+    }
+  }
+  function btn(label: string, onClick: () => void): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.className = 'mini-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  async function view(item: VaultItem) {
+    const conn = connMap[item.connectionId] ?? connections[0];
+    toast('info', `Decrypting ${item.metadata.name}…`);
+    try {
+      const { bytes } = await client.download(item, conn);
+      const blob = new Blob([bytes], { type: item.metadata.mime || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      toast('error', `Could not open: ${(err as Error).message}`);
+    }
+  }
+  async function toggleStar(item: VaultItem) {
+    try {
+      await client.setBookmark(item, !item.bookmarked);
+      item.bookmarked = !item.bookmarked;
+      render();
+    } catch {
+      toast('error', 'Could not update bookmark');
+    }
+  }
+  async function remove(item: VaultItem) {
+    if (!confirm(`Delete "${item.metadata.name}"? This removes it from your storage permanently.`)) return;
+    const conn = connMap[item.connectionId] ?? connections[0];
+    try {
+      await client.remove(item, conn);
+      items = items.filter((i) => i.id !== item.id);
+      render();
+      toast('success', 'Deleted');
+    } catch (err) {
+      toast('error', `Delete failed: ${(err as Error).message}`);
+    }
+  }
+
+  $('file-input').addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length) return;
+    const conn = connections[0];
+    const status = $('upload-status');
+    status.hidden = false;
+    let done = 0;
+    for (const file of files) {
+      status.textContent = `Encrypting & uploading ${file.name} (${done + 1}/${files.length})…`;
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        await client.upload(conn, { bytes, name: file.name, mime: file.type || 'application/octet-stream' });
+        done++;
+      } catch (err) {
+        toast('error', `${file.name}: ${(err as Error).message}`);
+      }
+    }
+    status.hidden = true;
+    toast('success', `Uploaded ${done} file${done === 1 ? '' : 's'}`);
+    await loadFirstPage();
+  });
+
+  function showErr(id: string, err: unknown) {
+    const el = $(id);
+    const msg = (err as Error).message || String(err);
+    const friendly: Record<string, string> = {
+      invalid_credentials: 'Incorrect email or password.',
+      rate_limited: 'Too many attempts. Try again in 15 minutes.',
+      email_taken: 'An account with this email already exists.',
+      unlock_failed: 'Incorrect password.',
+      login_failed: 'Incorrect email or password.',
+    };
+    el.textContent = friendly[msg] ?? msg;
+    el.hidden = false;
+  }
+
+  boot();
+</script>
+
+<style>
+  .appbar {
+    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .appbar-logo { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em; }
+  .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--text-primary); color: var(--bg); display: flex; align-items: center; justify-content: center; }
+  #appbar-actions { display: flex; align-items: center; gap: 14px; }
+  .storage-label { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  .app-main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  .centered { min-height: calc(100dvh - 60px - 120px); display: flex; align-items: center; justify-content: center; }
+  .card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+  .card-wide { max-width: 460px; }
+  .card-h { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); margin: 0 0 8px; }
+  .muted { font-size: 13.5px; line-height: 1.6; color: var(--text-body); margin: 0 0 20px; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; gap: 12px; }
+  .row > .inp { flex: 1; }
+  .inp { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text-primary); font-size: 14px; font-family: inherit; }
+  .inp:focus { outline: none; border-color: var(--accent); }
+  .btn-primary { background: var(--text-primary); color: var(--bg); border: none; border-radius: 9px; padding: 11px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; }
+  .link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; margin-top: 14px; }
+  .hint { font-size: 12px; color: var(--text-muted); margin: 16px 0 0; line-height: 1.5; }
+  .error { font-size: 13px; color: #ef4444; margin: 14px 0 0; }
+  .tabs { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 22px; }
+  .tab { flex: 1; background: transparent; border: none; border-radius: 7px; padding: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+  .tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.1)); }
+  .reckey { display: block; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--text-primary); background: var(--bg); border: 2px dashed var(--border-strong, var(--border)); border-radius: 10px; padding: 16px; word-break: break-all; margin-bottom: 16px; }
+
+  .vault-toolbar { display: flex; gap: 12px; margin-bottom: 20px; }
+  .search { flex: 1; }
+  .upload-label { display: inline-flex; align-items: center; cursor: pointer; }
+  .upload-status { font-size: 13px; color: var(--text-body); margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .file-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .file-name { font-size: 14px; font-weight: 600; color: var(--text-primary); word-break: break-word; }
+  .file-meta { font-size: 11.5px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .file-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .mini-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--text-primary); font-family: inherit; }
+  .mini-btn.danger { color: #ef4444; }
+  .empty { text-align: center; padding: 60px 0; }
+  .center { text-align: center; margin-top: 24px; }
+</style>
