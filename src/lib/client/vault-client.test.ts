@@ -146,19 +146,25 @@ describe('VaultClient full lifecycle (real services + crypto, fake transport)', 
     expect(conns[0].id).toBe(connId);
     expect(conns[0].config.bucket).toBe('b'); // decrypted locally
 
-    // upload
+    // upload (with an encrypted thumbnail)
     const original = new Uint8Array([10, 20, 30, 40, 50, 60]);
-    await client.upload(conns[0], { bytes: original, name: 'beach.jpg', mime: 'image/jpeg' });
-    expect(store.size).toBe(1); // ciphertext landed in the (fake) bucket
-    const onDisk = [...store.values()][0];
-    expect(onDisk.slice(0, 3)).toEqual(new Uint8Array([0x4d, 0x56, 0x31])); // "MV1" — encrypted, not plaintext
-    expect(Array.from(onDisk)).not.toEqual(Array.from(original)); // definitely not the raw bytes
+    const thumb = new Uint8Array([1, 2, 3, 4]);
+    await client.upload(conns[0], { bytes: original, name: 'beach.jpg', mime: 'image/jpeg', thumbnail: thumb });
+    expect(store.size).toBe(2); // file + thumbnail, both ciphertext
+    for (const onDisk of store.values()) {
+      expect(onDisk.slice(0, 3)).toEqual(new Uint8Array([0x4d, 0x56, 0x31])); // "MV1" — encrypted
+    }
 
     // list + decrypt metadata
     const page = await client.listPage();
     expect(page.items).toHaveLength(1);
     expect(page.items[0].metadata.name).toBe('beach.jpg');
     expect(page.items[0].metadata.mime).toBe('image/jpeg');
+    expect(page.items[0].thumbKey).toBeTruthy();
+
+    // thumbnail round-trips
+    const t = await client.getThumbnail(page.items[0], conns[0]);
+    expect(t && Array.from(t)).toEqual(Array.from(thumb));
 
     // download + decrypt
     const dl = await client.download(page.items[0], conns[0]);
