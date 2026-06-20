@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
+import { env } from 'cloudflare:workers';
 import { D1SessionStore } from './lib/server/stores';
 import { validateSession } from './lib/server/auth-service';
 import { SESSION_COOKIE } from './lib/server/http';
@@ -26,12 +27,12 @@ const CSP = [
 ].join('; ');
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { url, locals, cookies } = context;
+  const { url, cookies } = context;
 
   if (PROTECTED.test(url.pathname)) {
-    const env = locals.runtime?.env;
+    const db = (env as unknown as { DB?: never })?.DB;
     const token = cookies.get(SESSION_COOKIE)?.value;
-    const session = env?.DB ? await validateSession(new D1SessionStore(env.DB), token) : null;
+    const session = db ? await validateSession(new D1SessionStore(db), token) : null;
     if (!session) return context.redirect('/login');
   }
 
