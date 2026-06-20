@@ -1,33 +1,6 @@
 ---
-import PublicLayout from '../layouts/PublicLayout.astro';
-
-// Placeholder while the new end-to-end-encrypted account flow (Phase 3) is
-// built. The client-side signup/login UI will replace this. noindex so it
-// never surfaces in search while incomplete.
+// The authenticated experience is the /app SPA (it handles sign-in, account
+// creation, unlock-on-reload, and the vault in one place — the account key
+// never leaves the browser). Old /login links redirect there.
+return Astro.redirect('/app', 302);
 ---
-<PublicLayout
-  title="Sign In"
-  description="Access your end-to-end encrypted MediaVault."
-  noindex={true}
->
-  <section style="min-height: calc(100dvh - 64px - 200px); display: flex; align-items: center; justify-content: center; padding: 48px 24px;">
-    <div style="max-width: 420px; text-align: center;">
-      <div style="width: 56px; height: 56px; border-radius: 14px; background: var(--text-primary); color: var(--bg); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/>
-          <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="14" cy="18" r="1.5" fill="currentColor"/>
-        </svg>
-      </div>
-      <h1 style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em; color: var(--text-primary); margin-bottom: 12px;">
-        Secure sign-in is being rebuilt
-      </h1>
-      <p style="font-size: 15px; line-height: 1.65; color: var(--text-body); margin-bottom: 24px;">
-        We're rebuilding accounts with true end-to-end encryption — your keys are
-        derived and held only on your device. This page will become the new
-        sign-in shortly.
-      </p>
-      <a href="/" style="color: var(--accent); text-decoration: none; font-weight: 500;">← Back to home</a>
-    </div>
-  </section>
-</PublicLayout>
