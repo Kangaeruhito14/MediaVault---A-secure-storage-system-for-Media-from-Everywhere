@@ -172,22 +172,28 @@ export interface FileMetadata {
 }
 
 export interface EncryptedFile {
-  ciphertext: Uint8Array;   // upload these bytes to the user's storage
-  wrappedFileKey: string;   // store in the index
-  encMetadata: string;      // store in the index (encrypted name/mime/size…)
+  ciphertext: Uint8Array;        // upload these bytes to the user's storage
+  wrappedFileKey: string;        // store in the index
+  encMetadata: string;           // store in the index (encrypted name/mime/size…)
+  encThumbnail?: Uint8Array;     // optional encrypted preview (same key, own nonce)
 }
 
 export async function encryptForUpload(
   plaintext: Uint8Array,
   metadata: FileMetadata,
   accountKey: Uint8Array,
+  thumbnail?: Uint8Array,
 ): Promise<EncryptedFile> {
   const fileKey = generateKey();
-  return {
+  const out: EncryptedFile = {
     ciphertext: await encryptFile(plaintext, fileKey),
     wrappedFileKey: await wrapKey(fileKey, accountKey),
     encMetadata: await encryptJson(metadata, accountKey),
   };
+  // The thumbnail reuses the per-file key but encryptFile assigns a fresh random
+  // nonce per call, so there is no nonce reuse between file and thumbnail.
+  if (thumbnail) out.encThumbnail = await encryptFile(thumbnail, fileKey);
+  return out;
 }
 
 export async function decryptDownloaded(
