@@ -41,6 +41,7 @@ export interface VaultItem {
   wrappedItemKey: string; // unwrapped locally at download time
   connectionId: string;
   objectKey: string;
+  thumbKey: string | null;
   size: number;
   bookmarked: boolean;
   createdAt: number;
@@ -142,14 +143,26 @@ export class VaultClient {
   // ── Files ─────────────────────────────────────────────────────────────────
   async upload(
     conn: Connection,
-    file: { bytes: Uint8Array; name: string; mime: string },
+    file: { bytes: Uint8Array; name: string; mime: string; thumbnail?: Uint8Array | null },
   ): Promise<{ id: string }> {
     this.requireKey();
     const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.bytes.length };
-    const enc = await encryptForUpload(file.bytes, meta, this.accountKey!);
-    const objectKey = `mv/${globalThis.crypto.randomUUID()}.enc`;
+    const enc = await encryptForUpload(file.bytes, meta, this.accountKey!, file.thumbnail ?? undefined);
+    const base = `mv/${globalThis.crypto.randomUUID()}`;
+    const objectKey = `${base}.enc`;
+    const s3 = this.makeS3(conn.config);
 
-    await this.makeS3(conn.config).put(objectKey, enc.ciphertext);
+    await s3.put(objectKey, enc.ciphertext);
+
+    let thumbKey: string | null = null;
+    if (enc.encThumbnail) {
+      thumbKey = `${base}.thumb.enc`;
+      try {
+        await s3.put(thumbKey, enc.encThumbnail);
+      } catch {
+        thumbKey = null; // a thumbnail is optional — never fail the upload over it
+      }
+    }
 
     const res = await this.api('/api/vault/items', {
       method: 'POST',
@@ -159,12 +172,14 @@ export class VaultClient {
         wrappedItemKey: enc.wrappedFileKey,
         connectionId: conn.id,
         objectKey,
+        thumbKey,
         size: enc.ciphertext.length,
       }),
     });
     if (!res.ok) {
-      // best-effort: don't leave an orphan object if the index write failed
-      await this.makeS3(conn.config).del(objectKey).catch(() => {});
+      // best-effort: don't leave orphan objects if the index write failed
+      await s3.del(objectKey).catch(() => {});
+      if (thumbKey) await s3.del(thumbKey).catch(() => {});
       throw new Error((await asJson(res)).error || 'index_write_failed');
     }
     return { id: (await asJson(res)).id };
@@ -196,6 +211,7 @@ export class VaultClient {
         wrappedItemKey: raw.wrappedItemKey,
         connectionId: raw.connectionId,
         objectKey: raw.objectKey,
+        thumbKey: raw.thumbKey ?? null,
         size: raw.size,
         bookmarked: raw.bookmarked,
         createdAt: raw.createdAt,
@@ -205,16 +221,32 @@ export class VaultClient {
   }
 
   async download(item: VaultItem, conn: Connection): Promise<{ bytes: Uint8Array; metadata: FileMetadata }> {
-    this.requireKey();
-    const res = await this.makeS3(conn.config).get(item.objectKey);
-    const ciphertext = new Uint8Array(await res.arrayBuffer());
-    const bytes = await decryptDownloaded(ciphertext, item.wrappedItemKey, this.accountKey!);
+    const bytes = await this.fetchDecrypt(conn, item.objectKey, item.wrappedItemKey);
     return { bytes, metadata: item.metadata };
+  }
+
+  /** Fetch + decrypt the encrypted thumbnail, or null if the item has none. */
+  async getThumbnail(item: VaultItem, conn: Connection): Promise<Uint8Array | null> {
+    if (!item.thumbKey) return null;
+    try {
+      return await this.fetchDecrypt(conn, item.thumbKey, item.wrappedItemKey);
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchDecrypt(conn: Connection, objectKey: string, wrappedItemKey: string): Promise<Uint8Array> {
+    this.requireKey();
+    const res = await this.makeS3(conn.config).get(objectKey);
+    const ciphertext = new Uint8Array(await res.arrayBuffer());
+    return decryptDownloaded(ciphertext, wrappedItemKey, this.accountKey!);
   }
 
   async remove(item: VaultItem, conn: Connection): Promise<void> {
     this.requireKey();
-    await this.makeS3(conn.config).del(item.objectKey).catch(() => {}); // remove bytes from user's bucket
+    const s3 = this.makeS3(conn.config);
+    await s3.del(item.objectKey).catch(() => {}); // remove bytes from the user's bucket
+    if (item.thumbKey) await s3.del(item.thumbKey).catch(() => {}); // and its thumbnail
     const res = await this.api(`/api/vault/items/${item.id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('delete_failed');
   }
