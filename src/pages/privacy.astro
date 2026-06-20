@@ -15,8 +15,8 @@ const jsonLd = [
 ---
 
 <PublicLayout
-  title="Privacy Policy — Zero Tracking, Zero Data Collection"
-  description="MediaVault runs entirely on your own hardware: no analytics, no telemetry, no cookies beyond your login session, no third-party servers. Read exactly what data exists and where it lives."
+  title="Privacy Policy — Zero-Knowledge, Zero Tracking"
+  description="MediaVault is end-to-end encrypted and zero-knowledge: your files stay in your own storage, your keys never leave your browser, and we hold only an encrypted index. No analytics, no telemetry, no ad trackers. Read exactly what data exists and where it lives."
   jsonLd={jsonLd}
 >
   <section class="legal-page">
@@ -24,63 +24,75 @@ const jsonLd = [
       <header class="legal-header">
         <span class="page-eyebrow">Privacy Statement</span>
         <h1 class="page-title">Privacy Policy.</h1>
-        <p class="last-updated">Last updated: June 9, 2026</p>
+        <p class="last-updated">Last updated: June 20, 2026</p>
       </header>
 
       <div class="legal-content">
         <section class="legal-section">
           <h2>1. Overview</h2>
           <p>
-            MediaVault is designed with a <strong>privacy-first mindset</strong>. We believe your personal media files belong entirely to you. Since MediaVault is self-hosted by you on your own systems, we have zero access to your files, passwords, configuration data, or access logs.
+            MediaVault is designed to be <strong>zero-knowledge</strong>: your personal media belongs entirely to you, and we go out of our way to never see it. Your files are encrypted in your browser and stored in cloud storage you own; your encryption keys never leave your device. We operate a thin control plane that holds only an encrypted index — never your files, your keys, or your storage credentials in readable form.
           </p>
         </section>
 
         <section class="legal-section">
-          <h2>2. Data Collection</h2>
+          <h2>2. What We Store</h2>
           <p>
-            The creators and maintainers of MediaVault:
+            To run your account, our servers hold a deliberately small amount of data:
           </p>
           <ul>
-            <li><strong>Collect zero personal data</strong>. There are no tracking scripts, analytics tools, or telemetry trackers in this Software.</li>
-            <li><strong>Do not host any centralized database</strong>. Your password hashes and files are saved exclusively on your own hard drive.</li>
-            <li><strong>Have no remote access</strong>. The Software does not contain backdoors or remote admin portals.</li>
+            <li><strong>Account record</strong>: your email address, a hash of an authentication value derived in your browser (never your password itself), and your encrypted account-key envelopes.</li>
+            <li><strong>Encrypted index</strong>: for each item, encrypted metadata such as the filename and content type, plus the storage object location. Filenames and metadata are encrypted with keys we do not have.</li>
+            <li><strong>Encrypted storage settings</strong>: the configuration for the bucket you connect, encrypted in your browser before it reaches us, so your storage credentials are never readable to us.</li>
+          </ul>
+          <p>
+            We do <strong>not</strong> store your media files (they go straight to your bucket), your password, your encryption keys, or any readable copy of your storage credentials.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. What We Do Not Collect</h2>
+          <ul>
+            <li><strong>No analytics or telemetry</strong>. There are no tracking scripts, behavioral analytics, or telemetry in the application.</li>
+            <li><strong>No advertising</strong>. We do not run ads or share data with advertisers or data brokers.</li>
+            <li><strong>No content access</strong>. We have no technical means to read, scan, or recover your media — there is no backdoor.</li>
           </ul>
         </section>
 
         <section class="legal-section">
-          <h2>3. Cookies</h2>
+          <h2>4. Cookies</h2>
           <p>
             MediaVault uses one functional cookie:
           </p>
           <ul>
-            <li><code>mv_session</code>: This cookie is used strictly to authenticate your browser session to access your private vault page. It is a cryptographic token that expires after 24 hours of inactivity.</li>
+            <li><code>mv_session</code>: used strictly to authenticate your browser session. It is a cryptographic token and carries no tracking data.</li>
             <li>We do not use advertising cookies, marketing trackers, or third-party analytical cookies.</li>
           </ul>
         </section>
 
         <section class="legal-section">
-          <h2>4. Third-Party Services</h2>
+          <h2>5. Operational Data</h2>
           <p>
-            The Software operates independently. By default, it does not send your data to third parties. If you configure custom media transcoders or run the application behind reverse proxies, please consult the privacy policies of those specific network providers.
+            To keep the free Service available and resistant to abuse, we apply basic rate limiting, which involves temporarily counting requests. We do not build profiles of you, and we keep operational logs to the minimum needed to run and secure the Service.
           </p>
         </section>
 
         <section class="legal-section">
-          <h2>5. Security of Stored Data</h2>
+          <h2>6. Third Parties</h2>
           <p>
-            The files you upload are stored in your project's local directory. Access to files is protected by a session validation token. It is your responsibility to safeguard your master password, restrict physical access to your host machine, and configure secure HTTPS connections if serving the vault over the internet.
+            Your encrypted files are stored with the cloud storage provider <strong>you</strong> choose and connect (such as Cloudflare R2, Backblaze B2, Wasabi, or S3); your relationship and their handling of that data are governed by their terms and privacy policy. Our own control plane runs on Cloudflare's infrastructure. We do not sell or share your data with any other third party.
           </p>
         </section>
 
         <section class="legal-section">
-          <h2>6. GDPR & CCPA Compliance</h2>
+          <h2>7. Your Rights & Control</h2>
           <p>
-            Because the Software is completely local and does not store or process data on third-party servers, you are the absolute data controller and processor under GDPR and CCPA. You have complete ability to delete your data at any time by clearing the <code>data/</code> folder.
+            You can delete individual items or your entire account at any time, which removes the corresponding records from our index. Because your files live in your own storage, you also retain direct and independent control over them there. Under GDPR, CCPA, and similar laws, you have rights to access, correct, and erase your data; the encrypted, minimal nature of what we hold is built to honor those rights by default.
           </p>
         </section>
 
         <section class="legal-section">
-          <h2>7. Contact</h2>
+          <h2>8. Contact</h2>
           <p>
             For questions about this policy, contact us at <a href="mailto:fantasyfalcoon91@gmail.com">fantasyfalcoon91@gmail.com</a>.
           </p>
