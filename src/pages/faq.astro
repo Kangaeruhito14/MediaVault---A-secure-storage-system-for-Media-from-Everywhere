@@ -5,8 +5,8 @@ import PublicLayout from '../layouts/PublicLayout.astro';
  * FAQ content doubles as the FAQPage JSON-LD source, so the structured data
  * Google reads always matches the text visitors see — a hard requirement for
  * rich-result eligibility. Questions mirror real search queries ("People Also
- * Ask") around self-hosted photo storage, encrypted vaults, and Google Photos
- * alternatives.
+ * Ask") around end-to-end encrypted photo storage, zero-knowledge vaults, and
+ * Google Photos alternatives.
  */
 const faqSections = [
   {
@@ -14,23 +14,23 @@ const faqSections = [
     items: [
       {
         q: 'What is MediaVault?',
-        a: 'MediaVault is a free, open-source, self-hosted media vault — a private alternative to Google Photos and iCloud. It stores your photos, videos, and audio on your own computer or server, encrypts every file with AES-256, and serves them through a fast web interface only you can unlock.',
+        a: 'MediaVault is a free, open-source, end-to-end encrypted media vault — a private alternative to Google Photos and iCloud. It encrypts your photos, videos, and audio in your browser, then stores them in cloud storage you own (such as Cloudflare R2, Backblaze B2, Wasabi, or S3). Because the keys never leave your device, not even we can read your files.',
       },
       {
         q: 'Is MediaVault really free? What is the catch?',
-        a: 'Yes — completely free, with no subscriptions, no premium tiers, no ads, and no data collection. There is no catch: because MediaVault runs on your own hardware, there are no cloud storage bills for anyone to pass on to you. You provide the disk space; the software is free.',
+        a: 'Yes — free, with no subscriptions, ads, or data collection. There is no catch: we never store your files, so there are no storage bills to pass on to you. You connect your own cloud storage (which has its own free tiers), and the software is free and open-source.',
       },
       {
         q: 'How is MediaVault different from Google Photos or iCloud?',
-        a: 'Google Photos and iCloud store your media on company servers, scan it with automated systems, and charge subscriptions once you outgrow the free tier. MediaVault stores media on hardware you own, encrypts it so that even a stolen disk reveals nothing, has no scanning or telemetry, and never charges you. The trade-off: you are responsible for your own backups.',
+        a: 'Google Photos and iCloud store your media on their servers, can scan it, and charge a subscription past the free tier. MediaVault encrypts your media in your browser and keeps it in storage you own — so the provider cannot read or scan it, and you are not locked into anyone’s cloud.',
       },
       {
         q: 'How is MediaVault different from Immich, PhotoPrism, or Ente?',
-        a: 'Immich and PhotoPrism are excellent self-hosted photo managers, but they store files as plaintext on disk and typically require Docker and a database server. MediaVault is radically simpler — one Node.js process, zero external dependencies, no Docker required — and it is sealed by default: every file is AES-256 encrypted at rest, and the decryption key only exists in memory while you are logged in.',
+        a: 'Immich and PhotoPrism are self-hosted photo managers that store files unencrypted and require you to run Docker and a database. Ente is end-to-end encrypted but keeps your files in its own cloud. MediaVault is end-to-end encrypted AND keeps your files in your own cloud bucket, with no infrastructure for you to run beyond that bucket.',
       },
       {
-        q: 'Do I need a NAS or special hardware to run MediaVault?',
-        a: 'No. Any machine that runs Node.js 22 or newer works: an old laptop, a desktop, a Raspberry Pi, or a $5 VPS. There is no database server to install and no Docker requirement — clone, npm install, npm start, done.',
+        q: 'Do I need any special hardware or a server?',
+        a: 'No. MediaVault runs in your browser and stores files in a cloud bucket you connect. You just need a free or cheap S3-compatible bucket (Cloudflare R2 and Backblaze B2 both have free tiers). One-click Google Drive and Dropbox options are planned.',
       },
     ],
   },
@@ -38,40 +38,36 @@ const faqSections = [
     category: 'Security & Encryption',
     items: [
       {
-        q: 'Is self-hosted photo storage safe?',
-        a: 'It is as safe as the software and your setup make it. MediaVault is designed defensively: files are AES-256 encrypted at rest, passwords are hashed with scrypt, login is rate-limited against brute force, sessions are revocable, and every response carries hardened security headers. Keep your system updated, use a strong password, and store the recovery key offline.',
+        q: 'Is end-to-end encrypted photo storage safe?',
+        a: 'MediaVault is designed defensively: every file is encrypted in your browser with AES-256 before upload, your key is derived from your password with Argon2id and never leaves your device, logins are rate-limited, sessions are revocable, and strict security headers are sent on every response. The provider only ever holds ciphertext. Use a strong password and store your recovery key offline.',
       },
       {
         q: 'How does MediaVault encryption work?',
-        a: 'MediaVault uses envelope encryption. Each file gets its own random AES-256 key; file keys are wrapped by a 256-bit master key; and the master key is itself wrapped twice — once by a key derived from your password, once by a key derived from your recovery key (both via scrypt). Files are encrypted with AES-256-CTR, which keeps video seeking instant even on encrypted data.',
+        a: 'Your password is stretched with Argon2id into a key that unwraps a random per-account key, held only in your browser. Each file gets its own AES-256 key, wrapped by the account key; filenames and metadata are encrypted too. Files use AES-256-CTR so any byte range can be decrypted on demand — which keeps encrypted video seeking instant.',
       },
       {
-        q: 'What does "sealed at rest" mean?',
-        a: 'When the server is off, restarts, or you press Lock Vault, the master key is wiped from memory. Everything on disk — every photo, video, and song — is unreadable ciphertext until someone enters the password again. Even a full copy of your hard drive reveals nothing.',
+        q: 'What does "zero-knowledge" mean here?',
+        a: 'It means the operator has no knowledge of your content. We store only an encrypted index and your encrypted storage settings — never your files (those live in your own cloud), your keys, or your storage credentials. There is nothing readable for us to leak, hand over, or scan.',
       },
       {
-        q: 'Can MediaVault, or anyone else, see my files?',
-        a: 'No. There is no MediaVault company server — the software runs entirely on your machine and makes no outbound connections. Files on disk are encrypted, so even someone with physical access to the drive cannot view them without your password or recovery key.',
+        q: 'Can MediaVault, or my cloud provider, see my files?',
+        a: 'No. Files are encrypted in your browser before they reach any server, so MediaVault only handles ciphertext. Your cloud provider stores those encrypted blobs and cannot read them either, because the keys never leave your device.',
       },
       {
-        q: 'How is my password stored?',
-        a: 'Your password is never stored. MediaVault keeps only an scrypt hash (a deliberately slow, memory-hard function designed to resist GPU cracking) with a unique random salt. The password also derives the key that unwraps your master encryption key — which is why no one can reset it without the recovery key.',
+        q: 'How is my password handled?',
+        a: 'Your password is never sent to the server. In the browser it derives both your encryption key (kept local) and a separate auth value; the server stores only a hash of that auth value. Because the encryption key comes from your password, no one can reset it without your recovery key.',
       },
       {
         q: 'What happens if I forget my password?',
-        a: 'Use your recovery key. During setup MediaVault generates a 64-character recovery key and shows it exactly once. On the login page, choose "Forgot password? Use recovery key", enter it, and set a new password. A new recovery key is issued and the old one is permanently invalidated.',
+        a: 'Use your recovery key. At signup MediaVault generates a one-time recovery key and shows it once (with a printable kit). Choose "Forgot password? Use recovery key", enter it, and set a new password. A fresh recovery key is issued and the old one stops working.',
       },
       {
         q: 'What happens if I lose both my password and my recovery key?',
-        a: 'Your files are unrecoverable — by design. The encryption has no backdoor, and MediaVault has no company server that could let you "reset by email". This is the price of real privacy, so print the recovery key and keep it somewhere physically safe.',
+        a: 'Your files are unrecoverable — by design. The encryption has no backdoor and there is no "reset by email", because that would mean we could access your data. This is the price of real end-to-end encryption, so save your recovery key somewhere safe.',
       },
       {
-        q: 'Can someone brute-force my vault password?',
-        a: 'Realistically no. Five failed attempts lock the vault for 15 minutes — globally, not per-IP, so attackers cannot bypass it with proxies or spoofed headers. The lockout counter survives server restarts, and scrypt hashing makes each guess deliberately expensive.',
-      },
-      {
-        q: 'What happens if my computer or server is stolen?',
-        a: 'The thief gets ciphertext. Files on disk are AES-256 encrypted and the master key is not stored in usable form anywhere on the device — it only exists in memory while the vault is unlocked. Without your password or recovery key, the data is mathematically out of reach.',
+        q: 'What if MediaVault’s servers are breached?',
+        a: 'A breach exposes only ciphertext and an encrypted index. Your actual files are not on our servers (they’re in your own cloud), and the encryption keys never were either. There is nothing readable to steal.',
       },
     ],
   },
@@ -79,24 +75,24 @@ const faqSections = [
     category: 'Files & Storage',
     items: [
       {
+        q: 'Whose storage are my files kept in?',
+        a: 'Yours. You connect your own S3-compatible bucket — Cloudflare R2, Backblaze B2, Wasabi, or AWS S3 — and encrypted files transfer directly between your browser and that bucket. They never pass through or rest on MediaVault’s servers.',
+      },
+      {
         q: 'What file types does MediaVault support?',
-        a: 'Images: JPEG, PNG, GIF, WebP, AVIF, SVG. Video: MP4, WebM, OGG, QuickTime/MOV, AVI. Audio: MP3, WAV, OGG, FLAC, AAC, M4A. Uploads are verified by content — a renamed executable pretending to be a photo is rejected before it ever lands on disk.',
+        a: 'Images: JPEG, PNG, GIF, WebP, AVIF, SVG. Video: MP4, WebM, OGG, QuickTime/MOV, AVI. Audio: MP3, WAV, OGG, FLAC, AAC, M4A. Uploads are content-verified — a renamed executable pretending to be a photo is rejected.',
       },
       {
         q: 'Is there a file size or storage limit?',
-        a: 'Single files can be up to 5 GB, streamed to disk in chunks so memory use stays flat. Total storage is limited only by your drive; self-hosters can optionally set a hard quota with the MEDIAVAULT_MAX_STORAGE environment variable.',
+        a: 'Single files can be very large (multi-GB), encrypted in chunks so memory stays flat. Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours.',
       },
       {
         q: 'Does MediaVault compress my photos and videos?',
-        a: 'Never. You get back the exact bytes you uploaded — no recompression, no quality loss, no stripped metadata. Encryption preserves file content perfectly.',
+        a: 'Never. You get back the exact bytes you uploaded — no recompression or quality loss. (You can optionally strip EXIF/GPS location metadata from photos before they’re encrypted.)',
       },
       {
         q: 'How does video streaming work on encrypted files?',
-        a: 'MediaVault answers HTTP Range requests (206 Partial Content) and uses AES-256-CTR encryption, which can decrypt from any byte offset. When you skip to minute 40 of a movie, the server decrypts only the bytes the player asks for — seeking stays instant, and the whole file never loads into memory.',
-      },
-      {
-        q: 'How do I back up my vault?',
-        a: 'Copy two folders: data/ (the SQLite database holding metadata and wrapped keys) and uploads/ (your encrypted files). Backups are safe to put on any external drive or cloud storage, because everything in uploads/ is ciphertext — useless without your password or recovery key.',
+        a: 'A Service Worker translates the player’s byte-range requests into encrypted-chunk fetches from your bucket, decrypts just those chunks in the browser, and returns them. Skip to minute 40 of a movie and only that part is fetched and decrypted — the whole file never downloads.',
       },
     ],
   },
@@ -104,16 +100,16 @@ const faqSections = [
     category: 'Access & Devices',
     items: [
       {
-        q: 'Can I access MediaVault from my phone or other devices?',
-        a: 'Yes. The interface is fully responsive. By default the server listens on localhost; bind it to your LAN address to reach it from phones and tablets on your network, or use a VPN like Tailscale or WireGuard for secure remote access. If you expose it publicly, put it behind HTTPS.',
+        q: 'Can I access my vault from my phone or other devices?',
+        a: 'Yes. Sign in from any device with a browser; your encrypted library syncs through a small metadata index, and your files come straight from your own cloud. MediaVault is fully responsive and installable as an app (PWA).',
+      },
+      {
+        q: 'Is MediaVault multi-user?',
+        a: 'Yes. Anyone can create their own account; each account is fully isolated, with its own encryption keys and its own connected storage. One person can never access another’s files or index.',
       },
       {
         q: 'Can I share files with other people?',
-        a: 'MediaVault is intentionally a single-owner vault — there are no public share links or guest accounts, which keeps the attack surface minimal. To share something, download the original and send it through any channel you trust.',
-      },
-      {
-        q: 'Do I need an internet connection to use MediaVault?',
-        a: 'No. MediaVault is fully functional offline — uploads, playback, search, everything runs on your machine. The only network it needs is the one between your browser and your own server.',
+        a: 'Not yet — there are no public share links today, which keeps the encryption model simple and the attack surface small. To share something, open it and download the original, then send it through any channel you trust.',
       },
     ],
   },
@@ -121,12 +117,8 @@ const faqSections = [
     category: 'Features & Support',
     items: [
       {
-        q: 'How does the delete Undo feature work?',
-        a: 'Deleting a file (or a bulk selection) hides it immediately and shows an Undo toast for 5 seconds. Click Undo to restore instantly; let the timer run out and the encrypted file is permanently erased from disk.',
-      },
-      {
         q: 'What browsers are supported?',
-        a: 'Every modern browser: Chrome, Firefox, Safari, Edge, and their mobile versions. Playback of specific video codecs depends on the browser, exactly as it would for any local video file.',
+        a: 'Every modern browser: Chrome, Firefox, Safari, Edge, and their mobile versions. Encryption uses the standard Web Crypto API; playback of specific video codecs depends on the browser, as with any video.',
       },
       {
         q: 'How do I report a bug or security issue?',
@@ -152,8 +144,8 @@ const jsonLd = [
 ---
 
 <PublicLayout
-  title="FAQ — Self-Hosted Encrypted Media Storage Questions Answered"
-  description="Is self-hosted photo storage safe? How does AES-256 vault encryption work? What happens if you forget your password? Every common question about MediaVault, answered clearly."
+  title="FAQ — End-to-End Encrypted Media Storage Questions Answered"
+  description="Is end-to-end encrypted photo storage safe? How does the encryption work? Where are my files stored? What happens if you forget your password? Every common question about MediaVault, answered clearly."
   jsonLd={jsonLd}
 >
   <section class="faq-page">
@@ -163,7 +155,7 @@ const jsonLd = [
         <span class="page-eyebrow">FAQ Help</span>
         <h1 class="page-title">Frequently Asked Questions.</h1>
         <p class="page-lead">
-          Everything people ask about self-hosted, encrypted media storage — security, recovery keys, file formats, devices, and more. If you don't find what you need, <a href="/contact" class="lead-link">contact us</a>.
+          Everything people ask about end-to-end encrypted media storage — security, recovery keys, where your files live, devices, and more. If you don't find what you need, <a href="/contact" class="lead-link">contact us</a>.
         </p>
       </header>
 
