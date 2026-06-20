@@ -241,6 +241,7 @@ import Toast from '../../components/Toast.astro';
     e.preventDefault();
     $('connect-error').hidden = true;
     const cfg = {
+      kind: 's3' as const,
       endpoint: ($('c-endpoint') as HTMLInputElement).value.trim(),
       region: ($('c-region') as HTMLInputElement).value.trim() || 'auto',
       bucket: ($('c-bucket') as HTMLInputElement).value.trim(),
@@ -305,7 +306,7 @@ import Toast from '../../components/Toast.astro';
       if (thumbUrls.has(item.id)) thumb.style.backgroundImage = `url(${thumbUrls.get(item.id)})`;
       const badge = document.createElement('span');
       badge.className = 'tile-badge';
-      badge.textContent = kind(item.metadata.mime).toUpperCase();
+      badge.textContent = `${kind(item.metadata.mime).toUpperCase()} · ${fmtBytes(item.metadata.size)}`;
       thumb.appendChild(badge);
       card.appendChild(thumb);
 
