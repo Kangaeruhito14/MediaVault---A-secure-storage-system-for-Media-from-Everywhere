@@ -12,7 +12,7 @@
  * The file key reaches the SW only via postMessage (same-origin, in-memory) and
  * is dropped when the page unregisters or the SW restarts. Nothing is persisted.
  */
-import { S3Client, type S3Config } from '../lib/storage/s3';
+import { makeStore, type ProviderConfig } from '../lib/storage/object-store';
 import { streamRange } from '../lib/client/stream';
 import type { FileHeader } from '../lib/e2ee/crypto';
 
@@ -24,7 +24,7 @@ const STREAM_PREFIX = '/__mv_stream/';
 const WINDOW = 4 * 1024 * 1024; // max plaintext bytes served per range request
 
 interface StreamEntry {
-  config: S3Config;
+  config: ProviderConfig;
   objectKey: string;
   fileKey: Uint8Array;
   header: FileHeader;
@@ -135,8 +135,8 @@ async function handleStream(request: Request, id: string): Promise<Response> {
   }
 
   try {
-    const s3 = new S3Client(s.config);
-    const bytes = await streamRange(s3, s.objectKey, s.header, s.fileKey, total, start, end);
+    const store = makeStore(s.config);
+    const bytes = await streamRange(store, s.objectKey, s.header, s.fileKey, total, start, end);
     const headers: Record<string, string> = {
       'Content-Type': s.mime || 'application/octet-stream',
       'Content-Length': String(bytes.length),
