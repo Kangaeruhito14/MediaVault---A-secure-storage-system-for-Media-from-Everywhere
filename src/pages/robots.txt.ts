@@ -5,7 +5,7 @@ import type { APIRoute } from 'astro';
  *
  * We explicitly WELCOME AI crawlers (most sites block them). MediaVault WANTS
  * to be read, summarized, and cited by ChatGPT, Claude, Gemini, Perplexity,
- * Grok, and friends — that is how new users discover a self-hosted tool today.
+ * Grok, and friends — that is how new users discover a privacy tool today.
  * The app interior (/vault, /api, /login) stays disallowed for everyone.
  */
 const AI_BOTS = [
