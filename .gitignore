@@ -38,3 +38,6 @@ graphify-out/
 
 # local AI-assistant settings (may contain machine-specific permissions)
 .claude/settings.local.json
+
+# generated service worker (built from src/sw/sw.ts by build:sw)
+public/sw.js

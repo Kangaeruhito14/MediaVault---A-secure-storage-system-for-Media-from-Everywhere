@@ -22,8 +22,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "build:sw": "node scripts/build-sw.mjs",
+    "dev": "npm run build:sw && astro dev",
+    "build": "npm run build:sw && astro build",
     "preview": "astro preview",
     "start": "node --no-warnings ./dist/server/entry.mjs",
     "migrate:legacy": "node scripts/migrate-legacy.mjs",

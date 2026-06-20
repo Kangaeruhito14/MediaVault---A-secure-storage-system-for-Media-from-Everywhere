@@ -369,7 +369,37 @@ import Toast from '../../components/Toast.astro';
   // ── Viewer ────────────────────────────────────────────────────────────────────
   let viewerIdx = -1;
   let viewerUrl: string | null = null;
+  const registeredStreams = new Set<string>();
   function clearViewerUrl() { if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; } }
+
+  function sw(): ServiceWorker | null {
+    return ('serviceWorker' in navigator && navigator.serviceWorker.controller) || null;
+  }
+  function unregisterStreams() {
+    const c = sw();
+    if (c) for (const id of registeredStreams) c.postMessage({ type: 'mv-unregister-stream', id });
+    registeredStreams.clear();
+  }
+
+  // Register an item with the SW so <video>/<audio> can stream seekable,
+  // decrypted bytes from /__mv_stream/<id> (only the watched part is fetched).
+  async function streamUrlFor(item: VaultItem): Promise<string | null> {
+    const c = sw();
+    if (!c) return null; // SW not controlling this load yet → fall back to full download
+    try {
+      const p = await client.getStreamParams(item, connFor(item));
+      c.postMessage({
+        type: 'mv-register-stream', id: item.id,
+        config: p.config, objectKey: p.objectKey, fileKey: p.fileKey,
+        chunkSize: p.header.chunkSize, baseNonce: p.header.baseNonce,
+        plaintextSize: p.plaintextSize, mime: p.mime,
+      });
+      registeredStreams.add(item.id);
+      return `/__mv_stream/${item.id}`;
+    } catch {
+      return null;
+    }
+  }
 
   async function openViewer(idx: number) {
     viewerIdx = idx;
@@ -382,6 +412,7 @@ import Toast from '../../components/Toast.astro';
     document.body.style.overflow = '';
     $('v-stage').innerHTML = '<div id="v-spin" class="v-spin">Decrypting…</div>';
     clearViewerUrl();
+    unregisterStreams();
   }
   async function renderViewer() {
     const item = visible[viewerIdx];
@@ -390,11 +421,26 @@ import Toast from '../../components/Toast.astro';
     stage.innerHTML = '<div class="v-spin">Decrypting…</div>';
     $('v-caption').textContent = item.metadata.name;
     clearViewerUrl();
+    const k = kind(item.metadata.mime);
     try {
+      // Video & audio: stream via the Service Worker (seekable, no full download).
+      if (k === 'video' || k === 'audio') {
+        const streamUrl = await streamUrlFor(item);
+        if (streamUrl) {
+          stage.innerHTML = '';
+          const el = document.createElement(k);
+          el.src = streamUrl;
+          el.controls = true;
+          (el as HTMLMediaElement).autoplay = true;
+          if (k === 'video') el.className = 'v-media';
+          stage.appendChild(el);
+          return;
+        }
+      }
+      // Images, other types, or stream fallback: download + decrypt fully.
       const { bytes } = await client.download(item, connFor(item));
       const url = URL.createObjectURL(new Blob([bytes], { type: item.metadata.mime || 'application/octet-stream' }));
       viewerUrl = url;
-      const k = kind(item.metadata.mime);
       stage.innerHTML = '';
       let el: HTMLElement;
       if (k === 'image') { const i = document.createElement('img'); i.src = url; i.className = 'v-media'; el = i; }
