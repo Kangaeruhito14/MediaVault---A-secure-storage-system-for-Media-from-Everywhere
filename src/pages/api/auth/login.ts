@@ -6,7 +6,7 @@ import { SESSION_COOKIE, cookieOptions, json } from '../../../lib/server/http';
 // Step 2 of login: client posts its derived auth key. The session token is set
 // as an httpOnly cookie (never returned in the body). The wrapped account key
 // is returned so the client can unlock it locally — the server can't.
-export const POST: APIRoute = async ({ request, locals, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   let body: { email?: string; authKeyB64?: string };
   try {
     body = await request.json();
@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     return json({ error: 'invalid_json' }, 400);
   }
 
-  const ctx = getServerContext(locals);
+  const ctx = getServerContext();
   const r = await login(ctx, {
     email: String(body.email ?? ''),
     authKeyB64: String(body.authKeyB64 ?? ''),

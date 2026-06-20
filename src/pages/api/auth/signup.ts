@@ -6,7 +6,7 @@ import { SESSION_COOKIE, cookieOptions, json } from '../../../lib/server/http';
 
 // The client has already generated all keys locally; the server only stores
 // the opaque blobs it sends. On success we open a session (auto-login).
-export const POST: APIRoute = async ({ request, locals, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   let body: { email?: string; secrets?: SignupSecrets };
   try {
     body = await request.json();
@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
   }
   if (!body.email || !body.secrets) return json({ error: 'missing_fields' }, 400);
 
-  const ctx = getServerContext(locals);
+  const ctx = getServerContext();
   const res = await signup(ctx.accounts, { email: body.email, secrets: body.secrets });
   if (!res.ok) return json({ error: res.error }, res.error === 'email_taken' ? 409 : 400);
 
