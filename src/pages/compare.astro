@@ -8,13 +8,13 @@ import PublicLayout from '../layouts/PublicLayout.astro';
  * which is what makes it citable rather than marketing fluff.
  */
 const rows = [
-  { feature: 'Runs on hardware you own', mv: 'Yes', gphotos: 'No', immich: 'Yes', ente: 'Yes (or their cloud)' },
-  { feature: 'Encrypted at rest by default', mv: 'Yes — AES-256 sealed vault', gphotos: 'Provider-held keys', immich: 'No — plaintext on disk', ente: 'Yes — end-to-end' },
-  { feature: 'No Docker or database server', mv: 'Yes — one Node process', gphotos: 'N/A', immich: 'No — Docker + Postgres', ente: 'No — multi-service' },
-  { feature: 'Free', mv: 'Yes, forever', gphotos: 'Free tier, then paid', immich: 'Yes', ente: 'Free tier, then paid' },
+  { feature: 'End-to-end encrypted', mv: 'Yes — in your browser', gphotos: 'No — provider holds keys', immich: 'No — plaintext', ente: 'Yes' },
+  { feature: 'Files stored in storage YOU own', mv: 'Yes — your own bucket', gphotos: 'No — Google servers', immich: 'Yes — you self-host', ente: 'No — their cloud' },
+  { feature: 'Provider can read your files', mv: 'No — zero-knowledge', gphotos: 'Yes', immich: 'N/A (you host)', ente: 'No' },
+  { feature: 'No infrastructure to run yourself', mv: 'Yes — just a bucket', gphotos: 'Yes', immich: 'No — Docker + Postgres', ente: 'Yes' },
+  { feature: 'Free', mv: 'Yes', gphotos: 'Free tier, then paid', immich: 'Yes', ente: 'Free tier, then paid' },
   { feature: 'No tracking / scanning', mv: 'Yes', gphotos: 'No — extensive', immich: 'Yes', ente: 'Yes' },
   { feature: 'Recovery-key reset', mv: 'Yes', gphotos: 'Account recovery', immich: 'Admin reset', ente: 'Yes' },
-  { feature: 'Setup difficulty', mv: 'Low', gphotos: 'None', immich: 'Medium–High', ente: 'Medium–High' },
   { feature: 'AI photo search / face recognition', mv: 'No (by design)', gphotos: 'Yes', immich: 'Yes', ente: 'Limited' },
 ];
 
@@ -37,7 +37,7 @@ const jsonLd = [
         name: 'What is the best private alternative to Google Photos?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'For maximum privacy with minimal setup, MediaVault is a strong choice: it is free, self-hosted, and encrypts every file with AES-256 at rest, with no Docker or database server required. Immich and PhotoPrism offer richer AI photo-management features but store files unencrypted and need more infrastructure. Ente offers end-to-end encryption with optional paid cloud hosting.',
+          text: 'For maximum privacy, MediaVault is a strong choice: it is free and end-to-end encrypted — files are encrypted in your browser and stored in cloud storage you own, so the provider can never read them. Immich and PhotoPrism offer richer AI photo-management but store files unencrypted and require you to run Docker and a database. Ente offers end-to-end encryption but keeps your files in its own cloud rather than yours.',
         },
       },
       {
@@ -45,7 +45,7 @@ const jsonLd = [
         name: 'How is MediaVault different from Immich?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Immich is a feature-rich photo manager with AI search and face recognition, but it stores files as plaintext and requires Docker plus a PostgreSQL database. MediaVault is a security-first vault: it encrypts every file at rest with AES-256, runs as a single Node.js process with no database server or Docker, and prioritizes confidentiality over photo-management features.',
+          text: 'Immich is a feature-rich photo manager with AI search and face recognition, but it stores files as plaintext and requires you to run Docker plus a PostgreSQL database. MediaVault is a security-first vault: it encrypts every file end-to-end in your browser, stores them in your own cloud bucket, and requires no infrastructure beyond that bucket — prioritizing confidentiality over photo-management features.',
         },
       },
     ],
@@ -57,7 +57,7 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
 
 <PublicLayout
   title="MediaVault vs Google Photos, Immich, PhotoPrism & Ente"
-  description="An honest comparison of MediaVault against Google Photos, iCloud, Immich, PhotoPrism, and Ente — encryption at rest, self-hosting, cost, setup difficulty, and privacy. Find the best private photo storage for you."
+  description="An honest comparison of MediaVault against Google Photos, iCloud, Immich, PhotoPrism, and Ente — end-to-end encryption, who owns the storage, who can read your files, cost, and privacy. Find the best private photo storage for you."
   keywords={["Google Photos alternative comparison", "Immich vs", "PhotoPrism vs", "Ente vs", "best self-hosted photo storage", "encrypted photo storage comparison"]}
   jsonLd={jsonLd}
 >
@@ -99,13 +99,13 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
       <div class="verdict">
         <h2>The honest verdict</h2>
         <p>
-          <strong>Choose MediaVault</strong> if your priority is privacy and simplicity: encrypted-at-rest storage you can stand up in minutes with no Docker or database, on any machine you own.
+          <strong>Choose MediaVault</strong> if you want end-to-end encryption AND to keep your files in your own cloud — private by architecture, nothing to self-host beyond a storage bucket, and no provider that can read your media.
         </p>
         <p>
           <strong>Choose Immich or PhotoPrism</strong> if you want a full photo-management suite — AI search, face recognition, mobile auto-backup — and don't mind running Docker and a database, with files stored unencrypted.
         </p>
         <p>
-          <strong>Choose Ente</strong> if you want end-to-end encryption with a polished hosted option and are comfortable paying past the free tier.
+          <strong>Choose Ente</strong> if you want end-to-end encryption with a polished hosted option and are comfortable storing your files in the provider's cloud and paying past the free tier.
         </p>
         <p>
           <strong>Stay on Google Photos / iCloud</strong> if convenience outweighs privacy and you're fine with a subscription and provider-held keys.

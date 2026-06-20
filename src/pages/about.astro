@@ -15,21 +15,21 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'HowTo',
     name: 'How to set up and use MediaVault',
-    description: 'Set up a self-hosted, encrypted media vault in under two minutes.',
-    totalTime: 'PT2M',
+    description: 'Set up an end-to-end encrypted media vault over your own cloud storage in minutes.',
+    totalTime: 'PT3M',
     step: [
-      { '@type': 'HowToStep', position: 1, name: 'Create your master password', text: 'On first run, set your master password. A one-time recovery key is generated — save it offline.' },
-      { '@type': 'HowToStep', position: 2, name: 'Drag & drop upload', text: 'Log in and drop images, videos, or audio onto the upload zone. Each file is encrypted before it touches disk.' },
-      { '@type': 'HowToStep', position: 3, name: 'Organize, sort & play', text: 'Sort by date, name, or size, bookmark favorites, and click any file to view, stream, or download it.' },
-      { '@type': 'HowToStep', position: 4, name: 'Delete with 5-second undo', text: 'Deleting hides a file instantly but waits 5 seconds before permanently erasing it, so accidents are recoverable.' },
+      { '@type': 'HowToStep', position: 1, name: 'Create your account', text: 'Sign up; your password derives your encryption key in the browser, and a one-time recovery key is generated — save it offline.' },
+      { '@type': 'HowToStep', position: 2, name: 'Connect your storage', text: 'Link your own cloud bucket (Cloudflare R2, Backblaze B2, Wasabi, or S3). Credentials are stored encrypted and used only in your browser.' },
+      { '@type': 'HowToStep', position: 3, name: 'Upload & organize', text: 'Drag in images, videos, or audio. Each file is encrypted locally, then sent straight to your bucket; browse thumbnails, search, and bookmark.' },
+      { '@type': 'HowToStep', position: 4, name: 'View & stream', text: 'Open the in-page viewer to see photos or stream encrypted video/audio, with instant seeking.' },
     ],
   },
 ];
 ---
 
 <PublicLayout
-  title="About MediaVault — How Self-Hosted Encrypted Media Storage Works"
-  description="How MediaVault keeps private photos and videos safe: sealed-at-rest AES-256 encryption, self-hosting on your own hardware, recovery-key resets, and a zero-tracking design. Step-by-step setup guide included."
+  title="About MediaVault — How End-to-End Encrypted Media Storage Works"
+  description="How MediaVault keeps private photos and videos safe: end-to-end AES-256 encryption in your browser, storage you own, recovery-key resets, and a zero-knowledge design. Step-by-step setup guide included."
   jsonLd={jsonLd}
 >
   <article class="about-page">
@@ -39,33 +39,33 @@ const jsonLd = [
         <span class="page-eyebrow">Our Philosophy</span>
         <h1 class="page-title">Ownership of your digital life.</h1>
         <p class="page-lead">
-          MediaVault is a self-hosted private media repository. We believe your private photos, videos, and voice memos shouldn't live in a corporate cloud database scanning your files.
+          MediaVault is the private layer over the cloud storage you already own. We believe your private photos, videos, and voice memos shouldn't live in a corporate cloud that scans them — so we encrypt everything in your browser and keep it in storage only you control.
         </p>
       </div>
     </header>
 
     <!-- Main Content Grid -->
     <div class="about-content container-sm">
-      
+
       <!-- Core Architecture -->
       <section class="about-section">
         <h2>How MediaVault Works</h2>
         <p>
-          MediaVault is built on a <strong>local-first architectural pattern</strong>. Unlike mainstream file storages that sync your data to centralized corporate networks, MediaVault operates directly on the machine you run it on.
+          MediaVault is <strong>end-to-end encrypted and zero-knowledge by design</strong>. Files are encrypted in your browser before upload and stored in cloud storage you connect. We run only a thin control plane that holds an encrypted index — never your files, your keys, or your storage credentials.
         </p>
-        
+
         <div class="info-card-list">
           <div class="info-card">
-            <h4>📁 Zero Cloud Dependency</h4>
-            <p>Your media uploads are written directly to your local file system, structured in standard directories inside process memory boundaries. Your files never cross the public internet unless you request to access them.</p>
+            <h4>🔒 Encrypted in your browser</h4>
+            <p>Every file is encrypted with AES-256 on your device before it's uploaded. Your encryption key is derived from your password with Argon2id and never leaves the browser, so we only ever handle ciphertext we can't read.</p>
           </div>
           <div class="info-card">
-            <h4>🔑 Secure Local Auth</h4>
-            <p>We use industry-grade <code>scrypt</code> cryptographic password hashing. When you set up your vault, a physical cryptographic recovery key is generated. Without this physical key, your password cannot be reset.</p>
+            <h4>☁️ Your own storage</h4>
+            <p>You connect your own cloud bucket — Cloudflare R2, Backblaze B2, Wasabi, or any S3-compatible storage. Files move directly between your browser and your bucket; they never pass through our servers.</p>
           </div>
           <div class="info-card">
-            <h4>⚡ Partial Byte Streaming</h4>
-            <p>Our custom HTTP streaming handler serves videos and audios using chunked byte ranges. This means your browser only downloads the parts of files it needs to play, reducing CPU overhead and loading large media instantly.</p>
+            <h4>⚡ Seekable encrypted streaming</h4>
+            <p>A Service Worker decrypts only the byte ranges you're watching, so you can jump anywhere in a large video instantly — even though the file is encrypted end-to-end.</p>
           </div>
         </div>
       </section>
@@ -79,24 +79,24 @@ const jsonLd = [
           <div class="step-item">
             <div class="step-num">01</div>
             <div class="step-text">
-              <h4>Create Your Master Password</h4>
-              <p>When running MediaVault for the first time, navigate to the portal to set up your master key. A 64-character recovery key will be generated. Copy and save it offline.</p>
+              <h4>Create your account</h4>
+              <p>Sign up with an email and password. Your password derives your encryption key right in the browser, and a one-time recovery key is generated — copy or print it and store it offline.</p>
             </div>
           </div>
-          
+
           <div class="step-item">
             <div class="step-num">02</div>
             <div class="step-text">
-              <h4>Drag & Drop Upload</h4>
-              <p>Once logged in, click the Upload Zone or drag files onto the browser window. MediaVault supports batch uploading of images, videos (MP4, WebM, etc.), and audio files (MP3, WAV, etc.).</p>
+              <h4>Connect your storage</h4>
+              <p>Link a cloud bucket you own (Cloudflare R2, Backblaze B2, Wasabi, or S3). It's tested, then stored encrypted — your credentials are only ever used in your browser.</p>
             </div>
           </div>
-          
+
           <div class="step-item">
             <div class="step-num">03</div>
             <div class="step-text">
-              <h4>Organize, Sort & Play</h4>
-              <p>Rename files, sort them by upload date, name, or size, and toggle bookmarks. Click on any file to open the responsive preview drawer for seamless playback or downloading.</p>
+              <h4>Upload, organize & play</h4>
+              <p>Drag in images, videos, and audio — each is encrypted locally, then sent straight to your bucket. Browse encrypted thumbnails, search, bookmark, and open the in-page viewer to stream media.</p>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ const jsonLd = [
       <section class="about-section warning-box">
         <h3>🔒 Security & Privacy Notice</h3>
         <p>
-          Because MediaVault does not upload your files to any remote backup servers, <strong>your data is strictly local to your machine</strong>. If your host device fails and you do not have backups, your files could be lost. We highly recommend configuring a local cron job or backup system to duplicate your <code>data/</code> folder onto external offline disks periodically.
+          Your files live in <strong>your own cloud storage</strong>, encrypted end-to-end. Because the encryption keys are derived from your password and never leave your device, <strong>only you can decrypt your media</strong> — not us, not your cloud provider. The trade-off is real: if you lose both your password and your recovery key, your files cannot be recovered, because there is no backdoor. Save your recovery key, and rely on your storage provider's own durability/backup options.
         </p>
       </section>
       

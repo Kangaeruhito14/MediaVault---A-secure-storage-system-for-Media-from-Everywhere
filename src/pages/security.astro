@@ -5,7 +5,7 @@ import PublicLayout from '../layouts/PublicLayout.astro';
  * /security — the "verify it yourself" transparency page. A live, in-browser
  * encryption demo (Web Crypto, nothing leaves the page) lets visitors SEE
  * plaintext become ciphertext and watch a wrong password fail — mirroring how
- * MediaVault seals files on disk. No competitor lets you do this. It is the
+ * MediaVault encrypts files in the browser. No competitor lets you watch it. It is the
  * single most trust-building and citable page on the site.
  */
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
@@ -15,7 +15,7 @@ const jsonLd = [
     '@type': 'TechArticle',
     headline: 'MediaVault Security Model — Verify It Yourself',
     description:
-      'MediaVault’s threat model and a live in-browser demonstration of AES encryption, showing why a stolen disk reveals nothing without your password.',
+      'MediaVault’s threat model and a live in-browser demonstration of AES encryption, showing why neither the operator nor your cloud provider can read your files.',
     author: { '@type': 'Organization', name: 'MediaVault' },
     publisher: { '@type': 'Organization', name: 'MediaVault' },
     mainEntityOfPage: origin + '/security',
@@ -31,19 +31,19 @@ const jsonLd = [
 ];
 
 const threats = [
-  { attack: 'Someone steals your laptop or hard drive', result: 'They get AES-256 ciphertext. Without your password or recovery key, the files are unreadable.' },
-  { attack: 'Your server is hacked or seized', result: 'The master key lives only in memory while unlocked. A powered-off or freshly-booted server holds only ciphertext.' },
-  { attack: 'A backup of uploads/ leaks', result: 'Backups are ciphertext too — safe to store on any untrusted disk or cloud.' },
-  { attack: 'Someone brute-forces your password', result: 'Five wrong tries lock the vault for 15 minutes globally; scrypt makes each guess deliberately slow.' },
+  { attack: 'MediaVault’s servers are breached', result: 'The attacker gets only ciphertext and an encrypted index. Your files aren’t there (they’re in your own cloud), and the keys never were either.' },
+  { attack: 'Your cloud provider is compromised or curious', result: 'Your bucket holds AES-256 ciphertext encrypted in your browser. The provider — and we — cannot read it.' },
+  { attack: 'A government demand or subpoena hits the operator', result: 'There is nothing readable to hand over: no plaintext, no keys, no storage credentials.' },
+  { attack: 'Someone brute-forces your login', result: 'Per-account and per-IP rate limits throttle attempts; the password is stretched with Argon2id, making guesses expensive.' },
   { attack: 'You forget your password', result: 'Reset with your one-time recovery key. Lose both and the data is gone — there is no backdoor, by design.' },
-  { attack: 'The developer wants to read your files', result: 'Impossible. There is no MediaVault server; the code runs only on your machine and phones home to no one.' },
+  { attack: 'The developer wants to read your files', result: 'Impossible. Encryption happens in your browser and the keys never reach us — we only ever store ciphertext.' },
 ];
 ---
 
 <PublicLayout
   title="Security — See the Encryption Work Yourself"
-  description="MediaVault’s plain-language threat model plus a live, in-browser AES encryption demo. Watch plaintext turn into ciphertext and a wrong password fail — proof that a stolen disk reveals nothing."
-  keywords={["is self-hosted photo storage safe", "AES-256 encryption demo", "encrypted media vault security", "encryption at rest proof", "zero knowledge media storage"]}
+  description="MediaVault’s plain-language threat model plus a live, in-browser AES encryption demo. Watch plaintext turn into ciphertext and a wrong password fail — proof that neither we nor your cloud provider can read your files."
+  keywords={["is encrypted photo storage safe", "AES-256 encryption demo", "end-to-end encrypted media vault", "zero knowledge media storage", "bring your own storage encryption"]}
   jsonLd={jsonLd}
 >
   <section class="sec-page">
