@@ -1,25 +1,23 @@
 import { defineMiddleware } from 'astro:middleware';
-import { env } from 'cloudflare:workers';
-import { D1SessionStore } from './lib/server/stores';
-import { validateSession } from './lib/server/auth-service';
-import { SESSION_COOKIE } from './lib/server/http';
 
 /**
- * One gatekeeper:
- *  1. Auth gate for the (future) authenticated app under /app — validates the
- *     session against D1 before the page renders.
- *  2. Security headers on every response.
+ * Security headers on every response. The /app experience is a client-side SPA
+ * that manages its own auth/unlock states (the account key lives only in the
+ * browser), and every /api/* data route self-guards with a session check — so
+ * no server-side page redirect is needed or wanted here.
  */
-const PROTECTED = /^\/app(\/|$)/;
-
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // 'wasm-unsafe-eval' is required to run the Argon2id WASM (key derivation) in
+  // the browser; it does NOT permit JS eval(), only WebAssembly compilation.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
-  "connect-src 'self'",
+  // The browser talks directly to the user's own S3-compatible bucket, so any
+  // HTTPS origin must be allowed for storage upload/download.
+  "connect-src 'self' https:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -27,15 +25,7 @@ const CSP = [
 ].join('; ');
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { url, cookies } = context;
-
-  if (PROTECTED.test(url.pathname)) {
-    const db = (env as unknown as { DB?: never })?.DB;
-    const token = cookies.get(SESSION_COOKIE)?.value;
-    const session = db ? await validateSession(new D1SessionStore(db), token) : null;
-    if (!session) return context.redirect('/login');
-  }
-
+  const { url } = context;
   const response = await next();
 
   const h = response.headers;
