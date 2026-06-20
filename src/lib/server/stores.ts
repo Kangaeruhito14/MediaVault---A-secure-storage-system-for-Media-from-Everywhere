@@ -3,7 +3,18 @@
  * the SQL. All correctness logic lives in auth-service.ts and is unit-tested
  * against in-memory fakes; these get validated under local wrangler dev.
  */
-import type { AccountRow, AccountStore, D1Like, SessionRow, SessionStore } from './types';
+import type {
+  AccountRow,
+  AccountStore,
+  D1Like,
+  ItemCursor,
+  SessionRow,
+  SessionStore,
+  StorageConnectionRow,
+  StorageConnectionStore,
+  VaultItemRow,
+  VaultItemStore,
+} from './types';
 
 export class D1AccountStore implements AccountStore {
   constructor(private db: D1Like) {}
@@ -65,5 +76,105 @@ export class D1SessionStore implements SessionStore {
 
   async deleteAllForAccount(accountId: string): Promise<void> {
     await this.db.prepare('DELETE FROM sessions WHERE account_id = ?').bind(accountId).run();
+  }
+}
+
+export class D1VaultItemStore implements VaultItemStore {
+  constructor(private db: D1Like) {}
+
+  async countForAccount(accountId: string): Promise<number> {
+    const row = await this.db
+      .prepare('SELECT COUNT(*) AS n FROM vault_items WHERE account_id = ?')
+      .bind(accountId)
+      .first<{ n: number }>();
+    return row?.n ?? 0;
+  }
+
+  async insert(r: VaultItemRow): Promise<void> {
+    await this.db
+      .prepare(
+        `INSERT INTO vault_items
+         (id, account_id, enc_metadata, wrapped_item_key, iv, connection_id, object_key, thumb_key, size, bookmarked, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .bind(
+        r.id, r.account_id, r.enc_metadata, r.wrapped_item_key, r.iv, r.connection_id,
+        r.object_key, r.thumb_key, r.size, r.bookmarked, r.created_at, r.updated_at,
+      )
+      .run();
+  }
+
+  // Keyset pagination on (created_at DESC, id DESC) — stable and fast even at
+  // a million rows (no large OFFSET scans).
+  async page(
+    accountId: string,
+    opts: { limit: number; bookmarked?: boolean; cursor?: ItemCursor },
+  ): Promise<VaultItemRow[]> {
+    const where: string[] = ['account_id = ?'];
+    const binds: unknown[] = [accountId];
+    if (opts.bookmarked) where.push('bookmarked = 1');
+    if (opts.cursor) {
+      where.push('(created_at < ? OR (created_at = ? AND id < ?))');
+      binds.push(opts.cursor.createdAt, opts.cursor.createdAt, opts.cursor.id);
+    }
+    binds.push(opts.limit);
+    const res = await this.db
+      .prepare(
+        `SELECT * FROM vault_items WHERE ${where.join(' AND ')}
+         ORDER BY created_at DESC, id DESC LIMIT ?`,
+      )
+      .bind(...binds)
+      .all<VaultItemRow>();
+    return res.results ?? [];
+  }
+
+  getById(accountId: string, id: string): Promise<VaultItemRow | null> {
+    return this.db
+      .prepare('SELECT * FROM vault_items WHERE account_id = ? AND id = ?')
+      .bind(accountId, id)
+      .first<VaultItemRow>();
+  }
+
+  async setBookmark(accountId: string, id: string, bookmarked: boolean): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('UPDATE vault_items SET bookmarked = ?, updated_at = ? WHERE account_id = ? AND id = ?')
+      .bind(bookmarked ? 1 : 0, Date.now(), accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async remove(accountId: string, id: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('DELETE FROM vault_items WHERE account_id = ? AND id = ?')
+      .bind(accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+}
+
+export class D1StorageConnectionStore implements StorageConnectionStore {
+  constructor(private db: D1Like) {}
+
+  async listForAccount(accountId: string): Promise<StorageConnectionRow[]> {
+    const res = await this.db
+      .prepare('SELECT * FROM storage_connections WHERE account_id = ? ORDER BY created_at DESC')
+      .bind(accountId)
+      .all<StorageConnectionRow>();
+    return res.results ?? [];
+  }
+
+  async insert(r: StorageConnectionRow): Promise<void> {
+    await this.db
+      .prepare('INSERT INTO storage_connections (id, account_id, provider, enc_config, label, created_at) VALUES (?,?,?,?,?,?)')
+      .bind(r.id, r.account_id, r.provider, r.enc_config, r.label, r.created_at)
+      .run();
+  }
+
+  async remove(accountId: string, id: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('DELETE FROM storage_connections WHERE account_id = ? AND id = ?')
+      .bind(accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
   }
 }

@@ -60,6 +60,53 @@ export interface SessionStore {
   deleteAllForAccount(accountId: string): Promise<void>;
 }
 
+// ── Encrypted file index ───────────────────────────────────────────────────────
+export interface VaultItemRow {
+  id: string;
+  account_id: string;
+  enc_metadata: string;     // encrypted JSON {name, mime, size, ...}
+  wrapped_item_key: string;
+  iv: string;
+  connection_id: string;
+  object_key: string;       // key in the USER's bucket
+  thumb_key: string | null;
+  size: number;             // ciphertext size (not sensitive)
+  bookmarked: number;
+  created_at: number;
+  updated_at: number;
+}
+
+/** A keyset page cursor: items strictly older than (created_at, id). */
+export interface ItemCursor {
+  createdAt: number;
+  id: string;
+}
+
+export interface VaultItemStore {
+  countForAccount(accountId: string): Promise<number>;
+  insert(row: VaultItemRow): Promise<void>;
+  /** Newest-first page; optional bookmarked-only; keyset paginated. */
+  page(accountId: string, opts: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }): Promise<VaultItemRow[]>;
+  getById(accountId: string, id: string): Promise<VaultItemRow | null>;
+  setBookmark(accountId: string, id: string, bookmarked: boolean): Promise<boolean>;
+  remove(accountId: string, id: string): Promise<boolean>;
+}
+
+export interface StorageConnectionRow {
+  id: string;
+  account_id: string;
+  provider: string;
+  enc_config: string;       // encrypted creds/tokens (server can't read)
+  label: string | null;
+  created_at: number;
+}
+
+export interface StorageConnectionStore {
+  listForAccount(accountId: string): Promise<StorageConnectionRow[]>;
+  insert(row: StorageConnectionRow): Promise<void>;
+  remove(accountId: string, id: string): Promise<boolean>;
+}
+
 /** Minimal Cloudflare KV surface used for rate limiting. */
 export interface KVLike {
   get(key: string): Promise<string | null>;
