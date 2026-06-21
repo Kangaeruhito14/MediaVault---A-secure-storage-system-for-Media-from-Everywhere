@@ -1,0 +1,46 @@
+---
+// OAuth popup landing for Dropbox. This page holds no secrets and needs no
+// account key — it simply hands the authorization code back to the opener (the
+// unlocked /app SPA, which holds the account key in memory) via postMessage,
+// then closes itself. The token exchange happens in the opener.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Connecting Dropbox…</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0b0b0c;
+        color: #c9c9cf;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Finishing connection… you can close this window.</p>
+    <script>
+      const p = new URLSearchParams(location.search);
+      const msg = {
+        type: 'mv-dropbox-oauth',
+        code: p.get('code'),
+        state: p.get('state'),
+        error: p.get('error_description') || p.get('error'),
+      };
+      if (window.opener) {
+        window.opener.postMessage(msg, location.origin);
+        window.close();
+      } else {
+        // Opened directly (no opener): bounce back to the app.
+        location.replace('/app');
+      }
+    </script>
+  </body>
+</html>
