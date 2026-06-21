@@ -26,7 +26,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     </a>
     <div class="appbar-right">
       <span id="storage-label" class="storage-label" hidden></span>
-      <a href="/" class="btn-ghost appbar-site" aria-label="Back to website">Website</a>
       <button id="app-theme-toggle" class="icon-btn" aria-label="Toggle theme" title="Toggle theme">
         <svg id="app-icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         <svg id="app-icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
@@ -63,11 +62,11 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <h2 class="card-h">Save your recovery key</h2>
         <p class="muted">This is the <strong>only</strong> way to reset your password — we can't recover it for you. Store it offline.</p>
         <code id="recovery-key" class="reckey"></code>
-        <div class="row">
-          <button id="copy-key" type="button" class="btn-ghost">Copy</button>
-          <a id="print-kit" href="/recovery-kit" target="_blank" rel="noopener" class="btn-ghost">Print kit</a>
+        <div class="reckey-actions">
+          <button id="copy-key" type="button" class="btn-outline">Copy</button>
+          <a id="print-kit" href="/recovery-kit" target="_blank" rel="noopener" class="btn-outline">Print kit</a>
         </div>
-        <button id="recovery-continue" class="btn-primary">I've saved it — continue</button>
+        <button id="recovery-continue" class="btn-primary btn-block">I've saved it — continue</button>
       </div>
     </section>
 
@@ -692,8 +691,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--text-primary); color: var(--bg); display: flex; align-items: center; justify-content: center; }
   .appbar-right { display: flex; align-items: center; gap: 10px; }
   .appbar-actions { display: flex; align-items: center; gap: 10px; }
-  .appbar-site { text-decoration: none; }
-  @media (max-width: 480px) { .appbar-site { display: none; } }
   .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-med); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s ease, border-color .15s ease; }
   .icon-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
   .storage-label { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
@@ -709,9 +706,14 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .row > .inp { flex: 1; }
   .inp { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text-primary); font-size: 14px; font-family: inherit; }
   .inp:focus { outline: none; border-color: var(--accent); }
-  .btn-primary { background: var(--text-primary); color: var(--bg); border: none; border-radius: 9px; padding: 11px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; background: var(--text-primary); color: var(--bg); border: none; border-radius: 9px; padding: 11px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .btn-block { width: 100%; }
   .btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; }
+  /* Recovery-key actions: two equal outline buttons, then a full-width primary. */
+  .reckey-actions { display: flex; gap: 10px; margin-bottom: 12px; }
+  .btn-outline { flex: 1; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; transition: border-color .15s ease, background .15s ease; }
+  .btn-outline:hover { border-color: var(--accent); }
   .link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; margin-top: 14px; }
   .hint { font-size: 12px; color: var(--text-muted); margin: 16px 0 0; line-height: 1.5; }
   .error { font-size: 13px; color: #ef4444; margin: 14px 0 0; }
