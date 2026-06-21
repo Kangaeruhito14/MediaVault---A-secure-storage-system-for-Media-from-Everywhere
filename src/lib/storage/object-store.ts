@@ -6,6 +6,7 @@
  */
 import type { S3Config } from './s3';
 import { S3Store } from './s3-store';
+import { DropboxStore } from './dropbox-store';
 
 /** Discriminated config; stored ENCRYPTED (wrapped by the account key). */
 export type ProviderConfig =
@@ -43,9 +44,11 @@ export function makeStore(config: ProviderConfig): ObjectStore {
   switch (config.kind) {
     case 's3':
       return new S3Store(config);
+    case 'dropbox':
+      return new DropboxStore(config);
     default:
-      // Drive/Dropbox stores are added in the consumer-cloud phase; until their
-      // OAuth client IDs are configured the UI never offers them.
+      // Google Drive is added in a later phase; until its OAuth client ID is
+      // configured the UI never offers it.
       throw new Error(`Storage provider "${(config as { kind: string }).kind}" is not available yet`);
   }
 }
