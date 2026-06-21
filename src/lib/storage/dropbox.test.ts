@@ -89,4 +89,30 @@ describe('DropboxClient', () => {
     const r = await c.testConnection();
     expect(r.ok).toBe(false);
   });
+
+  it('uploads large files via a start/append/finish session and reassembles correctly', async () => {
+    const stored = new Map<string, Uint8Array>();
+    const sessions = new Map<string, Uint8Array[]>();
+    const bytesOf = async (b: unknown) => new Uint8Array(await new Response((b ?? new Uint8Array()) as BodyInit).arrayBuffer());
+    const fetchImpl = async (url: string, init?: RequestInit) => {
+      const h = new Headers((init ?? {}).headers);
+      const arg = h.get('dropbox-api-arg') ? JSON.parse(h.get('dropbox-api-arg')!) : {};
+      const chunk = await bytesOf((init ?? {}).body);
+      if (url.endsWith('/upload_session/start')) { sessions.set('s1', [chunk]); return new Response(JSON.stringify({ session_id: 's1' }), { status: 200 }); }
+      if (url.endsWith('/upload_session/append_v2')) { sessions.get(arg.cursor.session_id)!.push(chunk); return new Response('{}', { status: 200 }); }
+      if (url.endsWith('/upload_session/finish')) {
+        const parts = sessions.get(arg.cursor.session_id)!; parts.push(chunk);
+        const total = parts.reduce((n, p) => n + p.length, 0);
+        const out = new Uint8Array(total); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+        stored.set(arg.commit.path, out);
+        return new Response('{}', { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    };
+    // simpleLimit 4 forces a session for a 10-byte body; chunks of 4 ⇒ start(4)+append(4)+finish(2).
+    const c = new DropboxClient(cfg, fetchImpl, undefined, { simpleLimit: 4, sessionChunk: 4 });
+    const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    await c.put('mv/big.enc', data);
+    expect(Array.from(stored.get('/mv/big.enc')!)).toEqual(Array.from(data));
+  });
 });
