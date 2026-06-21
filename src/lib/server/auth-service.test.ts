@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { createAccount, type KdfParams } from '../e2ee/account';
+import {
+  createAccount,
+  deriveAuthKey,
+  normalizeRecoveryKey,
+  rewrapForNewPassword,
+  unlockWithRecovery,
+  type KdfParams,
+} from '../e2ee/account';
+import { sha256Hex } from '../e2ee/crypto';
 import {
   getLoginParams,
+  getRecoveryParams,
   signup,
   login,
   logout,
+  resetPassword,
+  changePassword,
+  startSession,
   validateSession,
 } from './auth-service';
 import type { AccountRow, AccountStore, KVLike, SessionRow, SessionStore, SignupSecrets } from './types';
@@ -202,5 +214,93 @@ describe('sessions', () => {
     const sessions = new MemSessions();
     expect(await validateSession(sessions, undefined)).toBeNull();
     expect(await validateSession(sessions, 'not-a-real-token')).toBeNull();
+  });
+});
+
+const te = new TextEncoder();
+const recoveryProof = (key: string) => sha256Hex(te.encode(normalizeRecoveryKey(key)));
+
+describe('getRecoveryParams', () => {
+  it('returns the stored recovery salt + wrapped key for a real account, decoy otherwise', async () => {
+    const accounts = new MemAccounts();
+    const acct = await createAccount('pw-12345678', FAST);
+    await signup(accounts, { email: 'r@example.com', secrets: acct.secrets });
+
+    const real = await getRecoveryParams(accounts, 'r@example.com');
+    expect(real.recoverySalt).toBe(acct.secrets.recoverySalt);
+    expect(real.wrappedAccountKeyRecovery).toBe(acct.secrets.wrappedAccountKeyRecovery);
+
+    const decoy = await getRecoveryParams(accounts, 'nobody@example.com');
+    expect(decoy.recoverySalt).not.toBe(real.recoverySalt);
+  });
+});
+
+describe('resetPassword', () => {
+  it('resets with the recovery key: new password works, old fails, sessions revoked', async () => {
+    const accounts = new MemAccounts(), sessions = new MemSessions(), kv = new MemKV();
+    const acct = await createAccount('old-pw-123', FAST);
+    await signup(accounts, { email: 'u@example.com', secrets: acct.secrets });
+    const id = (await accounts.getByEmail('u@example.com'))!.id;
+    const oldToken = await startSession(sessions, id);
+
+    // Client side: unlock with recovery key, re-wrap for the new password.
+    const params = await getRecoveryParams(accounts, 'u@example.com');
+    const ak = await unlockWithRecovery(acct.recoveryKey, params.recoverySalt, params.wrappedAccountKeyRecovery);
+    expect(ak).not.toBeNull();
+    const { secrets } = await rewrapForNewPassword(ak!, 'new-pw-456', FAST);
+
+    const r = await resetPassword(
+      { accounts, sessions, kv },
+      { email: 'u@example.com', recoveryKeyHash: await recoveryProof(acct.recoveryKey), secrets, ipKey: 't' },
+    );
+    expect(r.ok).toBe(true);
+    expect(await validateSession(sessions, oldToken)).toBeNull(); // old session revoked
+
+    const newAuth = await deriveAuthKey('new-pw-456', secrets.kdfSalt, secrets.kdfParams);
+    expect((await login({ accounts, sessions, kv }, { email: 'u@example.com', authKeyB64: newAuth, ipKey: 'a' })).ok).toBe(true);
+    const oldAuth = await deriveAuthKey('old-pw-123', acct.secrets.kdfSalt, acct.secrets.kdfParams);
+    expect((await login({ accounts, sessions, kv }, { email: 'u@example.com', authKeyB64: oldAuth, ipKey: 'b' })).ok).toBe(false);
+  });
+
+  it('rejects a wrong recovery key', async () => {
+    const accounts = new MemAccounts(), sessions = new MemSessions(), kv = new MemKV();
+    const acct = await createAccount('old-pw-123', FAST);
+    await signup(accounts, { email: 'u2@example.com', secrets: acct.secrets });
+    const params = await getRecoveryParams(accounts, 'u2@example.com');
+    const ak = await unlockWithRecovery(acct.recoveryKey, params.recoverySalt, params.wrappedAccountKeyRecovery);
+    const { secrets } = await rewrapForNewPassword(ak!, 'new-pw-456', FAST);
+    const r = await resetPassword(
+      { accounts, sessions, kv },
+      { email: 'u2@example.com', recoveryKeyHash: 'deadbeef', secrets, ipKey: 't' },
+    );
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe('changePassword', () => {
+  it('changes with the correct current password; new password works', async () => {
+    const accounts = new MemAccounts(), sessions = new MemSessions(), kv = new MemKV();
+    const acct = await createAccount('cur-pw-123', FAST);
+    await signup(accounts, { email: 'c@example.com', secrets: acct.secrets });
+    const id = (await accounts.getByEmail('c@example.com'))!.id;
+
+    const curAuth = await deriveAuthKey('cur-pw-123', acct.secrets.kdfSalt, acct.secrets.kdfParams);
+    const { secrets } = await rewrapForNewPassword(acct.accountKey, 'new-pw-789', FAST);
+    const r = await changePassword({ accounts, sessions }, { accountId: id, currentAuthKeyB64: curAuth, secrets });
+    expect(r.ok).toBe(true);
+
+    const newAuth = await deriveAuthKey('new-pw-789', secrets.kdfSalt, secrets.kdfParams);
+    expect((await login({ accounts, sessions, kv }, { email: 'c@example.com', authKeyB64: newAuth, ipKey: 'a' })).ok).toBe(true);
+  });
+
+  it('rejects a wrong current password', async () => {
+    const accounts = new MemAccounts(), sessions = new MemSessions();
+    const acct = await createAccount('cur-pw-123', FAST);
+    await signup(accounts, { email: 'c2@example.com', secrets: acct.secrets });
+    const id = (await accounts.getByEmail('c2@example.com'))!.id;
+    const { secrets } = await rewrapForNewPassword(acct.accountKey, 'new-pw-789', FAST);
+    const wrongAuth = await deriveAuthKey('WRONG-password', acct.secrets.kdfSalt, acct.secrets.kdfParams);
+    const r = await changePassword({ accounts, sessions }, { accountId: id, currentAuthKeyB64: wrongAuth, secrets });
+    expect(r.ok).toBe(false);
   });
 });
