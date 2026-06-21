@@ -52,7 +52,10 @@ export class DropboxClient {
     onTokenRefresh?: (t: DropboxTokens) => void,
     opts: DropboxClientOptions = {},
   ) {
-    this.fetchImpl = fetchImpl ?? (globalThis.fetch as FetchLike);
+    // Must be called with `this` bound to the global, or browsers throw
+    // "Illegal invocation". Wrapping (rather than assigning fetch directly)
+    // guarantees the correct receiver when invoked as this.fetchImpl(...).
+    this.fetchImpl = fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
     this.accessToken = cfg.accessToken;
     this.refreshToken = cfg.refreshToken;
     this.expiresAt = cfg.expiresAt;
