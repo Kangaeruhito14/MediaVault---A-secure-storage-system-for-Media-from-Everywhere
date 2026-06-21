@@ -53,6 +53,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         </form>
         <p class="hint">Your password derives your encryption key on this device. We never see it.</p>
         <p id="auth-error" class="error" hidden></p>
+        <button id="forgot-link" type="button" class="link" hidden>Forgot password? Use your recovery key</button>
+      </div>
+    </section>
+
+    <!-- Forgot password → reset with recovery key -->
+    <section id="reset-view" class="centered" hidden>
+      <div class="card">
+        <h2 class="card-h">Reset with recovery key</h2>
+        <p class="muted">Enter your recovery key and a new password. We'll give you a fresh recovery key afterwards.</p>
+        <form id="reset-form" class="stack">
+          <input id="reset-email" class="inp" type="email" placeholder="Email" autocomplete="username" required />
+          <textarea id="reset-reckey" class="inp reckey-input" placeholder="Recovery key (XXXXXXXX-XXXXXXXX-…)" rows="2" required></textarea>
+          <input id="reset-password" class="inp" type="password" placeholder="New password" autocomplete="new-password" required minlength="8" />
+          <input id="reset-password2" class="inp" type="password" placeholder="Confirm new password" autocomplete="new-password" required minlength="8" />
+          <button class="btn-primary btn-block" type="submit">Reset password</button>
+        </form>
+        <p id="reset-error" class="error" hidden></p>
+        <button id="reset-back" type="button" class="link">Back to sign in</button>
       </div>
     </section>
 
@@ -177,7 +195,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     <div class="modal-card">
       <button id="account-close" class="modal-close" aria-label="Close">✕</button>
       <h2 class="card-h">Your account</h2>
-      <p class="muted" id="account-email"></p>
+
+      <dl class="profile-grid">
+        <dt>Email</dt><dd id="profile-email">—</dd>
+        <dt>Member since</dt><dd id="profile-since">—</dd>
+        <dt>Files</dt><dd id="profile-items">—</dd>
+        <dt>Storage</dt><dd id="profile-conns">—</dd>
+      </dl>
+
+      <div class="account-block">
+        <h3 class="account-h">Change password</h3>
+        <p class="account-p">You'll get a new recovery key after changing it — save it.</p>
+        <form id="changepw-form" class="stack">
+          <input id="cp-current" class="inp" type="password" placeholder="Current password" autocomplete="current-password" required />
+          <input id="cp-new" class="inp" type="password" placeholder="New password" autocomplete="new-password" required minlength="8" />
+          <input id="cp-new2" class="inp" type="password" placeholder="Confirm new password" autocomplete="new-password" required minlength="8" />
+          <button class="btn-primary btn-block" type="submit">Change password</button>
+        </form>
+      </div>
 
       <div class="account-block">
         <h3 class="account-h">Export your data</h3>
@@ -207,7 +242,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     document.dispatchEvent(new CustomEvent('toast', { detail: { type, message } }));
 
   const client = new VaultClient();
-  const VIEWS = ['auth-view', 'recovery-view', 'unlock-view', 'connect-view', 'vault-view'];
+  const VIEWS = ['auth-view', 'reset-view', 'recovery-view', 'unlock-view', 'connect-view', 'vault-view'];
   function show(view: string) {
     for (const v of VIEWS) $(v).hidden = v !== view;
     $('appbar-actions').hidden = view !== 'vault-view';
@@ -287,8 +322,36 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
       ($('password2') as HTMLInputElement).hidden = mode !== 'signup';
       $('auth-submit').textContent = mode === 'signup' ? 'Create account' : 'Sign in';
+      $('forgot-link').hidden = mode !== 'signin'; // recovery only makes sense on sign in
     }),
   );
+  $('forgot-link').hidden = false; // default tab is sign in
+
+  // ── Forgot password → reset with recovery key ───────────────────────────────
+  $('forgot-link').addEventListener('click', () => {
+    ($('reset-email') as HTMLInputElement).value = ($('email') as HTMLInputElement).value.trim() || (localStorage.getItem('mv_email') ?? '');
+    $('reset-error').hidden = true;
+    show('reset-view');
+  });
+  $('reset-back').addEventListener('click', () => show('auth-view'));
+
+  $('reset-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('reset-error').hidden = true;
+    const email = ($('reset-email') as HTMLInputElement).value.trim();
+    const recKey = ($('reset-reckey') as HTMLTextAreaElement).value.trim();
+    const pw = ($('reset-password') as HTMLInputElement).value;
+    if (pw !== ($('reset-password2') as HTMLInputElement).value) { showErr('reset-error', new Error('Passwords do not match.')); return; }
+    try {
+      const { recoveryKey } = await client.resetWithRecovery(email, recKey, pw);
+      localStorage.setItem('mv_email', email);
+      $('recovery-key').textContent = recoveryKey;
+      toast('success', 'Password reset — here is your new recovery key');
+      show('recovery-view');
+    } catch (err) {
+      showErr('reset-error', err);
+    }
+  });
 
   $('auth-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -344,12 +407,45 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('unlock-logout').addEventListener('click', async () => { clearKeptKey(); await client.logout(); show('auth-view'); });
   $('lock-btn').addEventListener('click', async () => { clearKeptKey(); revokeThumbs(); await client.logout(); show('auth-view'); });
 
-  // ── Account modal (export / delete) ─────────────────────────────────────────
-  $('account-btn').addEventListener('click', () => {
-    $('account-email').textContent = localStorage.getItem('mv_email') ?? '';
+  // ── Account modal (profile / change password / export / delete) ─────────────
+  $('account-btn').addEventListener('click', async () => {
     $('account-error').hidden = true;
+    $('profile-email').textContent = localStorage.getItem('mv_email') ?? '—';
+    $('profile-since').textContent = '…';
+    $('profile-items').textContent = '…';
+    $('profile-conns').textContent = '…';
     $('account-modal').hidden = false;
+    try {
+      const p = await client.getProfile();
+      $('profile-email').textContent = p.email;
+      $('profile-since').textContent = new Date(p.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      $('profile-items').textContent = `${p.itemCount}`;
+      $('profile-conns').textContent = p.connectionCount ? `${p.connectionCount} connected` : 'none';
+    } catch {
+      $('profile-since').textContent = '—'; $('profile-items').textContent = '—'; $('profile-conns').textContent = '—';
+    }
   });
+
+  $('changepw-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('account-error').hidden = true;
+    const email = localStorage.getItem('mv_email') ?? '';
+    const cur = ($('cp-current') as HTMLInputElement).value;
+    const nw = ($('cp-new') as HTMLInputElement).value;
+    if (nw !== ($('cp-new2') as HTMLInputElement).value) { showErr('account-error', new Error('New passwords do not match.')); return; }
+    try {
+      const { recoveryKey } = await client.changePassword(email, cur, nw);
+      (e.target as HTMLFormElement).reset();
+      $('account-modal').hidden = true;
+      $('recovery-key').textContent = recoveryKey;
+      toast('success', 'Password changed — here is your new recovery key');
+      show('recovery-view');
+    } catch (err) {
+      const msg = (err as Error).message;
+      showErr('account-error', new Error(msg === 'invalid_credentials' ? 'Current password is incorrect.' : msg));
+    }
+  });
+
   $('account-close').addEventListener('click', () => { $('account-modal').hidden = true; });
   $('account-modal').addEventListener('click', (e) => { if (e.target === $('account-modal')) $('account-modal').hidden = true; });
   $('account-delete').addEventListener('click', async () => {
@@ -824,6 +920,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .modal-card { position: relative; width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-height: 88vh; overflow-y: auto; }
   .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; line-height: 1; }
+  .profile-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 4px; font-size: 13px; }
+  .profile-grid dt { color: var(--text-muted); }
+  .profile-grid dd { color: var(--text-primary); margin: 0; text-align: right; word-break: break-word; }
+  .reckey-input { font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical; line-height: 1.5; }
   .account-block { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
   .account-block.danger { border-top-color: rgba(239,68,68,.3); }
   .account-h { font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 0 0 6px; }
