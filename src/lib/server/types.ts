@@ -17,6 +17,7 @@ export interface AccountRow {
   wrapped_account_key: string;
   wrapped_account_key_recovery: string;
   recovery_key_hash: string;
+  recovery_salt?: string | null; // KDF salt for the recovery-key unlock (added in 0002)
   created_at: number;
   updated_at: number;
 }
@@ -49,7 +50,7 @@ export interface AccountStore {
     id: string,
     fields: Pick<
       AccountRow,
-      'kdf_salt' | 'kdf_params' | 'login_hash' | 'wrapped_account_key' | 'wrapped_account_key_recovery' | 'recovery_key_hash' | 'updated_at'
+      'kdf_salt' | 'kdf_params' | 'login_hash' | 'wrapped_account_key' | 'wrapped_account_key_recovery' | 'recovery_key_hash' | 'recovery_salt' | 'updated_at'
     >,
   ): Promise<void>;
 }

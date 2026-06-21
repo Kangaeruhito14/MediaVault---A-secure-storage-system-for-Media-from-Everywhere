@@ -16,6 +16,27 @@ import type {
   VaultItemStore,
 } from './types';
 
+/**
+ * Idempotent schema self-heal for the `recovery_salt` column (migration 0002).
+ * D1 migrations are applied via wrangler on deploy, but local miniflare dev and
+ * pre-0002 databases won't have the column — this adds it once per instance so
+ * the recovery flow works everywhere without manual steps. Shared promise so
+ * concurrent cold-start requests don't race the ALTER.
+ */
+let recoverySaltEnsure: Promise<void> | null = null;
+async function ensureRecoverySaltColumn(db: D1Like): Promise<void> {
+  if (recoverySaltEnsure) return recoverySaltEnsure;
+  recoverySaltEnsure = (async () => {
+    const info = await db.prepare('PRAGMA table_info(accounts)').all<{ name: string }>();
+    const has = (info.results ?? []).some((c) => c.name === 'recovery_salt');
+    if (!has) await db.prepare('ALTER TABLE accounts ADD COLUMN recovery_salt TEXT').run();
+  })().catch((e) => {
+    recoverySaltEnsure = null; // allow a retry on a later request
+    throw e;
+  });
+  return recoverySaltEnsure;
+}
+
 export class D1AccountStore implements AccountStore {
   constructor(private db: D1Like) {}
 
@@ -32,29 +53,32 @@ export class D1AccountStore implements AccountStore {
   }
 
   async insert(r: AccountRow): Promise<void> {
+    await ensureRecoverySaltColumn(this.db);
     await this.db
       .prepare(
         `INSERT INTO accounts
          (id, email, email_verified, kdf, kdf_salt, kdf_params, login_hash,
-          wrapped_account_key, wrapped_account_key_recovery, recovery_key_hash, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          wrapped_account_key, wrapped_account_key_recovery, recovery_key_hash, recovery_salt, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .bind(
         r.id, r.email, r.email_verified, r.kdf, r.kdf_salt, r.kdf_params, r.login_hash,
-        r.wrapped_account_key, r.wrapped_account_key_recovery, r.recovery_key_hash, r.created_at, r.updated_at,
+        r.wrapped_account_key, r.wrapped_account_key_recovery, r.recovery_key_hash, r.recovery_salt ?? null,
+        r.created_at, r.updated_at,
       )
       .run();
   }
 
   async updateSecrets(id: string, f: Parameters<AccountStore['updateSecrets']>[1]): Promise<void> {
+    await ensureRecoverySaltColumn(this.db);
     await this.db
       .prepare(
         `UPDATE accounts SET kdf_salt=?, kdf_params=?, login_hash=?, wrapped_account_key=?,
-         wrapped_account_key_recovery=?, recovery_key_hash=?, updated_at=? WHERE id=?`,
+         wrapped_account_key_recovery=?, recovery_key_hash=?, recovery_salt=?, updated_at=? WHERE id=?`,
       )
       .bind(
         f.kdf_salt, f.kdf_params, f.login_hash, f.wrapped_account_key,
-        f.wrapped_account_key_recovery, f.recovery_key_hash, f.updated_at, id,
+        f.wrapped_account_key_recovery, f.recovery_key_hash, f.recovery_salt ?? null, f.updated_at, id,
       )
       .run();
   }
