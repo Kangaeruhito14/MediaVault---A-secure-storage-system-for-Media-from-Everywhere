@@ -384,52 +384,63 @@ const ctaPath = '/app';
 </style>
 
 <script>
-  // Mobile menu toggle handling
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  const header = document.querySelector('.public-header');
+  // All header interactivity is delegated on `document`, which survives Astro
+  // View Transition DOM swaps. Crucially, the theme is re-applied on
+  // astro:after-swap: each swap copies the server-rendered <html data-theme>
+  // default back onto the page, which would otherwise clobber the user's saved
+  // choice on every navigation (the "auto turns on/off" flicker).
+  (function () {
+    const html = document.documentElement;
 
-  mobileMenuBtn?.addEventListener('click', () => {
-    const isExpanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
-    mobileMenuBtn.setAttribute('aria-expanded', (!isExpanded).toString());
-    header?.classList.toggle('menu-open');
-    document.body.classList.toggle('overflow-hidden');
-  });
-
-  // Handle active navigation themes
-  const html = document.documentElement;
-  const sunIcon = document.getElementById('header-icon-sun');
-  const moonIcon = document.getElementById('header-icon-moon');
-
-  function updateThemeUI(theme: string) {
-    if (sunIcon && moonIcon) {
-      if (theme === 'dark') {
-        sunIcon.style.display = 'block';
-        moonIcon.style.display = 'none';
-      } else {
-        sunIcon.style.display = 'none';
-        moonIcon.style.display = 'block';
-      }
+    function syncThemeIcon() {
+      const theme = html.getAttribute('data-theme') || 'dark';
+      const sun = document.getElementById('header-icon-sun');
+      const moon = document.getElementById('header-icon-moon');
+      if (sun) sun.style.display = theme === 'dark' ? 'block' : 'none';
+      if (moon) moon.style.display = theme === 'dark' ? 'none' : 'block';
     }
-  }
 
-  // Set theme from parent page load (BaseLayout sets html data-theme first)
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-        const theme = html.getAttribute('data-theme') || 'dark';
-        updateThemeUI(theme);
+    function applySavedTheme() {
+      const saved = localStorage.getItem('mv-theme');
+      const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      html.setAttribute('data-theme', saved || preferred);
+      syncThemeIcon();
+    }
+
+    function closeMobileMenu() {
+      document.querySelector('.public-header')?.classList.remove('menu-open');
+      document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    // Re-apply after every view transition (the swap resets the html attribute).
+    document.addEventListener('astro:after-swap', applySavedTheme);
+
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+
+      if (target.closest('#header-theme-toggle')) {
+        const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('mv-theme', next);
+        syncThemeIcon();
+        return;
       }
+
+      const menuBtn = target.closest('#mobile-menu-btn');
+      if (menuBtn) {
+        const open = menuBtn.getAttribute('aria-expanded') === 'true';
+        menuBtn.setAttribute('aria-expanded', String(!open));
+        document.querySelector('.public-header')?.classList.toggle('menu-open');
+        document.body.classList.toggle('overflow-hidden');
+        return;
+      }
+
+      // Tapping any mobile nav link closes the overlay.
+      if (target.closest('.mobile-link-item, .mobile-cta-btn')) closeMobileMenu();
     });
-  });
 
-  observer.observe(html, { attributes: true });
-  updateThemeUI(html.getAttribute('data-theme') || 'dark');
-
-  // Wire theme button click
-  document.getElementById('header-theme-toggle')?.addEventListener('click', () => {
-    const current = html.getAttribute('data-theme') || 'dark';
-    const nextTheme = current === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', nextTheme);
-    localStorage.setItem('mv-theme', nextTheme);
-  });
+    syncThemeIcon();
+  })();
 </script>
