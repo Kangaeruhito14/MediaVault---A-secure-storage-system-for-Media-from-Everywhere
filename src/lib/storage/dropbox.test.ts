@@ -90,6 +90,27 @@ describe('DropboxClient', () => {
     expect(r.ok).toBe(false);
   });
 
+  it('invokes the global fetch with the correct receiver when none is injected', async () => {
+    // Guards the "Illegal invocation" regression: browsers throw if fetch is
+    // called with `this` set to anything but the global. We emulate that guard.
+    const orig = globalThis.fetch;
+    let called = false;
+    const guarded = function (this: unknown) {
+      if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+      called = true;
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    };
+    globalThis.fetch = guarded as typeof fetch;
+    try {
+      const c = new DropboxClient({ ...cfg, refreshToken: undefined }); // no fetchImpl → default path
+      const r = await c.testConnection();
+      expect(called).toBe(true);
+      expect(r.ok).toBe(true);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
   it('uploads large files via a start/append/finish session and reassembles correctly', async () => {
     const stored = new Map<string, Uint8Array>();
     const sessions = new Map<string, Uint8Array[]>();

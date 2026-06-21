@@ -61,4 +61,24 @@ describe('S3Client request signing', () => {
     expect(r.ok).toBe(false);
     expect(r.error).toContain('403');
   });
+
+  it('invokes the global fetch with the correct receiver when none is injected', async () => {
+    // Regression guard for the "Illegal invocation" bug (fetch called as a method).
+    const orig = globalThis.fetch;
+    let called = false;
+    const guarded = function (this: unknown) {
+      if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+      called = true;
+      return Promise.resolve(new Response('', { status: 200 }));
+    };
+    globalThis.fetch = guarded as typeof fetch;
+    try {
+      const c = new S3Client(cfg); // no fetchImpl → default path
+      const r = await c.testConnection();
+      expect(called).toBe(true);
+      expect(r.ok).toBe(true);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
 });
