@@ -23,8 +23,14 @@ type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 const CONTENT = 'https://content.dropboxapi.com/2';
 const RPC = 'https://api.dropboxapi.com/2';
 // Dropbox caps single-shot uploads at 150 MB; stay well under it.
-const SIMPLE_LIMIT = 140 * 1024 * 1024;
-const SESSION_CHUNK = 64 * 1024 * 1024;
+const DEFAULT_SIMPLE_LIMIT = 140 * 1024 * 1024;
+const DEFAULT_SESSION_CHUNK = 64 * 1024 * 1024;
+
+/** Tuning seam — overridable so the session-upload path is testable with tiny data. */
+export interface DropboxClientOptions {
+  simpleLimit?: number;
+  sessionChunk?: number;
+}
 
 /** App-folder paths are relative to the app root and must start with "/". */
 function toPath(key: string): string {
@@ -37,17 +43,22 @@ export class DropboxClient {
   private refreshToken?: string;
   private expiresAt?: number;
   private onTokenRefresh?: (t: DropboxTokens) => void;
+  private simpleLimit: number;
+  private sessionChunk: number;
 
   constructor(
     private cfg: DropboxConfig,
     fetchImpl?: FetchLike,
     onTokenRefresh?: (t: DropboxTokens) => void,
+    opts: DropboxClientOptions = {},
   ) {
     this.fetchImpl = fetchImpl ?? (globalThis.fetch as FetchLike);
     this.accessToken = cfg.accessToken;
     this.refreshToken = cfg.refreshToken;
     this.expiresAt = cfg.expiresAt;
     this.onTokenRefresh = onTokenRefresh;
+    this.simpleLimit = opts.simpleLimit ?? DEFAULT_SIMPLE_LIMIT;
+    this.sessionChunk = opts.sessionChunk ?? DEFAULT_SESSION_CHUNK;
   }
 
   private async ensureFresh(): Promise<void> {
@@ -81,7 +92,7 @@ export class DropboxClient {
   /** Upload ciphertext to the user's Dropbox. */
   async put(key: string, body: Uint8Array, _contentType?: string): Promise<void> {
     const path = toPath(key);
-    if (body.length <= SIMPLE_LIMIT) {
+    if (body.length <= this.simpleLimit) {
       const res = await this.authed(`${CONTENT}/files/upload`, {
         method: 'POST',
         headers: {
@@ -98,7 +109,7 @@ export class DropboxClient {
 
   /** Chunked upload session for files above the single-shot limit. */
   private async sessionUpload(path: string, body: Uint8Array): Promise<void> {
-    const first = body.subarray(0, SESSION_CHUNK);
+    const first = body.subarray(0, this.sessionChunk);
     const startRes = await this.authed(`${CONTENT}/files/upload_session/start`, {
       method: 'POST',
       headers: {
@@ -112,7 +123,7 @@ export class DropboxClient {
 
     let offset = first.length;
     while (offset < body.length) {
-      const chunk = body.subarray(offset, Math.min(offset + SESSION_CHUNK, body.length));
+      const chunk = body.subarray(offset, Math.min(offset + this.sessionChunk, body.length));
       const isLast = offset + chunk.length >= body.length;
       if (isLast) {
         const finRes = await this.authed(`${CONTENT}/files/upload_session/finish`, {
