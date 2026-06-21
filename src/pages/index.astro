@@ -99,8 +99,10 @@ const jsonLd = [
         </a>
       </div>
 
-      <!-- Floating App Mockup (Visual wow factor) -->
-      <div class="mockup-frame" data-reveal data-reveal-delay="240">
+      <!-- Floating App Mockup — 3D tilt reacts to scroll + pointer -->
+      <div class="mockup-stage" data-reveal data-reveal-delay="240">
+        <div class="mockup-glow"></div>
+        <div class="mockup-frame">
         <div class="mockup-header">
           <div class="mockup-dots">
             <span class="dot-red"></span>
@@ -132,38 +134,33 @@ const jsonLd = [
               <div class="mockup-upload">+ Upload File</div>
             </div>
             <div class="mockup-grid">
-              <!-- Card 1 -->
               <div class="mockup-card">
-                <div class="card-thumb image-thumb">
-                  <span>🏔️ sunset.jpg</span>
-                </div>
-                <div class="card-info">
-                  <div class="card-title">sunset.jpg</div>
-                  <div class="card-meta">1.2 MB</div>
-                </div>
+                <div class="card-thumb thumb-a"><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">sunset.jpg</div><div class="card-meta">1.2 MB</div></div>
               </div>
-              <!-- Card 2 -->
               <div class="mockup-card">
-                <div class="card-thumb video-thumb">
-                  <span>🎥 travel_vlog.mp4</span>
-                </div>
-                <div class="card-info">
-                  <div class="card-title">travel_vlog.mp4</div>
-                  <div class="card-meta">18.4 MB</div>
-                </div>
+                <div class="card-thumb thumb-b"><span class="thumb-play"></span><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">travel_vlog.mp4</div><div class="card-meta">18.4 MB</div></div>
               </div>
-              <!-- Card 3 -->
               <div class="mockup-card">
-                <div class="card-thumb audio-thumb">
-                  <span>🎵 background_track.mp3</span>
-                </div>
-                <div class="card-info">
-                  <div class="card-title">background_track.mp3</div>
-                  <div class="card-meta">4.1 MB</div>
-                </div>
+                <div class="card-thumb thumb-c"><span class="thumb-wave"></span><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">live_set.mp3</div><div class="card-meta">4.1 MB</div></div>
+              </div>
+              <div class="mockup-card">
+                <div class="card-thumb thumb-d"><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">portrait.png</div><div class="card-meta">2.8 MB</div></div>
+              </div>
+              <div class="mockup-card">
+                <div class="card-thumb thumb-e"><span class="thumb-play"></span><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">birthday.mov</div><div class="card-meta">31.2 MB</div></div>
+              </div>
+              <div class="mockup-card">
+                <div class="card-thumb thumb-f"><span class="thumb-lock">🔒</span></div>
+                <div class="card-info"><div class="card-title">mountains.jpg</div><div class="card-meta">3.5 MB</div></div>
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -279,6 +276,60 @@ const jsonLd = [
 
 </PublicLayout>
 
+<script>
+  // Hero mockup 3D tilt: rotateX eases from tilted → flat as it scrolls into
+  // view, plus a gentle pointer parallax. Disabled for reduced-motion and on
+  // small/touch screens. Re-inits after each View Transition (astro:page-load).
+  function initHeroMockup() {
+    const stage = document.querySelector<HTMLElement>('.mockup-stage');
+    const frame = document.querySelector<HTMLElement>('.mockup-frame');
+    if (!stage || !frame) return;
+
+    // Clean up any previous instance (page-load fires again after transitions).
+    (window as any).__heroTiltCleanup?.();
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || window.innerWidth < 700) {
+      frame.style.transform = 'rotateX(6deg) scale(0.98)';
+      return;
+    }
+
+    let base = 14; // scroll-driven rotateX (deg)
+    let rx = 0, ry = 0; // pointer offsets (deg)
+    let raf = 0;
+
+    const render = () => {
+      frame.style.transform =
+        `rotateX(${(base + rx).toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(0.97)`;
+    };
+    const onScroll = () => {
+      const r = stage.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.9)));
+      base = 14 - p * 13; // 14deg → ~1deg as it rises
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
+    };
+    const onMove = (e: MouseEvent) => {
+      const r = stage.getBoundingClientRect();
+      ry = ((e.clientX - (r.left + r.width / 2)) / r.width) * 9;
+      rx = -((e.clientY - (r.top + r.height / 2)) / r.height) * 5;
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
+    };
+    const onLeave = () => { rx = 0; ry = 0; render(); };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    stage.addEventListener('mousemove', onMove);
+    stage.addEventListener('mouseleave', onLeave);
+    (window as any).__heroTiltCleanup = () => {
+      window.removeEventListener('scroll', onScroll);
+      stage.removeEventListener('mousemove', onMove);
+      stage.removeEventListener('mouseleave', onLeave);
+    };
+    onScroll();
+  }
+  document.addEventListener('astro:page-load', initHeroMockup);
+</script>
+
 <style>
   /* Base Layout Container */
   .section-container {
@@ -300,11 +351,25 @@ const jsonLd = [
     text-align: center;
   }
 
+  /* Subtle dot grid, faded out toward the edges for depth. */
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at center, var(--border-strong) 1px, transparent 1px);
+    background-size: 30px 30px;
+    -webkit-mask: radial-gradient(ellipse 75% 60% at 50% 32%, #000 0%, transparent 78%);
+            mask: radial-gradient(ellipse 75% 60% at 50% 32%, #000 0%, transparent 78%);
+    opacity: 0.45;
+    z-index: 0;
+    pointer-events: none;
+  }
+
   .glow-orb {
     position: absolute;
     border-radius: 50%;
     filter: blur(120px);
-    opacity: 0.15;
+    opacity: 0.22;
     z-index: 1;
     pointer-events: none;
   }
@@ -439,26 +504,43 @@ const jsonLd = [
     transform: translateY(-1px);
   }
 
-  /* ── MOCKUP ── */
-  .mockup-frame {
+  /* ── MOCKUP (3D) ── */
+  .mockup-stage {
     width: 100%;
-    max-width: 900px;
+    max-width: 980px;
+    position: relative;
+    perspective: 1800px;
+    margin-top: 4px;
+  }
+
+  .mockup-glow {
+    position: absolute;
+    inset: 6% 10% -8%;
+    background: radial-gradient(ellipse at 50% 38%, rgba(59,130,246,0.38), rgba(168,85,247,0.20) 45%, transparent 72%);
+    filter: blur(64px);
+    opacity: 0.75;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .mockup-frame {
+    position: relative;
+    z-index: 1;
+    width: 100%;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 12px;
+    border-radius: 14px;
     box-shadow: var(--shadow-xl);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     text-align: left;
-    transform: translateY(0);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    animation: fadeInUp 1.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .mockup-frame:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+    transform-style: preserve-3d;
+    /* Resting pose (no-JS / pre-JS). JS upgrades this to scroll + pointer tilt.
+       Perspective comes from .mockup-stage, so we only rotate here. */
+    transform: rotateX(12deg) scale(0.97);
+    transition: box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
   }
 
   .mockup-header {
@@ -595,19 +677,40 @@ const jsonLd = [
   }
 
   .card-thumb {
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: #fff;
-    padding: 10px;
-    text-align: center;
+    height: 94px;
+    position: relative;
+    overflow: hidden;
   }
 
-  .image-thumb { background: linear-gradient(135deg, #6366f1, #a855f7); }
-  .video-thumb { background: linear-gradient(135deg, #ec4899, #f43f5e); }
-  .audio-thumb { background: linear-gradient(135deg, #10b981, #059669); }
+  /* Photo-like gradient previews (stand in for real encrypted thumbnails). */
+  .thumb-a { background: linear-gradient(160deg, #ff9966 0%, #ff5e62 45%, #6a3093 100%); }
+  .thumb-b { background: linear-gradient(160deg, #2193b0 0%, #6dd5ed 100%); }
+  .thumb-c { background: linear-gradient(160deg, #7028e4 0%, #e5b2ca 100%); }
+  .thumb-d { background: linear-gradient(160deg, #ee9ca7 0%, #ffdde1 100%); }
+  .thumb-e { background: linear-gradient(160deg, #11998e 0%, #38ef7d 100%); }
+  .thumb-f { background: linear-gradient(160deg, #4361ee 0%, #4cc9f0 100%); }
+
+  .thumb-lock {
+    position: absolute; top: 6px; right: 6px;
+    font-size: 8px; line-height: 1;
+    background: rgba(0,0,0,0.42); color: #fff;
+    padding: 3px 4px; border-radius: 5px;
+  }
+  .thumb-play {
+    position: absolute; inset: 0; margin: auto;
+    width: 0; height: 0;
+    border-left: 15px solid rgba(255,255,255,0.94);
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    filter: drop-shadow(0 1px 4px rgba(0,0,0,0.45));
+  }
+  .thumb-wave {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 42px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.85) 0 3px, transparent 3px 9px);
+    -webkit-mask: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+            mask: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+    opacity: 0.65;
+  }
 
   .card-info {
     padding: 8px 10px;
