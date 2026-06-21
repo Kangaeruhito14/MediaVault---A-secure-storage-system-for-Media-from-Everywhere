@@ -35,6 +35,12 @@ class MemItems implements VaultItemStore {
     }
     return rows.slice(0, o.limit);
   }
+  async allForAccount(a: string) {
+    return this.rows.filter((r) => r.account_id === a);
+  }
+  async deleteAllForAccount(a: string) {
+    this.rows = this.rows.filter((r) => r.account_id !== a);
+  }
   async getById(a: string, id: string) {
     return this.rows.find((r) => r.account_id === a && r.id === id) ?? null;
   }
@@ -64,6 +70,9 @@ class MemConns implements StorageConnectionStore {
     if (i < 0) return false;
     this.rows.splice(i, 1);
     return true;
+  }
+  async deleteAllForAccount(a: string) {
+    this.rows = this.rows.filter((r) => r.account_id !== a);
   }
 }
 

@@ -28,6 +28,7 @@ class MemAccounts implements AccountStore {
   async getByEmail(e: string) { return [...this.rows.values()].find((r) => r.email === e) ?? null; }
   async getById(id: string) { return this.rows.get(id) ?? null; }
   async insert(r: AccountRow) { this.rows.set(r.id, r); }
+  async deleteById(id: string) { this.rows.delete(id); }
   async updateSecrets() {}
 }
 class MemSessions implements SessionStore {
@@ -45,6 +46,8 @@ class MemKV implements KVLike {
 }
 class MemItems implements VaultItemStore {
   rows: VaultItemRow[] = [];
+  async allForAccount(a: string) { return this.rows.filter((r) => r.account_id === a); }
+  async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
   async countForAccount(a: string) { return this.rows.filter((r) => r.account_id === a).length; }
   async insert(r: VaultItemRow) { this.rows.push(r); }
   async page(a: string, o: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }) {
@@ -60,6 +63,7 @@ class MemItems implements VaultItemStore {
 }
 class MemConns implements StorageConnectionStore {
   rows: StorageConnectionRow[] = [];
+  async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
   async listForAccount(a: string) { return this.rows.filter((r) => r.account_id === a); }
   async insert(r: StorageConnectionRow) { this.rows.push(r); }
   async remove(a: string, id: string) { const i = this.rows.findIndex((r) => r.account_id === a && r.id === id); if (i < 0) return false; this.rows.splice(i, 1); return true; }

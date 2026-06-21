@@ -23,6 +23,9 @@ class MemAccounts implements AccountStore {
   async insert(row: AccountRow) {
     this.rows.set(row.id, row);
   }
+  async deleteById(id: string) {
+    this.rows.delete(id);
+  }
   async updateSecrets(id: string, f: Parameters<AccountStore['updateSecrets']>[1]) {
     this.rows.set(id, { ...this.rows.get(id)!, ...f });
   }
