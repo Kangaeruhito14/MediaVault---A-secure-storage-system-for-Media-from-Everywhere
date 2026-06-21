@@ -1,0 +1,15 @@
+import type { APIRoute } from 'astro';
+import { getServerContext, requireAccountId } from '../../lib/server/context';
+import { deleteAccount } from '../../lib/server/account-service';
+import { json, SESSION_COOKIE } from '../../lib/server/http';
+
+/** Permanently delete this account + its index/connections/sessions. */
+export const DELETE: APIRoute = async ({ cookies }) => {
+  const ctx = getServerContext();
+  const accountId = await requireAccountId(ctx, cookies);
+  if (!accountId) return json({ error: 'unauthorized' }, 401);
+
+  const ok = await deleteAccount(ctx, accountId);
+  cookies.delete(SESSION_COOKIE, { path: '/' });
+  return ok ? json({ ok: true }) : json({ error: 'not_found' }, 404);
+};
