@@ -21,6 +21,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     </a>
     <div id="appbar-actions" hidden>
       <span id="storage-label" class="storage-label"></span>
+      <button id="account-btn" class="btn-ghost">Account</button>
       <button id="lock-btn" class="btn-ghost">Lock</button>
     </div>
   </div>
@@ -133,6 +134,28 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     <div id="v-caption" class="v-caption"></div>
   </div>
 
+  <!-- Account modal -->
+  <div id="account-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button id="account-close" class="modal-close" aria-label="Close">✕</button>
+      <h2 class="card-h">Your account</h2>
+      <p class="muted" id="account-email"></p>
+
+      <div class="account-block">
+        <h3 class="account-h">Export your data</h3>
+        <p class="account-p">Download everything we hold for you — your encrypted index, storage settings, and key envelopes — as a single JSON file. It's encrypted; useless without your password.</p>
+        <a id="account-export" class="btn-ghost" href="/api/account/export">Download my data (JSON)</a>
+      </div>
+
+      <div class="account-block danger">
+        <h3 class="account-h">Delete account</h3>
+        <p class="account-p">Permanently removes your account and index from MediaVault. <strong>Your files in your own storage are not deleted</strong> — remove them there if you want them gone. This cannot be undone.</p>
+        <button id="account-delete" class="btn-danger" type="button">Delete my account</button>
+      </div>
+      <p id="account-error" class="error" hidden></p>
+    </div>
+  </div>
+
   <Toast />
 </BaseLayout>
 
@@ -241,6 +264,30 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   });
   $('unlock-logout').addEventListener('click', async () => { await client.logout(); show('auth-view'); });
   $('lock-btn').addEventListener('click', async () => { revokeThumbs(); await client.logout(); show('auth-view'); });
+
+  // ── Account modal (export / delete) ─────────────────────────────────────────
+  $('account-btn').addEventListener('click', () => {
+    $('account-email').textContent = localStorage.getItem('mv_email') ?? '';
+    $('account-error').hidden = true;
+    $('account-modal').hidden = false;
+  });
+  $('account-close').addEventListener('click', () => { $('account-modal').hidden = true; });
+  $('account-modal').addEventListener('click', (e) => { if (e.target === $('account-modal')) $('account-modal').hidden = true; });
+  $('account-delete').addEventListener('click', async () => {
+    if (!confirm('Permanently delete your MediaVault account and index?\n\nYour files in your own storage are NOT deleted. This cannot be undone.')) return;
+    if (!confirm('Are you absolutely sure? There is no recovery.')) return;
+    $('account-error').hidden = true;
+    try {
+      await client.deleteAccount();
+      revokeThumbs();
+      $('account-modal').hidden = true;
+      localStorage.removeItem('mv_email');
+      toast('success', 'Your account has been deleted');
+      show('auth-view');
+    } catch (err) {
+      showErr('account-error', err);
+    }
+  });
 
   // ── After unlock ──────────────────────────────────────────────────────────────
   async function afterUnlock() {
@@ -627,6 +674,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .tab { flex: 1; background: transparent; border: none; border-radius: 7px; padding: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; font-family: inherit; }
   .tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.1)); }
   .reckey { display: block; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--text-primary); background: var(--bg); border: 2px dashed var(--border-strong, var(--border)); border-radius: 10px; padding: 16px; word-break: break-all; margin-bottom: 16px; }
+
+  .btn-danger { background: #ef4444; color: #fff; border: none; border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-danger:hover { background: #dc2626; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-card { position: relative; width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-height: 88vh; overflow-y: auto; }
+  .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; line-height: 1; }
+  .account-block { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .account-block.danger { border-top-color: rgba(239,68,68,.3); }
+  .account-h { font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 0 0 6px; }
+  .account-p { font-size: 12.5px; line-height: 1.6; color: var(--text-body); margin: 0 0 14px; }
 
   .provider-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
   .provider-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; color: var(--text-muted); font-size: 11.5px; }
