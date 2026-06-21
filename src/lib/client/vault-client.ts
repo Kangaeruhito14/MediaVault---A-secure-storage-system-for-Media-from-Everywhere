@@ -113,6 +113,18 @@ export class VaultClient {
     this.lock();
   }
 
+  /**
+   * Permanently delete the account and everything the server holds for it. Files
+   * in the user's own storage are NOT touched — only the encrypted index, the
+   * storage connections, and the sessions are removed.
+   */
+  async deleteAccount(): Promise<void> {
+    this.requireKey();
+    const res = await this.api('/api/account', { method: 'DELETE' });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'delete_account_failed');
+    this.lock();
+  }
+
   // ── Storage connections ─────────────────────────────────────────────────────
   async addConnection(config: ProviderConfig, label?: string): Promise<{ id: string }> {
     this.requireKey();
