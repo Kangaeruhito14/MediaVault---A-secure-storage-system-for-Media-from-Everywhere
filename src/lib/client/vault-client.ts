@@ -12,12 +12,15 @@ import {
   decryptDownloaded,
   deriveAuthKey,
   encryptForUpload,
+  normalizeRecoveryKey,
   readMetadata,
+  rewrapForNewPassword,
   unlockWithPassword,
+  unlockWithRecovery,
   type FileMetadata,
   type KdfParams,
 } from '../e2ee/account';
-import { decryptJson, encryptJson, unwrapKey, type FileHeader } from '../e2ee/crypto';
+import { decryptJson, encryptJson, sha256Hex, unwrapKey, type FileHeader } from '../e2ee/crypto';
 import { makeStore, type ObjectStore, type ProviderConfig } from '../storage/object-store';
 import { fetchHeader } from './stream';
 
@@ -136,6 +139,76 @@ export class VaultClient {
   async logout(): Promise<void> {
     await this.api('/api/auth/logout', { method: 'POST', headers: { Origin: '' } }).catch(() => {});
     this.lock();
+  }
+
+  /**
+   * Forgot-password reset using the recovery key. Unlocks the account key with
+   * the recovery key, re-wraps everything under the new password (minting a fresh
+   * recovery key), and proves possession of the old recovery key to the server.
+   * Leaves the vault unlocked and returns the NEW recovery key to show once.
+   */
+  async resetWithRecovery(
+    email: string,
+    recoveryKey: string,
+    newPassword: string,
+    kdfParams?: KdfParams,
+  ): Promise<{ recoveryKey: string }> {
+    const params = await asJson(
+      await this.api('/api/auth/recovery-params', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }),
+    );
+    const accountKey = await unlockWithRecovery(recoveryKey, params.recoverySalt, params.wrappedAccountKeyRecovery);
+    if (!accountKey) throw new Error('invalid_recovery_key');
+
+    const { secrets, recoveryKey: newRecoveryKey } = await rewrapForNewPassword(accountKey, newPassword, kdfParams);
+    const proof = await sha256Hex(new TextEncoder().encode(normalizeRecoveryKey(recoveryKey)));
+    const res = await this.api('/api/auth/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, recoveryKeyHash: proof, secrets }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'reset_failed');
+    this.accountKey = accountKey; // now unlocked under the new password
+    return { recoveryKey: newRecoveryKey };
+  }
+
+  /**
+   * Change password while unlocked. Proves the current password to the server,
+   * re-wraps under the new password (minting a fresh recovery key), and returns
+   * that new recovery key to show once.
+   */
+  async changePassword(
+    email: string,
+    currentPassword: string,
+    newPassword: string,
+    kdfParams?: KdfParams,
+  ): Promise<{ recoveryKey: string }> {
+    this.requireKey();
+    const pre = await asJson(
+      await this.api('/api/auth/prelogin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }),
+    );
+    const currentAuthKeyB64 = await deriveAuthKey(currentPassword, pre.kdfSalt, pre.kdfParams);
+    const { secrets, recoveryKey: newRecoveryKey } = await rewrapForNewPassword(this.accountKey!, newPassword, kdfParams);
+    const res = await this.api('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentAuthKeyB64, secrets }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'change_password_failed');
+    return { recoveryKey: newRecoveryKey };
+  }
+
+  async getProfile(): Promise<{ email: string; createdAt: number; itemCount: number; connectionCount: number }> {
+    const res = await this.api('/api/account');
+    if (!res.ok) throw new Error('profile_failed');
+    return asJson(res);
   }
 
   /**
