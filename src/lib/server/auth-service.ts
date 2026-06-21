@@ -83,6 +83,7 @@ export async function signup(
     wrapped_account_key: s.wrappedAccountKey,
     wrapped_account_key_recovery: s.wrappedAccountKeyRecovery,
     recovery_key_hash: s.recoveryKeyHash,
+    recovery_salt: s.recoverySalt,
     created_at: now,
     updated_at: now,
   });
@@ -162,4 +163,102 @@ export async function validateSession(
 
 export async function logout(sessions: SessionStore, token: string | undefined): Promise<void> {
   if (token) await sessions.deleteByTokenHash(await tokenHashHex(token));
+}
+
+// ── Recovery-key password reset + change password ──────────────────────────────
+
+export interface RecoveryParams {
+  recoverySalt: string;
+  wrappedAccountKeyRecovery: string;
+}
+
+/**
+ * Step 1 of recovery: hand back what the client needs to attempt a recovery-key
+ * unlock. A deterministic decoy is returned for unknown emails so an attacker
+ * can't enumerate accounts; the client-side unwrap simply fails for a decoy.
+ */
+export async function getRecoveryParams(accounts: AccountStore, email: string): Promise<RecoveryParams> {
+  const e = email.toLowerCase().trim();
+  const acct = await accounts.getByEmail(e);
+  if (acct && acct.recovery_salt) {
+    return { recoverySalt: acct.recovery_salt, wrappedAccountKeyRecovery: acct.wrapped_account_key_recovery };
+  }
+  const decoy = await sha256Hex(te.encode('mediavault-recovery-decoy:' + e));
+  return { recoverySalt: btoa(decoy.slice(0, 16)), wrappedAccountKeyRecovery: btoa(decoy.slice(0, 64)) };
+}
+
+/**
+ * Reset the password using the recovery key. The client proves possession of the
+ * recovery key by sending its hash, which the server compares (constant-time) to
+ * the stored recovery_key_hash. On success all sessions are revoked and a fresh
+ * one is issued.
+ */
+export async function resetPassword(
+  deps: { accounts: AccountStore; sessions: SessionStore; kv: KVLike },
+  input: { email: string; recoveryKeyHash: string; secrets: SignupSecrets; ipKey: string },
+): Promise<{ ok: true; token: string } | { ok: false; error: AuthError }> {
+  const email = input.email?.toLowerCase().trim();
+  const s = input.secrets;
+  if (!email || !input.recoveryKeyHash || !s) return { ok: false, error: 'missing_fields' };
+  if (!s.authKeyB64 || !s.wrappedAccountKey || !s.wrappedAccountKeyRecovery || !s.recoveryKeyHash || !s.kdfSalt || !s.recoverySalt) {
+    return { ok: false, error: 'missing_fields' };
+  }
+
+  const limited =
+    !(await checkRateLimit(deps.kv, `reset:e:${email}`, 5, 900)).allowed ||
+    !(await checkRateLimit(deps.kv, `reset:i:${input.ipKey}`, 15, 900)).allowed;
+  if (limited) return { ok: false, error: 'rate_limited' };
+
+  const acct = await deps.accounts.getByEmail(email);
+  if (!acct || !equalHex(input.recoveryKeyHash, acct.recovery_key_hash)) {
+    return { ok: false, error: 'invalid_credentials' };
+  }
+
+  await deps.accounts.updateSecrets(acct.id, {
+    kdf_salt: s.kdfSalt,
+    kdf_params: JSON.stringify(s.kdfParams),
+    login_hash: await loginHashOf(s.authKeyB64),
+    wrapped_account_key: s.wrappedAccountKey,
+    wrapped_account_key_recovery: s.wrappedAccountKeyRecovery,
+    recovery_key_hash: s.recoveryKeyHash,
+    recovery_salt: s.recoverySalt,
+    updated_at: Date.now(),
+  });
+  await resetRateLimit(deps.kv, `reset:e:${email}`);
+  await deps.sessions.deleteAllForAccount(acct.id); // revoke everything after a reset
+  return { ok: true, token: await startSession(deps.sessions, acct.id) };
+}
+
+/**
+ * Change password for an already-authenticated account. The current password is
+ * re-proven (its auth key vs the stored login_hash) so a hijacked session alone
+ * can't change it. Other sessions are revoked; the caller gets a fresh one.
+ */
+export async function changePassword(
+  deps: { accounts: AccountStore; sessions: SessionStore },
+  input: { accountId: string; currentAuthKeyB64: string; secrets: SignupSecrets },
+): Promise<{ ok: true; token: string } | { ok: false; error: AuthError }> {
+  const s = input.secrets;
+  if (!input.currentAuthKeyB64 || !s) return { ok: false, error: 'missing_fields' };
+  if (!s.authKeyB64 || !s.wrappedAccountKey || !s.wrappedAccountKeyRecovery || !s.recoveryKeyHash || !s.kdfSalt || !s.recoverySalt) {
+    return { ok: false, error: 'missing_fields' };
+  }
+
+  const acct = await deps.accounts.getById(input.accountId);
+  if (!acct || !equalHex(await loginHashOf(input.currentAuthKeyB64), acct.login_hash)) {
+    return { ok: false, error: 'invalid_credentials' };
+  }
+
+  await deps.accounts.updateSecrets(acct.id, {
+    kdf_salt: s.kdfSalt,
+    kdf_params: JSON.stringify(s.kdfParams),
+    login_hash: await loginHashOf(s.authKeyB64),
+    wrapped_account_key: s.wrappedAccountKey,
+    wrapped_account_key_recovery: s.wrappedAccountKeyRecovery,
+    recovery_key_hash: s.recoveryKeyHash,
+    recovery_salt: s.recoverySalt,
+    updated_at: Date.now(),
+  });
+  await deps.sessions.deleteAllForAccount(acct.id); // boot other devices after a password change
+  return { ok: true, token: await startSession(deps.sessions, acct.id) };
 }
