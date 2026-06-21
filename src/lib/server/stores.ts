@@ -27,6 +27,10 @@ export class D1AccountStore implements AccountStore {
     return this.db.prepare('SELECT * FROM accounts WHERE id = ?').bind(id).first<AccountRow>();
   }
 
+  async deleteById(id: string): Promise<void> {
+    await this.db.prepare('DELETE FROM accounts WHERE id = ?').bind(id).run();
+  }
+
   async insert(r: AccountRow): Promise<void> {
     await this.db
       .prepare(
@@ -128,6 +132,14 @@ export class D1VaultItemStore implements VaultItemStore {
     return res.results ?? [];
   }
 
+  async allForAccount(accountId: string): Promise<VaultItemRow[]> {
+    const res = await this.db
+      .prepare('SELECT * FROM vault_items WHERE account_id = ? ORDER BY created_at ASC, id ASC')
+      .bind(accountId)
+      .all<VaultItemRow>();
+    return res.results ?? [];
+  }
+
   getById(accountId: string, id: string): Promise<VaultItemRow | null> {
     return this.db
       .prepare('SELECT * FROM vault_items WHERE account_id = ? AND id = ?')
@@ -149,6 +161,10 @@ export class D1VaultItemStore implements VaultItemStore {
       .bind(accountId, id)
       .run();
     return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async deleteAllForAccount(accountId: string): Promise<void> {
+    await this.db.prepare('DELETE FROM vault_items WHERE account_id = ?').bind(accountId).run();
   }
 }
 
@@ -176,5 +192,9 @@ export class D1StorageConnectionStore implements StorageConnectionStore {
       .bind(accountId, id)
       .run();
     return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async deleteAllForAccount(accountId: string): Promise<void> {
+    await this.db.prepare('DELETE FROM storage_connections WHERE account_id = ?').bind(accountId).run();
   }
 }
