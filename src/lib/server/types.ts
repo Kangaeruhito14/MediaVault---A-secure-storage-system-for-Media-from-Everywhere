@@ -44,6 +44,7 @@ export interface AccountStore {
   getByEmail(email: string): Promise<AccountRow | null>;
   getById(id: string): Promise<AccountRow | null>;
   insert(row: AccountRow): Promise<void>;
+  deleteById(id: string): Promise<void>;
   updateSecrets(
     id: string,
     fields: Pick<
@@ -86,9 +87,12 @@ export interface VaultItemStore {
   insert(row: VaultItemRow): Promise<void>;
   /** Newest-first page; optional bookmarked-only; keyset paginated. */
   page(accountId: string, opts: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }): Promise<VaultItemRow[]>;
+  /** Every row for an account, oldest-first — used for data export. */
+  allForAccount(accountId: string): Promise<VaultItemRow[]>;
   getById(accountId: string, id: string): Promise<VaultItemRow | null>;
   setBookmark(accountId: string, id: string, bookmarked: boolean): Promise<boolean>;
   remove(accountId: string, id: string): Promise<boolean>;
+  deleteAllForAccount(accountId: string): Promise<void>;
 }
 
 export interface StorageConnectionRow {
@@ -104,6 +108,7 @@ export interface StorageConnectionStore {
   listForAccount(accountId: string): Promise<StorageConnectionRow[]>;
   insert(row: StorageConnectionRow): Promise<void>;
   remove(accountId: string, id: string): Promise<boolean>;
+  deleteAllForAccount(accountId: string): Promise<void>;
 }
 
 /** Minimal Cloudflare KV surface used for rate limiting. */
