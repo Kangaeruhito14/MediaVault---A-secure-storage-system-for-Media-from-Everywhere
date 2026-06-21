@@ -38,6 +38,23 @@ export interface AccountExport {
   }[];
 }
 
+export interface AccountProfile {
+  email: string;
+  createdAt: number;
+  itemCount: number;
+  connectionCount: number;
+}
+
+export async function getProfile(ctx: ExportCtx, accountId: string): Promise<AccountProfile | null> {
+  const a = await ctx.accounts.getById(accountId);
+  if (!a) return null;
+  const [itemCount, conns] = await Promise.all([
+    ctx.items.countForAccount(accountId),
+    ctx.connections.listForAccount(accountId),
+  ]);
+  return { email: a.email, createdAt: a.created_at, itemCount, connectionCount: conns.length };
+}
+
 interface ExportCtx {
   accounts: AccountStore;
   connections: StorageConnectionStore;
