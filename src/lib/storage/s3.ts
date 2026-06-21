@@ -28,7 +28,9 @@ const UNSIGNED = 'UNSIGNED-PAYLOAD';
 export class S3Client {
   private fetchImpl: FetchLike;
   constructor(private cfg: S3Config, fetchImpl?: FetchLike) {
-    this.fetchImpl = fetchImpl ?? ((globalThis.fetch as FetchLike));
+    // Wrap (don't assign) so fetch keeps the global as its receiver — calling
+    // this.fetchImpl(...) with a bare global fetch throws "Illegal invocation".
+    this.fetchImpl = fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
   }
 
   private host(): string {
