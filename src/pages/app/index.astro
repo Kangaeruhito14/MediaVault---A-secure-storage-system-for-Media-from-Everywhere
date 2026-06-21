@@ -6,6 +6,10 @@ import Toast from '../../components/Toast.astro';
 // browser; the server only ever sees encrypted blobs. This page is a static
 // shell — all state (signed-out / locked / connected / vault) is decided by the
 // client script based on /api/auth/me and the in-memory key.
+
+// Dropbox connector is gated behind its public OAuth client ID: with no ID set
+// (the default), the button never renders and nothing about Dropbox ships.
+const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 ---
 <BaseLayout title="Your Vault" description="Your end-to-end encrypted MediaVault." noindex={true}>
   <div class="appbar">
@@ -73,7 +77,17 @@ import Toast from '../../components/Toast.astro';
     <section id="connect-view" class="centered" hidden>
       <div class="card card-wide">
         <h2 class="card-h">Connect your storage</h2>
-        <p class="muted">Files live in <strong>your own</strong> S3-compatible bucket (Cloudflare R2, Backblaze B2, Wasabi, AWS S3). They're encrypted in your browser first — we never receive your files or these credentials in readable form.</p>
+        <p class="muted">Files live in <strong>your own</strong> cloud storage. They're encrypted in your browser first — we never receive your files or your credentials in readable form.</p>
+        {dropboxEnabled && (
+          <>
+            <button id="connect-dropbox" type="button" class="btn-primary provider-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 2 0 6l6 4 6-4-6-4Zm12 0-6 4 6 4 6-4-6-4ZM0 14l6 4 6-4-6-4-6 4Zm18-4-6 4 6 4 6-4-6-4ZM6 19.5l6 4 6-4-6-4-6 4Z"/></svg>
+              Connect Dropbox
+            </button>
+            <div class="provider-divider"><span>or use S3-compatible storage</span></div>
+          </>
+        )}
+        <p class="muted s3-hint">S3-compatible: Cloudflare R2, Backblaze B2, Wasabi, or AWS S3.</p>
         <form id="connect-form" class="stack">
           <input id="c-endpoint" class="inp" placeholder="Endpoint URL (https://…)" required />
           <div class="row">
@@ -125,6 +139,7 @@ import Toast from '../../components/Toast.astro';
 <script>
   import { VaultClient, type Connection, type VaultItem } from '../../lib/client/vault-client';
   import { makeThumbnail } from '../../lib/client/thumbnail';
+  import { startDropboxAuth, exchangeDropboxCode } from '../../lib/storage/dropbox-oauth';
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
   const toast = (type: 'success' | 'error' | 'info', message: string) =>
@@ -257,6 +272,58 @@ import Toast from '../../components/Toast.astro';
       showErr('connect-error', err);
     }
   });
+
+  // ── Dropbox connect (OAuth PKCE via popup) ──────────────────────────────────
+  // The whole flow stays in the browser: a popup gets the auth code, posts it
+  // back here, and we exchange it for tokens with PKCE (no secret, no operator
+  // round-trip). Tokens are then stored ENCRYPTED like any other connection.
+  const DROPBOX_CLIENT_ID = import.meta.env.PUBLIC_DROPBOX_CLIENT_ID ?? '';
+  const dropboxBtn = document.getElementById('connect-dropbox');
+  if (dropboxBtn && DROPBOX_CLIENT_ID) {
+    let pending: { state: string; verifier: string } | null = null;
+    const redirectUri = `${location.origin}/app/connect/dropbox`;
+
+    dropboxBtn.addEventListener('click', async () => {
+      $('connect-error').hidden = true;
+      try {
+        const auth = await startDropboxAuth(DROPBOX_CLIENT_ID, redirectUri);
+        pending = { state: auth.state, verifier: auth.verifier };
+        const w = window.open(auth.url, 'mv-dropbox', 'width=560,height=720');
+        if (!w) throw new Error('Popup blocked — allow popups for this site and try again.');
+      } catch (err) {
+        showErr('connect-error', err);
+      }
+    });
+
+    window.addEventListener('message', async (ev: MessageEvent) => {
+      if (ev.origin !== location.origin) return;
+      const d = ev.data;
+      if (!d || d.type !== 'mv-dropbox-oauth' || !pending) return;
+      const { state, verifier } = pending;
+      pending = null;
+      try {
+        if (d.error) throw new Error(d.error);
+        if (!d.code || d.state !== state) throw new Error('Dropbox sign-in could not be verified — please retry.');
+        const tokens = await exchangeDropboxCode(
+          { clientId: DROPBOX_CLIENT_ID, code: d.code, verifier, redirectUri },
+        );
+        await client.addConnection(
+          {
+            kind: 'dropbox',
+            clientId: DROPBOX_CLIENT_ID,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresAt: tokens.expiresAt,
+          },
+          'Dropbox',
+        );
+        toast('success', 'Dropbox connected');
+        await afterUnlock();
+      } catch (err) {
+        showErr('connect-error', err);
+      }
+    });
+  }
 
   // ── List + render ─────────────────────────────────────────────────────────────
   async function loadFirstPage() {
@@ -560,6 +627,11 @@ import Toast from '../../components/Toast.astro';
   .tab { flex: 1; background: transparent; border: none; border-radius: 7px; padding: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; font-family: inherit; }
   .tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.1)); }
   .reckey { display: block; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--text-primary); background: var(--bg); border: 2px dashed var(--border-strong, var(--border)); border-radius: 10px; padding: 16px; word-break: break-all; margin-bottom: 16px; }
+
+  .provider-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
+  .provider-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; color: var(--text-muted); font-size: 11.5px; }
+  .provider-divider::before, .provider-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .s3-hint { font-size: 12px; color: var(--text-muted); margin: 12px 0 14px; }
 
   .vault-toolbar { display: flex; gap: 12px; margin-bottom: 20px; }
   .search { flex: 1; }
