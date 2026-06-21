@@ -31,8 +31,14 @@ export type ProviderKind = ProviderConfig['kind'];
 
 export interface ObjectStore {
   /** Store ciphertext; returns the canonical object key/id to persist (for S3
-   *  the given key, for Drive the assigned file id). */
-  put(key: string, body: Uint8Array, contentType?: string): Promise<string>;
+   *  the given key, for Drive the assigned file id). `onProgress` (optional)
+   *  reports bytes uploaded for a progress bar. */
+  put(
+    key: string,
+    body: Uint8Array,
+    contentType?: string,
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<string>;
   /** Fetch ciphertext, optionally a byte range. */
   get(key: string, range?: { start: number; end: number }): Promise<Response>;
   del(key: string): Promise<void>;

@@ -12,8 +12,13 @@ export class DropboxStore implements ObjectStore {
   ) {
     this.client = new DropboxClient(config, fetchImpl, onTokenRefresh);
   }
-  async put(key: string, body: Uint8Array, contentType?: string): Promise<string> {
-    await this.client.put(key, body, contentType);
+  async put(
+    key: string,
+    body: Uint8Array,
+    contentType?: string,
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<string> {
+    await this.client.put(key, body, contentType, onProgress);
     return key; // Dropbox keys are caller-chosen app-folder paths
   }
   get(key: string, range?: { start: number; end: number }): Promise<Response> {

@@ -10,6 +10,7 @@
  *   decrypt only the bytes being watched.
  */
 import { refreshDropboxToken, type DropboxTokens } from './dropbox-oauth';
+import { hasXhr, xhrUpload, type ProgressFn } from './http-upload';
 
 export interface DropboxConfig {
   clientId: string;
@@ -93,9 +94,11 @@ export class DropboxClient {
   }
 
   /** Upload ciphertext to the user's Dropbox. */
-  async put(key: string, body: Uint8Array, _contentType?: string): Promise<void> {
+  async put(key: string, body: Uint8Array, _contentType?: string, onProgress?: ProgressFn): Promise<void> {
     const path = toPath(key);
     if (body.length <= this.simpleLimit) {
+      // XHR path gives real byte progress; fetch path is the fallback (tests/no-XHR).
+      if (onProgress && hasXhr) return await this.xhrSimpleUpload(path, body, onProgress);
       const res = await this.authed(`${CONTENT}/files/upload`, {
         method: 'POST',
         headers: {
@@ -107,11 +110,29 @@ export class DropboxClient {
       if (!res.ok) throw new Error(`Dropbox upload failed: ${res.status} ${await safeText(res)}`);
       return;
     }
-    await this.sessionUpload(path, body);
+    await this.sessionUpload(path, body, onProgress);
   }
 
-  /** Chunked upload session for files above the single-shot limit. */
-  private async sessionUpload(path: string, body: Uint8Array): Promise<void> {
+  /** Simple upload via XHR so the caller gets upload-byte progress. */
+  private async xhrSimpleUpload(path: string, body: Uint8Array, onProgress: ProgressFn, retry = true): Promise<void> {
+    await this.ensureFresh();
+    const headers = {
+      Authorization: `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', mute: true }),
+    };
+    const r = await xhrUpload('POST', `${CONTENT}/files/upload`, headers, body, onProgress);
+    if (r.status === 401 && retry && this.refreshToken) {
+      await this.refresh();
+      return this.xhrSimpleUpload(path, body, onProgress, false);
+    }
+    if (r.status < 200 || r.status >= 300) throw new Error(`Dropbox upload failed: ${r.status} ${r.text.slice(0, 200)}`);
+  }
+
+  /** Chunked upload session for files above the single-shot limit. Progress is
+   *  reported per completed chunk (coarse but real). */
+  private async sessionUpload(path: string, body: Uint8Array, onProgress?: ProgressFn): Promise<void> {
+    const total = body.length;
     const first = body.subarray(0, this.sessionChunk);
     const startRes = await this.authed(`${CONTENT}/files/upload_session/start`, {
       method: 'POST',
@@ -123,6 +144,7 @@ export class DropboxClient {
     });
     if (!startRes.ok) throw new Error(`Dropbox session start failed: ${startRes.status} ${await safeText(startRes)}`);
     const sessionId: string = (await startRes.json()).session_id;
+    onProgress?.(first.length, total);
 
     let offset = first.length;
     while (offset < body.length) {
@@ -153,6 +175,7 @@ export class DropboxClient {
         if (!appRes.ok) throw new Error(`Dropbox session append failed: ${appRes.status} ${await safeText(appRes)}`);
       }
       offset += chunk.length;
+      onProgress?.(offset, total);
     }
   }
 

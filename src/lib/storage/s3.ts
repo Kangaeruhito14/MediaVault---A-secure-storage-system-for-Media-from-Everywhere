@@ -12,6 +12,7 @@
  * multi-GB bodies for the signature.
  */
 import { signV4, uriEncode } from './sigv4';
+import { hasXhr, xhrUpload, type ProgressFn } from './http-upload';
 
 export interface S3Config {
   endpoint: string; // e.g. https://<acct>.r2.cloudflarestorage.com (no bucket, no trailing slash)
@@ -89,8 +90,19 @@ export class S3Client {
   }
 
   /** Upload ciphertext bytes to the user's bucket. */
-  async put(key: string, body: Uint8Array | Blob, contentType = 'application/octet-stream'): Promise<void> {
+  async put(
+    key: string,
+    body: Uint8Array | Blob,
+    contentType = 'application/octet-stream',
+    onProgress?: ProgressFn,
+  ): Promise<void> {
     const headers = await this.signedFetchHeaders('PUT', key, { contentType });
+    // Use XHR when a progress bar is requested (fetch can't report upload bytes).
+    if (onProgress && hasXhr && body instanceof Uint8Array) {
+      const r = await xhrUpload('PUT', this.urlFor(key), headers, body, onProgress);
+      if (r.status < 200 || r.status >= 300) throw new Error(`S3 PUT failed: ${r.status} ${r.text.slice(0, 200)}`);
+      return;
+    }
     const res = await this.fetchImpl(this.urlFor(key), { method: 'PUT', headers, body: body as BodyInit });
     if (!res.ok) throw new Error(`S3 PUT failed: ${res.status} ${await safeText(res)}`);
   }

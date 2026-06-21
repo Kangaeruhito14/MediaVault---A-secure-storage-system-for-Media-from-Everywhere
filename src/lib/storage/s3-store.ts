@@ -7,8 +7,13 @@ export class S3Store implements ObjectStore {
   constructor(config: S3Config, fetchImpl?: (input: string, init?: RequestInit) => Promise<Response>) {
     this.client = new S3Client(config, fetchImpl);
   }
-  async put(key: string, body: Uint8Array, contentType?: string): Promise<string> {
-    await this.client.put(key, body, contentType);
+  async put(
+    key: string,
+    body: Uint8Array,
+    contentType?: string,
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<string> {
+    await this.client.put(key, body, contentType, onProgress);
     return key; // S3 keys are caller-chosen
   }
   get(key: string, range?: { start: number; end: number }): Promise<Response> {

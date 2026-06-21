@@ -75,6 +75,31 @@ export class VaultClient {
     this.accountKey = null;
   }
 
+  /**
+   * Export/restore the in-memory account key as base64 so the UI can optionally
+   * keep the vault unlocked across reloads within a tab (sessionStorage). This
+   * is an explicit, opt-in convenience — storing the key anywhere is a tradeoff,
+   * so callers gate it behind a user choice and tab-scoped storage only.
+   */
+  exportSessionKey(): string | null {
+    if (!this.accountKey) return null;
+    let s = '';
+    for (const b of this.accountKey) s += String.fromCharCode(b);
+    return btoa(s);
+  }
+  restoreSessionKey(b64: string): boolean {
+    try {
+      const bin = atob(b64);
+      const k = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) k[i] = bin.charCodeAt(i);
+      if (k.length < 16) return false;
+      this.accountKey = k;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   /** Create an account; returns the one-time recovery key to show the user. */
   async signup(email: string, password: string, kdfParams?: KdfParams): Promise<{ recoveryKey: string }> {
@@ -156,6 +181,7 @@ export class VaultClient {
   async upload(
     conn: Connection,
     file: { bytes: Uint8Array; name: string; mime: string; thumbnail?: Uint8Array | null },
+    onProgress?: (loaded: number, total: number) => void,
   ): Promise<{ id: string }> {
     this.requireKey();
     const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.bytes.length };
@@ -164,7 +190,7 @@ export class VaultClient {
     const store = this.store(conn.config);
 
     // put() returns the canonical key/id to persist (S3: our key, Drive: file id).
-    const objectKey = await store.put(`${base}.enc`, enc.ciphertext);
+    const objectKey = await store.put(`${base}.enc`, enc.ciphertext, undefined, onProgress);
 
     let thumbKey: string | null = null;
     if (enc.encThumbnail) {
