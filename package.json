@@ -2,14 +2,16 @@
   "name": "mediavault",
   "type": "module",
   "version": "2.0.0",
-  "description": "Free, self-hosted, encrypted media vault — store private photos, videos, and audio on your own hardware with AES-256 sealed-at-rest encryption.",
+  "description": "Free, end-to-end encrypted media vault — store private photos, videos, and audio in cloud storage you own, encrypted in your browser with AES-256 so not even the operator can read it.",
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere.git"
   },
   "keywords": [
-    "self-hosted",
+    "end-to-end-encryption",
+    "zero-knowledge",
+    "bring-your-own-storage",
     "encrypted-storage",
     "media-vault",
     "photo-storage",
@@ -26,7 +28,7 @@
     "dev": "npm run build:sw && astro dev",
     "build": "npm run build:sw && astro build",
     "preview": "astro preview",
-    "start": "node --no-warnings ./dist/server/entry.mjs",
+    "start": "npm run dev",
     "migrate:legacy": "node scripts/migrate-legacy.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
