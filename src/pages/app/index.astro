@@ -12,6 +12,11 @@ import Toast from '../../components/Toast.astro';
 const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 ---
 <BaseLayout title="Your Vault" description="Your end-to-end encrypted MediaVault." noindex={true}>
+  <div class="app-bg" aria-hidden="true">
+    <div class="app-orb app-orb-1"></div>
+    <div class="app-orb app-orb-2"></div>
+  </div>
+
   <div class="appbar">
     <a href="/" class="appbar-logo" aria-label="MediaVault home">
       <span class="logo-mark">
@@ -19,10 +24,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       </span>
       MediaVault
     </a>
-    <div id="appbar-actions" hidden>
-      <span id="storage-label" class="storage-label"></span>
-      <button id="account-btn" class="btn-ghost">Account</button>
-      <button id="lock-btn" class="btn-ghost">Lock</button>
+    <div class="appbar-right">
+      <span id="storage-label" class="storage-label" hidden></span>
+      <a href="/" class="btn-ghost appbar-site" aria-label="Back to website">Website</a>
+      <button id="app-theme-toggle" class="icon-btn" aria-label="Toggle theme" title="Toggle theme">
+        <svg id="app-icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg id="app-icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      </button>
+      <div id="appbar-actions" class="appbar-actions" hidden>
+        <button id="account-btn" class="btn-ghost">Account</button>
+        <button id="lock-btn" class="btn-ghost">Lock</button>
+      </div>
     </div>
   </div>
 
@@ -173,7 +185,27 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   function show(view: string) {
     for (const v of VIEWS) $(v).hidden = v !== view;
     $('appbar-actions').hidden = view !== 'vault-view';
+    $('storage-label').hidden = view !== 'vault-view';
   }
+
+  // Theme toggle (the marketing header's engine isn't loaded here). Saved theme
+  // is already applied pre-paint by BaseLayout's inline script.
+  (function () {
+    const html = document.documentElement;
+    const syncIcon = () => {
+      const dark = (html.getAttribute('data-theme') || 'dark') === 'dark';
+      const sun = $('app-icon-sun'), moon = $('app-icon-moon');
+      if (sun) sun.style.display = dark ? 'block' : 'none';
+      if (moon) moon.style.display = dark ? 'none' : 'block';
+    };
+    $('app-theme-toggle').addEventListener('click', () => {
+      const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('mv-theme', next);
+      syncIcon();
+    });
+    syncIcon();
+  })();
 
   let connections: Connection[] = [];
   let connMap: Record<string, Connection> = {};
@@ -647,15 +679,28 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 </script>
 
 <style>
-  .appbar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  /* Atmospheric background so the app shell isn't a flat white page. */
+  .app-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background:
+      radial-gradient(ellipse at 18% 12%, rgba(59,130,246,0.10), transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(168,85,247,0.10), transparent 55%); }
+  .app-orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.5; }
+  .app-orb-1 { top: -120px; left: -80px; width: 420px; height: 420px; background: rgba(59,130,246,0.28); }
+  .app-orb-2 { bottom: -140px; right: -100px; width: 460px; height: 460px; background: rgba(168,85,247,0.22); }
+
+  .appbar { position: sticky; top: 0; z-index: 10; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   .appbar-logo { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em; }
   .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--text-primary); color: var(--bg); display: flex; align-items: center; justify-content: center; }
-  #appbar-actions { display: flex; align-items: center; gap: 14px; }
+  .appbar-right { display: flex; align-items: center; gap: 10px; }
+  .appbar-actions { display: flex; align-items: center; gap: 10px; }
+  .appbar-site { text-decoration: none; }
+  @media (max-width: 480px) { .appbar-site { display: none; } }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-med); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s ease, border-color .15s ease; }
+  .icon-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
   .storage-label { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 
-  .app-main { max-width: 1200px; margin: 0 auto; padding: 28px 24px 80px; }
+  .app-main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 28px 24px 80px; }
   .centered { min-height: calc(100dvh - 60px - 110px); display: flex; align-items: center; justify-content: center; }
-  .card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+  .card { width: 100%; max-width: 380px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border-med); border-radius: 16px; padding: 32px; box-shadow: var(--shadow-xl); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   .card-wide { max-width: 460px; }
   .card-h { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); margin: 0 0 8px; }
   .muted { font-size: 13.5px; line-height: 1.6; color: var(--text-body); margin: 0 0 20px; }
