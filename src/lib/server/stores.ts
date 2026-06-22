@@ -17,24 +17,31 @@ import type {
 } from './types';
 
 /**
- * Idempotent schema self-heal for the `recovery_salt` column (migration 0002).
- * D1 migrations are applied via wrangler on deploy, but local miniflare dev and
- * pre-0002 databases won't have the column — this adds it once per instance so
- * the recovery flow works everywhere without manual steps. Shared promise so
- * concurrent cold-start requests don't race the ALTER.
+ * Idempotent schema self-heal. D1 migrations are applied via wrangler on deploy,
+ * but local miniflare dev and older databases drift from the current schema.
+ * This reconciles the known drifts once per worker instance (shared promise so
+ * concurrent cold-start requests don't race the ALTERs):
+ *   - accounts.recovery_salt: ADD if missing (migration 0002).
+ *   - vault_items.iv: DROP if present — an older schema had `iv NOT NULL`, which
+ *     makes every current insert (no `iv`) fail with a NOT NULL constraint.
  */
-let recoverySaltEnsure: Promise<void> | null = null;
-async function ensureRecoverySaltColumn(db: D1Like): Promise<void> {
-  if (recoverySaltEnsure) return recoverySaltEnsure;
-  recoverySaltEnsure = (async () => {
-    const info = await db.prepare('PRAGMA table_info(accounts)').all<{ name: string }>();
-    const has = (info.results ?? []).some((c) => c.name === 'recovery_salt');
-    if (!has) await db.prepare('ALTER TABLE accounts ADD COLUMN recovery_salt TEXT').run();
+let schemaEnsure: Promise<void> | null = null;
+async function ensureSchema(db: D1Like): Promise<void> {
+  if (schemaEnsure) return schemaEnsure;
+  schemaEnsure = (async () => {
+    const accCols = (await db.prepare('PRAGMA table_info(accounts)').all<{ name: string }>()).results ?? [];
+    if (!accCols.some((c) => c.name === 'recovery_salt')) {
+      await db.prepare('ALTER TABLE accounts ADD COLUMN recovery_salt TEXT').run();
+    }
+    const itemCols = (await db.prepare('PRAGMA table_info(vault_items)').all<{ name: string }>()).results ?? [];
+    if (itemCols.some((c) => c.name === 'iv')) {
+      await db.prepare('ALTER TABLE vault_items DROP COLUMN iv').run();
+    }
   })().catch((e) => {
-    recoverySaltEnsure = null; // allow a retry on a later request
+    schemaEnsure = null; // allow a retry on a later request
     throw e;
   });
-  return recoverySaltEnsure;
+  return schemaEnsure;
 }
 
 export class D1AccountStore implements AccountStore {
@@ -53,7 +60,7 @@ export class D1AccountStore implements AccountStore {
   }
 
   async insert(r: AccountRow): Promise<void> {
-    await ensureRecoverySaltColumn(this.db);
+    await ensureSchema(this.db);
     await this.db
       .prepare(
         `INSERT INTO accounts
@@ -70,7 +77,7 @@ export class D1AccountStore implements AccountStore {
   }
 
   async updateSecrets(id: string, f: Parameters<AccountStore['updateSecrets']>[1]): Promise<void> {
-    await ensureRecoverySaltColumn(this.db);
+    await ensureSchema(this.db);
     await this.db
       .prepare(
         `UPDATE accounts SET kdf_salt=?, kdf_params=?, login_hash=?, wrapped_account_key=?,
@@ -119,6 +126,7 @@ export class D1VaultItemStore implements VaultItemStore {
   }
 
   async insert(r: VaultItemRow): Promise<void> {
+    await ensureSchema(this.db);
     await this.db
       .prepare(
         `INSERT INTO vault_items
