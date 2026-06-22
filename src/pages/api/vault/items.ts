@@ -32,7 +32,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   } catch {
     return json({ error: 'invalid_json' }, 400);
   }
-  const res = await createItem(ctx.items, accountId, body);
-  if (!res.ok) return json({ error: res.error }, res.error === 'item_limit_reached' ? 409 : 400);
-  return json(res, 201);
+  try {
+    const res = await createItem(ctx.items, accountId, body);
+    if (!res.ok) return json({ error: res.error }, res.error === 'item_limit_reached' ? 409 : 400);
+    return json(res, 201);
+  } catch (e) {
+    // Surface the real cause as JSON so the client never sees an opaque 500.
+    return json({ error: `index_write_error: ${(e as Error).message || e}` }, 500);
+  }
 };
