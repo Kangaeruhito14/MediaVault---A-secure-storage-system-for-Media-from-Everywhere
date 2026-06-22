@@ -251,6 +251,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     </div>
   </div>
 
+  <!-- Delete confirmation -->
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-card confirm-card">
+      <div class="confirm-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </div>
+      <h2 class="card-h">Delete file?</h2>
+      <p class="muted" id="confirm-text">This permanently removes it from your storage.</p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel" type="button" class="btn-outline">Cancel</button>
+        <button id="confirm-ok" type="button" class="btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Account modal -->
   <div id="account-modal" class="modal" hidden>
     <div class="modal-card">
@@ -768,6 +786,26 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('select-clear').addEventListener('click', () => { selected.clear(); render(); });
   $('select-delete').addEventListener('click', () => {
     const batch = items.filter((i) => selected.has(i.id));
+    askDelete(batch);
+  });
+
+  // Styled confirmation before deleting (then the 5s-undo soft delete runs).
+  let confirmBatch: VaultItem[] = [];
+  function askDelete(batch: VaultItem[]) {
+    if (!batch.length) return;
+    confirmBatch = batch;
+    $('confirm-modal').querySelector('.card-h')!.textContent = batch.length === 1 ? 'Delete file?' : `Delete ${batch.length} files?`;
+    $('confirm-text').textContent = batch.length === 1
+      ? `“${batch[0].metadata.name}” will be permanently removed from your storage. You'll have 5 seconds to undo.`
+      : `These ${batch.length} files will be permanently removed from your storage. You'll have 5 seconds to undo.`;
+    $('confirm-modal').hidden = false;
+  }
+  function closeConfirm() { $('confirm-modal').hidden = true; confirmBatch = []; }
+  $('confirm-cancel').addEventListener('click', closeConfirm);
+  $('confirm-modal').addEventListener('click', (e) => { if (e.target === $('confirm-modal')) closeConfirm(); });
+  $('confirm-ok').addEventListener('click', () => {
+    const batch = confirmBatch;
+    closeConfirm();
     if (batch.length) softDelete(batch);
   });
 
@@ -849,7 +887,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     catch { toast('error', 'Could not update bookmark'); }
   }
   function remove(item: VaultItem) {
-    softDelete([item]); // disappears now, real delete after 5s with Undo
+    askDelete([item]); // confirm first, then soft-delete with 5s undo
   }
 
   // ── Viewer ────────────────────────────────────────────────────────────────────
@@ -1169,6 +1207,14 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .modal-card { position: relative; width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-height: 88vh; overflow-y: auto; }
   .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; line-height: 1; }
+
+  /* Delete confirmation */
+  .confirm-card { max-width: 400px; text-align: center; }
+  .confirm-icon { width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; background: rgba(239,68,68,.12); color: #ef4444; }
+  .confirm-card .card-h { margin-bottom: 8px; }
+  .confirm-card .muted { margin-bottom: 22px; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions .btn-outline, .confirm-actions .btn-danger { flex: 1; justify-content: center; }
   .profile-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 4px; font-size: 13px; }
   .profile-grid dt { color: var(--text-muted); }
   .profile-grid dd { color: var(--text-primary); margin: 0; text-align: right; word-break: break-word; }
