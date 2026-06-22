@@ -147,6 +147,16 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         </label>
       </div>
       <div id="upload-status" class="upload-status" hidden></div>
+
+      <!-- Selection action bar (appears when items are selected) -->
+      <div id="select-bar" class="select-bar" hidden>
+        <span id="select-count" class="select-count">0 selected</span>
+        <div class="select-actions">
+          <button id="select-clear" type="button" class="btn-ghost">Clear</button>
+          <button id="select-delete" type="button" class="btn-danger">Delete selected</button>
+        </div>
+      </div>
+
       <div id="grid" class="grid"></div>
 
       <!-- Empty state: a real drag-and-drop zone, not a bare line of text. -->
@@ -579,6 +589,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     { rootMargin: '200px' },
   );
 
+  const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+
   function render() {
     const q = ($('search') as HTMLInputElement).value.toLowerCase();
     visible = q ? items.filter((i) => i.metadata.name.toLowerCase().includes(q)) : items;
@@ -586,44 +598,101 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     const grid = $('grid');
     grid.innerHTML = '';
     visible.forEach((item, idx) => {
+      const k = kind(item.metadata.mime);
       const card = document.createElement('div');
-      card.className = 'tile';
+      card.className = 'tile' + (selected.has(item.id) ? ' selected' : '');
       card.dataset.id = item.id;
-      card.dataset.idx = String(idx);
 
-      const thumb = document.createElement('div');
-      thumb.className = `tile-thumb kind-${kind(item.metadata.mime)}`;
-      if (thumbUrls.has(item.id)) thumb.style.backgroundImage = `url(${thumbUrls.get(item.id)})`;
-      const badge = document.createElement('span');
-      badge.className = 'tile-badge';
-      badge.textContent = `${kind(item.metadata.mime).toUpperCase()} · ${fmtBytes(item.metadata.size)}`;
-      thumb.appendChild(badge);
-      card.appendChild(thumb);
+      const media = document.createElement('div');
+      media.className = `tile-media kind-${k}`;
+      if (thumbUrls.has(item.id)) media.style.backgroundImage = `url(${thumbUrls.get(item.id)})`;
 
-      const bar = document.createElement('div');
-      bar.className = 'tile-bar';
-      const name = document.createElement('div');
-      name.className = 'tile-name';
-      name.textContent = item.metadata.name; // textContent — XSS-safe
-      const star = document.createElement('button');
-      star.className = 'tile-star' + (item.bookmarked ? ' on' : '');
-      star.textContent = item.bookmarked ? '★' : '☆';
-      star.title = 'Bookmark';
-      star.addEventListener('click', (ev) => { ev.stopPropagation(); toggleStar(item); });
-      bar.append(name, star);
-      card.appendChild(bar);
+      const check = document.createElement('button');
+      check.className = 'tile-check';
+      check.setAttribute('aria-label', 'Select file');
+      check.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSelect(item.id); });
+
+      const fav = document.createElement('button');
+      fav.className = 'tile-fav' + (item.bookmarked ? ' on' : '');
+      fav.textContent = item.bookmarked ? '★' : '☆';
+      fav.title = 'Bookmark';
+      fav.addEventListener('click', (ev) => { ev.stopPropagation(); toggleStar(item); });
 
       const del = document.createElement('button');
       del.className = 'tile-del';
-      del.textContent = 'Delete';
+      del.title = 'Delete';
+      del.innerHTML = TRASH_SVG;
       del.addEventListener('click', (ev) => { ev.stopPropagation(); remove(item); });
-      card.appendChild(del);
 
-      card.addEventListener('click', () => openViewer(idx));
+      const type = document.createElement('span');
+      type.className = 'tile-type';
+      type.textContent = k.toUpperCase();
+
+      media.append(check, fav, del, type);
+      if (k === 'video' || k === 'audio') {
+        const ind = document.createElement('span');
+        ind.className = k === 'video' ? 'tile-play' : 'tile-note';
+        media.appendChild(ind);
+      }
+      card.appendChild(media);
+
+      const foot = document.createElement('div');
+      foot.className = 'tile-foot';
+      const name = document.createElement('div');
+      name.className = 'tile-name';
+      name.textContent = item.metadata.name; // textContent — XSS-safe
+      name.title = item.metadata.name;
+      const sub = document.createElement('div');
+      sub.className = 'tile-sub';
+      sub.textContent = `${k} · ${fmtBytes(item.metadata.size)}`;
+      foot.append(name, sub);
+      card.appendChild(foot);
+
+      card.addEventListener('click', () => {
+        if (selected.size > 0) toggleSelect(item.id); // in selection mode, click toggles
+        else openViewer(idx);
+      });
       grid.appendChild(card);
       if (item.thumbKey && !thumbUrls.has(item.id)) thumbObserver.observe(card);
     });
+    updateSelectBar();
   }
+
+  // ── Multi-select ────────────────────────────────────────────────────────────
+  const selected = new Set<string>();
+  function toggleSelect(id: string) {
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    const card = $('grid').querySelector<HTMLElement>(`.tile[data-id="${id}"]`);
+    card?.classList.toggle('selected', selected.has(id));
+    updateSelectBar();
+  }
+  function updateSelectBar() {
+    const n = selected.size;
+    $('select-bar').hidden = n === 0;
+    $('select-count').textContent = `${n} selected`;
+  }
+  $('select-clear').addEventListener('click', () => { selected.clear(); render(); });
+  $('select-delete').addEventListener('click', async () => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} file${ids.length === 1 ? '' : 's'}? This permanently removes them from your storage.`)) return;
+    let done = 0;
+    for (const id of ids) {
+      const item = items.find((i) => i.id === id);
+      if (!item) continue;
+      try {
+        await client.remove(item, connFor(item));
+        const u = thumbUrls.get(id); if (u) { URL.revokeObjectURL(u); thumbUrls.delete(id); }
+        items = items.filter((i) => i.id !== id);
+        done++;
+      } catch { /* keep going */ }
+    }
+    selected.clear();
+    render();
+    if (done) toast('success', `Deleted ${done} file${done === 1 ? '' : 's'}`);
+    if (done < ids.length) toast('error', `${ids.length - done} could not be deleted`);
+  });
 
   async function loadThumb(card: HTMLElement) {
     const item = items.find((i) => i.id === card.dataset.id);
@@ -633,7 +702,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       if (!bytes) return;
       const url = URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' }));
       thumbUrls.set(item.id, url);
-      const el = card.querySelector<HTMLElement>('.tile-thumb');
+      const el = card.querySelector<HTMLElement>('.tile-media');
       if (el) el.style.backgroundImage = `url(${url})`;
     } catch {}
   }
@@ -713,22 +782,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     $('v-caption').textContent = item.metadata.name;
     clearViewerUrl();
     const k = kind(item.metadata.mime);
-    try {
-      // Video & audio: stream via the Service Worker (seekable, no full download).
-      if (k === 'video' || k === 'audio') {
-        const streamUrl = await streamUrlFor(item);
-        if (streamUrl) {
-          stage.innerHTML = '';
-          const el = document.createElement(k);
-          el.src = streamUrl;
-          el.controls = true;
-          (el as HTMLMediaElement).autoplay = true;
-          if (k === 'video') el.className = 'v-media';
-          stage.appendChild(el);
-          return;
-        }
-      }
-      // Images, other types, or stream fallback: download + decrypt fully.
+
+    // Full download + decrypt — used for images, non-streamable types, and as a
+    // fallback when Service-Worker streaming hiccups (provider range/CORS error).
+    const playByDownload = async () => {
       const { bytes } = await client.download(item, connFor(item));
       const url = URL.createObjectURL(new Blob([bytes], { type: item.metadata.mime || 'application/octet-stream' }));
       viewerUrl = url;
@@ -739,6 +796,33 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       else if (k === 'audio') { const a = document.createElement('audio'); a.src = url; a.controls = true; a.autoplay = true; el = a; }
       else { const link = document.createElement('a'); link.href = url; link.download = item.metadata.name; link.className = 'btn-primary'; link.textContent = `Download ${item.metadata.name}`; el = link; }
       stage.appendChild(el);
+    };
+
+    try {
+      // Video & audio: stream via the Service Worker (seekable, no full download).
+      if (k === 'video' || k === 'audio') {
+        const streamUrl = await streamUrlFor(item);
+        if (streamUrl) {
+          stage.innerHTML = '';
+          const el = document.createElement(k) as HTMLMediaElement;
+          el.src = streamUrl;
+          el.controls = true;
+          el.autoplay = true;
+          if (k === 'video') el.className = 'v-media';
+          let fellBack = false;
+          el.addEventListener('error', () => {
+            if (fellBack) return;
+            fellBack = true;
+            stage.innerHTML = '<div class="v-spin">Buffering…</div>';
+            playByDownload().catch((e) => {
+              stage.innerHTML = `<div class="v-spin">Could not open: ${(e as Error).message}</div>`;
+            });
+          });
+          stage.appendChild(el);
+          return;
+        }
+      }
+      await playByDownload();
     } catch (err) {
       stage.innerHTML = `<div class="v-spin">Could not open: ${(err as Error).message}</div>`;
     }
@@ -945,20 +1029,12 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .search { flex: 1; }
   .upload-label { display: inline-flex; align-items: center; cursor: pointer; }
 
-  /* Upload progress card */
-  .upload-status { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow-md); }
-  .up-head { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; }
-  .up-list { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; }
-  .up-row { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
-  .up-row-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
-  .up-name { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .up-stage { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
-  .up-track { height: 6px; background: var(--bg-inset); border-radius: 100px; overflow: hidden; }
-  .up-fill { height: 100%; width: 0%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), #8b5cf6); transition: width .2s ease; }
-  .up-done .up-fill { background: var(--success, #00a854); }
-  .up-done .up-stage { color: var(--success, #00a854); }
-  .up-failed .up-fill { background: #ef4444; width: 100% !important; }
-  .up-failed .up-stage { color: #ef4444; }
+  /* (Upload card, grid tiles, and viewer media are JS-rendered → styled in the
+     global block below, since Astro's scoped styles can't reach createElement nodes.) */
+
+  .select-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border-med); border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+  .select-count { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .select-actions { display: flex; gap: 10px; }
 
   /* Empty-state dropzone */
   .dropzone { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 24px; margin: 8px 0; background: color-mix(in srgb, var(--surface) 70%, transparent); border: 2px dashed var(--border-strong, var(--border)); border-radius: 16px; cursor: pointer; font-family: inherit; transition: border-color .15s ease, background .15s ease; }
@@ -967,20 +1043,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .dropzone-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
   .dropzone-sub { font-size: 12.5px; color: var(--text-muted); max-width: 360px; text-align: center; line-height: 1.5; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color .15s, transform .15s; position: relative; }
-  .tile:hover { border-color: var(--border-strong, var(--accent)); transform: translateY(-2px); }
-  .tile-thumb { aspect-ratio: 1; background-size: cover; background-position: center; background-color: var(--bg); position: relative; display: flex; align-items: center; justify-content: center; }
-  .tile-thumb.kind-video::after { content: '▶'; position: absolute; font-size: 30px; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
-  .tile-thumb.kind-audio::after { content: '♪'; position: absolute; font-size: 34px; color: var(--text-muted); }
-  .tile-thumb.kind-file::after { content: '📄'; position: absolute; font-size: 30px; opacity: .6; }
-  .tile-badge { position: absolute; top: 8px; left: 8px; font-size: 9px; font-weight: 700; letter-spacing: .05em; background: rgba(0,0,0,.6); color: #fff; padding: 2px 6px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; }
-  .tile-bar { display: flex; align-items: center; gap: 8px; padding: 9px 11px; }
-  .tile-name { flex: 1; font-size: 12.5px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tile-star { background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-muted); padding: 0; }
-  .tile-star.on { color: #f5a623; }
-  .tile-del { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.6); color: #fff; border: none; border-radius: 6px; font-size: 11px; padding: 4px 8px; cursor: pointer; opacity: 0; transition: opacity .15s; }
-  .tile:hover .tile-del { opacity: 1; }
   .empty { text-align: center; padding: 60px 0; }
   .center { text-align: center; margin-top: 24px; }
 
@@ -989,12 +1051,82 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
   .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 50; display: flex; align-items: center; justify-content: center; }
   .v-stage { max-width: 92vw; max-height: 82vh; display: flex; align-items: center; justify-content: center; }
-  .v-media { max-width: 92vw; max-height: 82vh; border-radius: 8px; }
-  .v-spin { color: #ccc; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
   .v-close { position: absolute; top: 18px; right: 22px; background: none; border: none; color: #fff; font-size: 26px; cursor: pointer; line-height: 1; }
   .v-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.1); border: none; color: #fff; font-size: 34px; width: 52px; height: 52px; border-radius: 50%; cursor: pointer; }
   .v-prev { left: 20px; }
   .v-next { right: 20px; }
   .v-caption { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: #ddd; font-size: 13px; padding: 0 24px; }
   @media (max-width: 600px) { .v-nav { width: 40px; height: 40px; font-size: 26px; } }
+</style>
+
+<!-- GLOBAL: these elements are created in JS (document.createElement), so Astro's
+     scoped styles never reach them. Class names are app-specific (no leakage). -->
+<style is:global>
+  /* ── Gallery grid ─────────────────────────────────────────────────────────── */
+  #grid.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+
+  #grid .tile {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; cursor: pointer;
+    transition: transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s ease, border-color .18s ease;
+  }
+  #grid .tile:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: var(--shadow-lg); }
+  #grid .tile.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+
+  #grid .tile-media {
+    position: relative; aspect-ratio: 1 / 1; background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #grid .tile-media.kind-image { background: var(--bg-inset); }
+  #grid .tile-media.kind-video { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  #grid .tile-media.kind-audio { background: linear-gradient(135deg, #6d28d9, #4c1d95); }
+  #grid .tile-media.kind-file  { background: var(--bg-inset); }
+
+  /* Video play badge + audio note (centered) */
+  #grid .tile-play { width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; }
+  #grid .tile-play::after { content: ''; width: 0; height: 0; border-left: 15px solid #fff; border-top: 9px solid transparent; border-bottom: 9px solid transparent; margin-left: 3px; }
+  #grid .tile-note::after { content: '♪'; font-size: 42px; color: rgba(255,255,255,.92); }
+
+  /* Type chip (bottom-left) */
+  #grid .tile-type { position: absolute; bottom: 8px; left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: .06em; color: #fff; background: rgba(0,0,0,.55); padding: 3px 7px; border-radius: 6px; backdrop-filter: blur(2px); }
+
+  /* Favorite (top-right) */
+  #grid .tile-fav { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.4); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
+  #grid .tile:hover .tile-fav { opacity: 1; }
+  #grid .tile-fav.on { opacity: 1; color: #fbbf24; }
+  #grid .tile-fav:hover { background: rgba(0,0,0,.65); }
+
+  /* Selection checkbox (top-left) */
+  #grid .tile-check { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,.85); background: rgba(0,0,0,.3); cursor: pointer; opacity: 0; transition: opacity .15s ease; padding: 0; }
+  #grid .tile:hover .tile-check { opacity: 1; }
+  #grid .tile.selected .tile-check { opacity: 1; background: var(--accent); border-color: var(--accent); }
+  #grid .tile.selected .tile-check::after { content: '✓'; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; height: 100%; }
+
+  /* Delete (bottom-right, hover) */
+  #grid .tile-del { position: absolute; bottom: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
+  #grid .tile:hover .tile-del { opacity: 1; }
+  #grid .tile-del:hover { background: #ef4444; }
+
+  #grid .tile-foot { padding: 10px 12px; }
+  #grid .tile-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+  #grid .tile-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; text-transform: capitalize; }
+
+  /* ── Upload progress card ─────────────────────────────────────────────────── */
+  #upload-status { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow-md); }
+  #upload-status .up-head { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; }
+  #upload-status .up-list { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; }
+  #upload-status .up-row { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  #upload-status .up-row-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
+  #upload-status .up-name { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #upload-status .up-stage { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
+  #upload-status .up-track { height: 6px; background: var(--bg); border-radius: 100px; overflow: hidden; }
+  #upload-status .up-fill { height: 100%; width: 0%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), #8b5cf6); transition: width .2s ease; }
+  #upload-status .up-done .up-fill { background: var(--success, #00a854); }
+  #upload-status .up-done .up-stage { color: var(--success, #00a854); }
+  #upload-status .up-failed .up-fill { background: #ef4444; width: 100% !important; }
+  #upload-status .up-failed .up-stage { color: #ef4444; }
+
+  /* ── Viewer media (img/video/audio injected into #v-stage) ────────────────── */
+  #v-stage .v-media { max-width: 92vw; max-height: 82vh; border-radius: 8px; }
+  #v-stage .v-spin { color: #ccc; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
 </style>
