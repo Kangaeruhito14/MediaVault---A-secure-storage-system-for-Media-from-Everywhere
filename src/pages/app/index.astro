@@ -141,12 +141,36 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     <section id="vault-view" hidden>
       <div class="vault-toolbar">
         <input id="search" class="inp search" placeholder="Search your files…" />
-        <label class="btn-primary upload-label">
-          Upload
-          <input id="file-input" type="file" multiple accept="image/*,video/*,audio/*" hidden />
-        </label>
+        <button id="upload-open" type="button" class="btn-primary upload-label">Upload</button>
+        <input id="file-input" type="file" multiple accept="image/*,video/*,audio/*,.pdf,.txt,.md,.rtf,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,application/pdf,text/plain" hidden />
       </div>
+
+      <!-- Category tabs + sort -->
+      <div id="filter-bar" class="filter-bar" hidden>
+        <div class="cat-tabs" role="tablist">
+          <button class="cat-tab active" data-cat="all" type="button">All</button>
+          <button class="cat-tab" data-cat="image" type="button">Images</button>
+          <button class="cat-tab" data-cat="video" type="button">Videos</button>
+          <button class="cat-tab" data-cat="audio" type="button">Audio</button>
+          <button class="cat-tab" data-cat="doc" type="button">Docs</button>
+        </div>
+        <select id="sort-select" class="sort-select" aria-label="Sort files">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="az">Name A–Z</option>
+          <option value="za">Name Z–A</option>
+          <option value="big">Largest first</option>
+          <option value="small">Smallest first</option>
+        </select>
+      </div>
+
       <div id="upload-status" class="upload-status" hidden></div>
+
+      <!-- Delete + undo banner -->
+      <div id="undo-bar" class="undo-bar" hidden>
+        <span id="undo-text" class="undo-text"></span>
+        <button id="undo-btn" type="button" class="btn-ghost undo-btn">Undo</button>
+      </div>
 
       <!-- Selection action bar (appears when items are selected) -->
       <div id="select-bar" class="select-bar" hidden>
@@ -159,6 +183,14 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
       <div id="grid" class="grid"></div>
 
+      <!-- Empty (filtered) note -->
+      <p id="no-match" class="muted no-match" hidden>No files match this filter.</p>
+
+      <!-- Upload-more affordance (shown when the library has files) -->
+      <div id="more-bar" class="more-bar" hidden>
+        Want to upload more? <button id="upload-more" type="button" class="link">Click here</button>
+      </div>
+
       <!-- Empty state: a real drag-and-drop zone, not a bare line of text. -->
       <button id="empty" class="dropzone" type="button" hidden>
         <span class="dropzone-icon" aria-hidden="true">
@@ -169,7 +201,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
           </svg>
         </span>
         <span class="dropzone-title">Drop files here, or click to upload</span>
-        <span class="dropzone-sub">Photos, videos, and audio — encrypted in your browser before they leave this device.</span>
+        <span class="dropzone-sub">Photos, videos, audio, PDFs &amp; documents — encrypted in your browser before they leave this device.</span>
       </button>
 
       <div class="center"><button id="load-more" class="btn-ghost" hidden>Load more</button></div>
@@ -198,6 +230,25 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     <div id="v-stage" class="v-stage"><div id="v-spin" class="v-spin">Decrypting…</div></div>
     <button id="v-next" class="v-nav v-next" aria-label="Next">›</button>
     <div id="v-caption" class="v-caption"></div>
+  </div>
+
+  <!-- Upload modal (drag & drop) -->
+  <div id="upload-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button id="upload-modal-close" class="modal-close" aria-label="Close">✕</button>
+      <h2 class="card-h">Upload files</h2>
+      <button id="modal-dropzone" class="dropzone" type="button">
+        <span class="dropzone-icon" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </span>
+        <span class="dropzone-title">Drop files here, or click to choose</span>
+        <span class="dropzone-sub">Photos, videos, audio, PDFs &amp; documents — encrypted in your browser first.</span>
+      </button>
+    </div>
   </div>
 
   <!-- Account modal -->
@@ -284,6 +335,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   let visible: VaultItem[] = [];
   let cursor: string | null = null;
   let mode: 'signin' | 'signup' = 'signin';
+  let category = 'all';
+  let sortKey = 'new';
   const thumbUrls = new Map<string, string>(); // id -> object URL (decrypted thumbnail)
   const connFor = (i: VaultItem) => connMap[i.connectionId] ?? connections[0];
 
@@ -293,8 +346,16 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     if (n < 1073741824) return `${(n / 1048576).toFixed(1)} MB`;
     return `${(n / 1073741824).toFixed(2)} GB`;
   }
-  const kind = (mime: string) =>
-    mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : mime.startsWith('audio/') ? 'audio' : 'file';
+  const kind = (mime: string) => {
+    const m = (mime || '').toLowerCase();
+    if (m.startsWith('image/')) return 'image';
+    if (m.startsWith('video/')) return 'video';
+    if (m.startsWith('audio/')) return 'audio';
+    if (m === 'application/pdf' || m.startsWith('text/') || /pdf|word|document|sheet|presentation|excel|powerpoint|rtf|epub|json|xml|csv|opendocument/.test(m)) return 'doc';
+    return 'file';
+  };
+  // Tabs: "Docs" groups documents + anything non-media.
+  const inCategory = (k: string, cat: string) => cat === 'all' || k === cat || (cat === 'doc' && (k === 'doc' || k === 'file'));
 
   // ── Stay-unlocked (opt-in, tab-scoped) ──────────────────────────────────────
   // Pref (whether to keep) lives in localStorage; the actual key lives ONLY in
@@ -414,8 +475,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       showErr('unlock-error', err);
     }
   });
-  $('unlock-logout').addEventListener('click', async () => { clearKeptKey(); await client.logout(); show('auth-view'); });
-  $('lock-btn').addEventListener('click', async () => { clearKeptKey(); revokeThumbs(); await client.logout(); show('auth-view'); });
+  $('unlock-logout').addEventListener('click', async () => { await commitPending(); clearKeptKey(); await client.logout(); show('auth-view'); });
+  $('lock-btn').addEventListener('click', async () => { await commitPending(); clearKeptKey(); revokeThumbs(); await client.logout(); show('auth-view'); });
 
   // ── Account modal (profile / change password / export / delete) ─────────────
   $('account-btn').addEventListener('click', async () => {
@@ -576,6 +637,16 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('load-more').addEventListener('click', () => loadMore());
   $('search').addEventListener('input', render);
 
+  // Category tabs + sort
+  document.querySelectorAll<HTMLButtonElement>('.cat-tab').forEach((t) =>
+    t.addEventListener('click', () => {
+      category = t.dataset.cat || 'all';
+      document.querySelectorAll('.cat-tab').forEach((x) => x.classList.toggle('active', x === t));
+      render();
+    }),
+  );
+  $('sort-select').addEventListener('change', (e) => { sortKey = (e.target as HTMLSelectElement).value; render(); });
+
   // Lazy-load thumbnails only as cards scroll into view (scales to big libraries).
   const thumbObserver = new IntersectionObserver(
     (entries) => {
@@ -591,10 +662,34 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
   const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
 
+  function sortFiltered(list: VaultItem[]): VaultItem[] {
+    const byName = (a: VaultItem, b: VaultItem) => a.metadata.name.localeCompare(b.metadata.name);
+    const cmp: Record<string, (a: VaultItem, b: VaultItem) => number> = {
+      new: (a, b) => b.createdAt - a.createdAt,
+      old: (a, b) => a.createdAt - b.createdAt,
+      az: byName,
+      za: (a, b) => byName(b, a),
+      big: (a, b) => b.metadata.size - a.metadata.size,
+      small: (a, b) => a.metadata.size - b.metadata.size,
+    };
+    const by = cmp[sortKey] || cmp.new;
+    return [...list].sort((a, b) => {
+      if (a.bookmarked !== b.bookmarked) return a.bookmarked ? -1 : 1; // bookmarked first
+      return by(a, b);
+    });
+  }
+
   function render() {
     const q = ($('search') as HTMLInputElement).value.toLowerCase();
-    visible = q ? items.filter((i) => i.metadata.name.toLowerCase().includes(q)) : items;
-    $('empty').hidden = items.length !== 0;
+    let list = items;
+    if (q) list = list.filter((i) => i.metadata.name.toLowerCase().includes(q));
+    list = list.filter((i) => inCategory(kind(i.metadata.mime), category));
+    visible = sortFiltered(list);
+
+    $('empty').hidden = items.length !== 0;            // first-run dropzone
+    $('filter-bar').hidden = items.length === 0;
+    $('more-bar').hidden = items.length === 0;
+    $('no-match').hidden = items.length === 0 || visible.length !== 0; // have files but filter empties them
     const grid = $('grid');
     grid.innerHTML = '';
     visible.forEach((item, idx) => {
@@ -626,14 +721,12 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
       const type = document.createElement('span');
       type.className = 'tile-type';
-      type.textContent = k.toUpperCase();
+      type.textContent = (k === 'doc' || k === 'file') ? 'DOC' : k.toUpperCase();
 
       media.append(check, fav, del, type);
-      if (k === 'video' || k === 'audio') {
-        const ind = document.createElement('span');
-        ind.className = k === 'video' ? 'tile-play' : 'tile-note';
-        media.appendChild(ind);
-      }
+      if (k === 'video') { const ind = document.createElement('span'); ind.className = 'tile-play'; media.appendChild(ind); }
+      else if (k === 'audio') { const ind = document.createElement('span'); ind.className = 'tile-note'; media.appendChild(ind); }
+      else if (k === 'doc' || k === 'file') { const ind = document.createElement('span'); ind.className = 'tile-doc'; media.appendChild(ind); }
       card.appendChild(media);
 
       const foot = document.createElement('div');
@@ -644,7 +737,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       name.title = item.metadata.name;
       const sub = document.createElement('div');
       sub.className = 'tile-sub';
-      sub.textContent = `${k} · ${fmtBytes(item.metadata.size)}`;
+      sub.textContent = `${k === 'file' ? 'document' : k} · ${fmtBytes(item.metadata.size)}`;
       foot.append(name, sub);
       card.appendChild(foot);
 
@@ -673,25 +766,65 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     $('select-count').textContent = `${n} selected`;
   }
   $('select-clear').addEventListener('click', () => { selected.clear(); render(); });
-  $('select-delete').addEventListener('click', async () => {
-    const ids = [...selected];
-    if (!ids.length) return;
-    if (!confirm(`Delete ${ids.length} file${ids.length === 1 ? '' : 's'}? This permanently removes them from your storage.`)) return;
+  $('select-delete').addEventListener('click', () => {
+    const batch = items.filter((i) => selected.has(i.id));
+    if (batch.length) softDelete(batch);
+  });
+
+  // ── Delete with a 5-second undo (Gmail-style; replaces the JS confirm) ────────
+  // The item disappears immediately and the real storage+index removal only runs
+  // after 5s, so "Undo" is instant and can't fail.
+  let pendingDelete: { items: VaultItem[]; timer: number; interval: number } | null = null;
+
+  async function commitPending(): Promise<void> {
+    if (!pendingDelete) return;
+    const batch = pendingDelete.items;
+    clearTimeout(pendingDelete.timer);
+    clearInterval(pendingDelete.interval);
+    pendingDelete = null;
+    ($('undo-btn') as HTMLButtonElement).hidden = true;
+    $('undo-text').textContent = `Deleting ${batch.length} file${batch.length === 1 ? '' : 's'}…`;
+    $('undo-bar').hidden = false;
     let done = 0;
-    for (const id of ids) {
-      const item = items.find((i) => i.id === id);
-      if (!item) continue;
+    for (const item of batch) {
       try {
         await client.remove(item, connFor(item));
-        const u = thumbUrls.get(id); if (u) { URL.revokeObjectURL(u); thumbUrls.delete(id); }
-        items = items.filter((i) => i.id !== id);
+        const u = thumbUrls.get(item.id); if (u) { URL.revokeObjectURL(u); thumbUrls.delete(item.id); }
         done++;
-      } catch { /* keep going */ }
+      } catch { /* leave it; it will reappear on next refresh */ }
     }
-    selected.clear();
-    render();
+    $('undo-bar').hidden = true;
+    ($('undo-btn') as HTMLButtonElement).hidden = false;
     if (done) toast('success', `Deleted ${done} file${done === 1 ? '' : 's'}`);
-    if (done < ids.length) toast('error', `${ids.length - done} could not be deleted`);
+    if (done < batch.length) toast('error', `${batch.length - done} could not be deleted`);
+  }
+
+  async function softDelete(batch: VaultItem[]) {
+    if (!batch.length) return;
+    await commitPending(); // finish any prior pending batch first
+    const ids = new Set(batch.map((i) => i.id));
+    items = items.filter((i) => !ids.has(i.id));
+    batch.forEach((i) => selected.delete(i.id));
+    render();
+    let secs = 5;
+    const label = () => { $('undo-text').textContent = `Deleted ${batch.length} file${batch.length === 1 ? '' : 's'} · undo (${secs}s)`; };
+    label();
+    ($('undo-btn') as HTMLButtonElement).hidden = false;
+    $('undo-bar').hidden = false;
+    const interval = window.setInterval(() => { secs--; if (secs >= 1) label(); }, 1000);
+    const timer = window.setTimeout(() => { commitPending(); }, 5000);
+    pendingDelete = { items: batch, timer, interval };
+  }
+
+  $('undo-btn').addEventListener('click', () => {
+    if (!pendingDelete) return;
+    clearTimeout(pendingDelete.timer);
+    clearInterval(pendingDelete.interval);
+    items = items.concat(pendingDelete.items);
+    pendingDelete = null;
+    $('undo-bar').hidden = true;
+    render();
+    toast('info', 'Restored');
   });
 
   async function loadThumb(card: HTMLElement) {
@@ -715,15 +848,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     try { await client.setBookmark(item, !item.bookmarked); item.bookmarked = !item.bookmarked; render(); }
     catch { toast('error', 'Could not update bookmark'); }
   }
-  async function remove(item: VaultItem) {
-    if (!confirm(`Delete "${item.metadata.name}"? This permanently removes it from your storage.`)) return;
-    try {
-      await client.remove(item, connFor(item));
-      const u = thumbUrls.get(item.id); if (u) { URL.revokeObjectURL(u); thumbUrls.delete(item.id); }
-      items = items.filter((i) => i.id !== item.id);
-      render();
-      toast('success', 'Deleted');
-    } catch (err) { toast('error', `Delete failed: ${(err as Error).message}`); }
+  function remove(item: VaultItem) {
+    softDelete([item]); // disappears now, real delete after 5s with Undo
   }
 
   // ── Viewer ────────────────────────────────────────────────────────────────────
@@ -790,11 +916,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       const url = URL.createObjectURL(new Blob([bytes], { type: item.metadata.mime || 'application/octet-stream' }));
       viewerUrl = url;
       stage.innerHTML = '';
+      const mime = (item.metadata.mime || '').toLowerCase();
+      const downloadLink = () => {
+        const link = document.createElement('a');
+        link.href = url; link.download = item.metadata.name; link.className = 'btn-primary';
+        link.textContent = `Download ${item.metadata.name}`;
+        return link;
+      };
       let el: HTMLElement;
       if (k === 'image') { const i = document.createElement('img'); i.src = url; i.className = 'v-media'; el = i; }
       else if (k === 'video') { const v = document.createElement('video'); v.src = url; v.controls = true; v.autoplay = true; v.className = 'v-media'; el = v; }
       else if (k === 'audio') { const a = document.createElement('audio'); a.src = url; a.controls = true; a.autoplay = true; el = a; }
-      else { const link = document.createElement('a'); link.href = url; link.download = item.metadata.name; link.className = 'btn-primary'; link.textContent = `Download ${item.metadata.name}`; el = link; }
+      else if (mime === 'application/pdf') { const f = document.createElement('iframe'); f.src = url; f.className = 'v-doc-frame'; el = f; }
+      else if (mime.startsWith('text/') || /json|xml|csv|markdown/.test(mime)) {
+        const pre = document.createElement('pre'); pre.className = 'v-doc-text';
+        pre.textContent = new TextDecoder().decode(bytes); // XSS-safe (textContent)
+        el = pre;
+      }
+      else { el = downloadLink(); }
       stage.appendChild(el);
     };
 
@@ -916,11 +1055,30 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     const input = e.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+    $('upload-modal').hidden = true; // close the picker dialog if it was open
     uploadFiles(files);
   });
 
-  // Empty-state dropzone → open the file picker.
+  // Empty-state dropzone (first run) → open the file picker directly.
   $('empty').addEventListener('click', () => ($('file-input') as HTMLInputElement).click());
+
+  // Upload popup: opened from the toolbar button and the "upload more" link.
+  const openUploadModal = () => { $('upload-modal').hidden = false; };
+  $('upload-open').addEventListener('click', openUploadModal);
+  $('upload-more').addEventListener('click', openUploadModal);
+  $('upload-modal-close').addEventListener('click', () => { $('upload-modal').hidden = true; });
+  $('upload-modal').addEventListener('click', (e) => { if (e.target === $('upload-modal')) $('upload-modal').hidden = true; });
+  $('modal-dropzone').addEventListener('click', () => ($('file-input') as HTMLInputElement).click());
+  // Drag & drop onto the modal dropzone.
+  const mdz = $('modal-dropzone');
+  ['dragenter', 'dragover'].forEach((ev) => mdz.addEventListener(ev, (e) => { e.preventDefault(); mdz.classList.add('drag-over'); }));
+  mdz.addEventListener('dragleave', () => mdz.classList.remove('drag-over'));
+  mdz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    mdz.classList.remove('drag-over');
+    $('upload-modal').hidden = true;
+    uploadFiles(Array.from((e as DragEvent).dataTransfer?.files ?? []));
+  });
 
   const vaultView = $('vault-view');
   const overlay = $('drop-overlay');
@@ -1036,6 +1194,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .select-count { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .select-actions { display: flex; gap: 10px; }
 
+  /* Category tabs + sort */
+  .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .cat-tabs { display: flex; gap: 4px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 100px; padding: 4px; }
+  .cat-tab { border: none; background: transparent; color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: 100px; cursor: pointer; transition: color .15s ease, background .15s ease; }
+  .cat-tab:hover { color: var(--text-primary); }
+  .cat-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+  .sort-select { background: var(--surface); border: 1px solid var(--border-med); border-radius: 9px; padding: 8px 12px; font: inherit; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+  .sort-select:focus { outline: none; border-color: var(--accent); }
+
+  /* Undo banner */
+  .undo-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--text-primary); color: var(--bg); border-radius: 12px; padding: 11px 16px; margin-bottom: 16px; }
+  .undo-text { font-size: 13px; font-weight: 500; }
+  .undo-btn { color: var(--bg) !important; border: 1px solid color-mix(in srgb, var(--bg) 40%, transparent); }
+  .undo-btn:hover { background: color-mix(in srgb, var(--bg) 15%, transparent) !important; }
+
+  .more-bar { text-align: center; margin: 28px 0 8px; font-size: 13px; color: var(--text-muted); }
+  .no-match { text-align: center; padding: 48px 0; }
+
   /* Empty-state dropzone */
   .dropzone { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 24px; margin: 8px 0; background: color-mix(in srgb, var(--surface) 70%, transparent); border: 2px dashed var(--border-strong, var(--border)); border-radius: 16px; cursor: pointer; font-family: inherit; transition: border-color .15s ease, background .15s ease; }
   .dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: var(--accent-subtle, rgba(59,130,246,0.08)); }
@@ -1080,7 +1256,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   #grid .tile-media.kind-image { background: var(--bg-inset); }
   #grid .tile-media.kind-video { background: linear-gradient(135deg, #1e293b, #0f172a); }
   #grid .tile-media.kind-audio { background: linear-gradient(135deg, #6d28d9, #4c1d95); }
-  #grid .tile-media.kind-file  { background: var(--bg-inset); }
+  #grid .tile-media.kind-doc   { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+  #grid .tile-media.kind-file  { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+  #grid .tile-doc::after { content: '📄'; font-size: 40px; }
 
   /* Video play badge + audio note (centered) */
   #grid .tile-play { width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; }
@@ -1126,7 +1304,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   #upload-status .up-failed .up-fill { background: #ef4444; width: 100% !important; }
   #upload-status .up-failed .up-stage { color: #ef4444; }
 
-  /* ── Viewer media (img/video/audio injected into #v-stage) ────────────────── */
+  /* ── Viewer media (img/video/audio/doc injected into #v-stage) ────────────── */
   #v-stage .v-media { max-width: 92vw; max-height: 82vh; border-radius: 8px; }
   #v-stage .v-spin { color: #ccc; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
+  #v-stage .v-doc-frame { width: 90vw; height: 82vh; border: none; border-radius: 8px; background: #fff; }
+  #v-stage .v-doc-text { max-width: 880px; width: 90vw; max-height: 82vh; overflow: auto; background: var(--surface); color: var(--text-primary); border-radius: 10px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; text-align: left; }
 </style>

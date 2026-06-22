@@ -15,6 +15,8 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
+  // Decrypted PDFs are previewed in a blob: iframe (in-page document viewer).
+  "frame-src 'self' blob:",
   // The browser talks directly to the user's own S3-compatible bucket, so any
   // HTTPS origin must be allowed for storage upload/download.
   "connect-src 'self' https:",
