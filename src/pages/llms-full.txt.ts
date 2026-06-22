@@ -13,9 +13,10 @@ export const GET: APIRoute = ({ url }) => {
 ## What it is
 MediaVault is a free, open-source, end-to-end encrypted media vault — a private
 alternative to Google Photos, Apple iCloud, and Microsoft OneDrive for storing
-personal photos, videos, and audio. Files are encrypted in your browser and
-stored in cloud storage you own; the service is a thin "control plane" that can
-never read your files.
+personal photos, videos, audio, PDFs, and documents. Files are encrypted in your
+browser and stored in cloud storage you own; the service is a thin "control plane"
+that can never read your files. Images, video, audio, PDFs, and text preview in the
+app; other documents download in one click.
 
 ## The core idea: zero-knowledge by architecture
 Encryption happens in your browser before anything is uploaded. The encryption

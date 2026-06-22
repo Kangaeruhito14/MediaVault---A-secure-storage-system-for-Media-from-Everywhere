@@ -16,7 +16,7 @@ const jsonLd = [
     alternateName: ['OpenMediaVaults', 'Open Media Vault'],
     url: origin,
     description:
-      'Free, open-source, end-to-end encrypted media vault — a private Google Photos alternative that encrypts photos, videos, and audio in your browser and stores them in cloud storage you own.',
+      'Free, open-source, end-to-end encrypted vault — a private Google Photos & cloud-drive alternative that encrypts photos, videos, audio, PDFs, and documents in your browser and stores them in cloud storage you own.',
   },
   {
     '@context': 'https://schema.org',
@@ -27,7 +27,7 @@ const jsonLd = [
     operatingSystem: 'Any modern web browser',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'End-to-end encrypted photo, video, and audio vault. Files are encrypted in the browser and stored in your own S3-compatible cloud; the operator can never read them. Includes seekable encrypted streaming and recovery-key reset.',
+      'End-to-end encrypted vault for photos, videos, audio, PDFs, and documents. Files are encrypted in the browser and stored in your own S3-compatible cloud; the operator can never read them. Includes seekable encrypted streaming, in-app document/PDF viewing, and recovery-key reset.',
     featureList: [
       'End-to-end encryption — keys never leave your device',
       'Bring your own storage (Cloudflare R2, Backblaze B2, Wasabi, S3)',
@@ -56,7 +56,7 @@ const jsonLd = [
 
 <PublicLayout
   title="MediaVault — End-to-End Encrypted Media, on Storage You Own"
-  description="MediaVault encrypts your photos, videos, and audio in your browser, then stores them in your own cloud (Cloudflare R2, Backblaze B2, Wasabi, S3). The keys never leave your device — so not even we can read your files. Free, open-source, multi-device."
+  description="MediaVault encrypts your photos, videos, audio, PDFs, and documents in your browser, then stores them in your own cloud (Cloudflare R2, Backblaze B2, Wasabi, S3). The keys never leave your device — so not even we can read your files. Free, open-source, multi-device."
   jsonLd={jsonLd}
 >
 
@@ -80,7 +80,7 @@ const jsonLd = [
       <!-- Description -->
       <p class="hero-description" data-reveal data-reveal-delay="120">
         MediaVault — the <strong>OpenMediaVaults</strong> project — encrypts your photos, videos,
-        and audio <strong>in your browser</strong>, then stores them in your own cloud bucket.
+        audio, PDFs &amp; documents <strong>in your browser</strong>, then stores them in your own cloud bucket.
         The keys never leave your device, so not even we can read your files. Free, open-source,
         and works across all your devices.
       </p>
