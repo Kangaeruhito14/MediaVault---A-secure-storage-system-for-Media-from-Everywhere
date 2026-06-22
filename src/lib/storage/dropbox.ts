@@ -80,12 +80,19 @@ export class DropboxClient {
     this.onTokenRefresh?.(t);
   }
 
-  /** Bearer-authed fetch, refreshing the token once on a 401. */
+  /** Bearer-authed fetch, refreshing the token once on a 401 and retrying once
+   *  on a transient network error (fetch rejection). */
   private async authed(url: string, init: RequestInit, retry = true): Promise<Response> {
     await this.ensureFresh();
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.accessToken}`);
-    const res = await this.fetchImpl(url, { ...init, headers });
+    let res: Response;
+    try {
+      res = await this.fetchImpl(url, { ...init, headers });
+    } catch (e) {
+      if (retry) { await sleep(800); return this.authed(url, init, false); } // network blip → one retry
+      throw e;
+    }
     if (res.status === 401 && retry && this.refreshToken) {
       await this.refresh();
       return this.authed(url, init, false);
@@ -121,7 +128,13 @@ export class DropboxClient {
       'Content-Type': 'application/octet-stream',
       'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', mute: true }),
     };
-    const r = await xhrUpload('POST', `${CONTENT}/files/upload`, headers, body, onProgress);
+    let r: { status: number; text: string };
+    try {
+      r = await xhrUpload('POST', `${CONTENT}/files/upload`, headers, body, onProgress);
+    } catch (e) {
+      if (retry) { await sleep(800); return this.xhrSimpleUpload(path, body, onProgress, false); } // network blip → one retry
+      throw e;
+    }
     if (r.status === 401 && retry && this.refreshToken) {
       await this.refresh();
       return this.xhrSimpleUpload(path, body, onProgress, false);
@@ -218,4 +231,8 @@ async function safeText(res: Response): Promise<string> {
   } catch {
     return '';
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
