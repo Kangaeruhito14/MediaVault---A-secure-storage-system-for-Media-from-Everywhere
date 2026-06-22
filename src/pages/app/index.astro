@@ -177,7 +177,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
       <a href="/report">Report</a>
-      <a href="/.well-known/security.txt">Security</a>
+      <a href="/contact">Contact</a>
     </nav>
   </footer>
 
@@ -760,24 +760,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   });
 
   // ── Upload (button + drag & drop) ───────────────────────────────────────────
-  // Render one progress row; returns helpers to update its stage + bar.
-  function makeUploadRow(name: string, index: number, count: number) {
+  // Render one progress row inside the upload list; returns update helpers.
+  function makeUploadRow(name: string, list: HTMLElement) {
     const row = document.createElement('div');
     row.className = 'up-row';
     row.innerHTML = `
       <div class="up-row-top">
         <span class="up-name"></span>
-        <span class="up-stage">Waiting…</span>
+        <span class="up-stage">Queued…</span>
       </div>
       <div class="up-track"><div class="up-fill"></div></div>`;
-    (row.querySelector('.up-name') as HTMLElement).textContent = `${name}  (${index + 1}/${count})`;
+    (row.querySelector('.up-name') as HTMLElement).textContent = name;
     const fill = row.querySelector('.up-fill') as HTMLElement;
     const stage = row.querySelector('.up-stage') as HTMLElement;
-    $('upload-status').appendChild(row);
+    list.appendChild(row);
     return {
       stage(text: string) { stage.textContent = text; },
       progress(pct: number) { fill.style.width = `${Math.max(0, Math.min(100, pct))}%`; },
-      done() { fill.style.width = '100%'; row.classList.add('up-done'); stage.textContent = 'Saved ✓'; },
+      done() { fill.style.width = '100%'; row.classList.add('up-done'); stage.textContent = 'Uploaded ✓'; },
       fail(msg: string) { row.classList.add('up-failed'); stage.textContent = msg; },
     };
   }
@@ -786,24 +786,27 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     if (!files.length || !connections.length) return;
     const conn = connections[0];
     const panel = $('upload-status');
+    $('empty').hidden = true; // don't show the dropzone behind the progress card
     panel.hidden = false;
-    panel.innerHTML = '';
-    let done = 0;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const row = makeUploadRow(file.name, i, files.length);
+    panel.innerHTML = '<div class="up-head"></div><div class="up-list"></div>';
+    const head = panel.querySelector('.up-head') as HTMLElement;
+    const list = panel.querySelector('.up-list') as HTMLElement;
+    let done = 0, failed = 0;
+    const setHead = (label: string) => { head.textContent = label; };
+    setHead(`Uploading 0 / ${files.length}…`);
+
+    for (const file of files) {
+      const row = makeUploadRow(file.name, list);
       try {
         row.stage('Encrypting…');
         const [bytes, thumbnail] = await Promise.all([
           file.arrayBuffer().then((b) => new Uint8Array(b)),
           makeThumbnail(file), // never blocks: times out → null
         ]);
-        let started = false;
         await client.upload(
           conn,
           { bytes, name: file.name, mime: file.type || 'application/octet-stream', thumbnail },
           (loaded: number, total: number) => {
-            if (!started) { started = true; }
             row.stage(`Uploading ${fmtBytes(loaded)} / ${fmtBytes(total)}`);
             row.progress(total ? (loaded / total) * 100 : 0);
           },
@@ -812,13 +815,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         done++;
       } catch (err) {
         row.fail((err as Error).message || 'failed');
-        toast('error', `${file.name}: ${(err as Error).message}`);
+        failed++;
       }
+      setHead(`Uploading ${done + failed} / ${files.length}…`);
     }
+
+    setHead(failed ? `Done — ${done} uploaded, ${failed} failed` : `All ${done} uploaded ✓`);
     if (done) toast('success', `Uploaded ${done} file${done === 1 ? '' : 's'}`);
+    if (failed) toast('error', `${failed} file${failed === 1 ? '' : 's'} failed`);
     await loadFirstPage();
-    // Leave the panel up briefly so the user sees the result, then clear.
-    setTimeout(() => { panel.hidden = true; panel.innerHTML = ''; }, done === files.length ? 2500 : 6000);
+    // Keep the summary visible a moment, then clear it.
+    setTimeout(() => { panel.hidden = true; panel.innerHTML = ''; render(); }, failed ? 8000 : 2500);
   }
 
   $('file-input').addEventListener('change', (e) => {
@@ -938,9 +945,11 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .search { flex: 1; }
   .upload-label { display: inline-flex; align-items: center; cursor: pointer; }
 
-  /* Upload progress panel */
-  .upload-status { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-  .up-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  /* Upload progress card */
+  .upload-status { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow-md); }
+  .up-head { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; }
+  .up-list { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; }
+  .up-row { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
   .up-row-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
   .up-name { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .up-stage { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
