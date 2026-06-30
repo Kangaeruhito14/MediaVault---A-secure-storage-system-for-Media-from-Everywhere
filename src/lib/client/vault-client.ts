@@ -57,6 +57,15 @@ export interface VaultItem {
   createdAt: number;
 }
 
+export interface SessionInfo {
+  id: string;
+  device: string;
+  ip: string | null;
+  createdAt: number;
+  lastSeen: number;
+  current: boolean;
+}
+
 async function asJson(res: Response): Promise<any> {
   const text = await res.text();
   try {
@@ -123,7 +132,12 @@ export class VaultClient {
     return { recoveryKey: acct.recoveryKey };
   }
 
-  async login(email: string, password: string): Promise<void> {
+  /**
+   * Sign in. Returns `{ twofaRequired: false }` when the vault is now unlocked,
+   * or `{ twofaRequired: true, pendingToken }` when the account has 2FA on — in
+   * which case the caller collects a code and calls completeTwoFactorLogin().
+   */
+  async login(email: string, password: string): Promise<{ twofaRequired: boolean; pendingToken?: string }> {
     const pre = await asJson(await this.api('/api/auth/prelogin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -137,6 +151,23 @@ export class VaultClient {
     });
     if (!res.ok) throw new Error((await asJson(res)).error || 'login_failed');
     const data = await asJson(res);
+    if (data.twofaRequired) return { twofaRequired: true, pendingToken: data.pendingToken };
+    await this.unlockFrom(password, data);
+    return { twofaRequired: false };
+  }
+
+  /** Finish a 2FA login: post the code, then unlock with the password. */
+  async completeTwoFactorLogin(password: string, pendingToken: string, code: string): Promise<void> {
+    const res = await this.api('/api/auth/2fa-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pendingToken, code: code.trim() }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'twofa_failed');
+    await this.unlockFrom(password, await asJson(res));
+  }
+
+  private async unlockFrom(password: string, data: { kdfSalt: string; kdfParams: KdfParams; wrappedAccountKey: string }): Promise<void> {
     const key = await unlockWithPassword(password, data.kdfSalt, data.kdfParams, data.wrappedAccountKey);
     if (!key) throw new Error('unlock_failed');
     this.accountKey = key;
@@ -209,6 +240,75 @@ export class VaultClient {
     });
     if (!res.ok) throw new Error((await asJson(res)).error || 'change_password_failed');
     return { recoveryKey: newRecoveryKey };
+  }
+
+  // ── Two-factor (TOTP) ───────────────────────────────────────────────────────
+  async twoFactorStatus(): Promise<{ enabled: boolean; pending: boolean }> {
+    return asJson(await this.api('/api/auth/2fa/status'));
+  }
+
+  /** Begin enrolment: returns the secret + otpauth URL for the QR code. */
+  async twoFactorSetup(): Promise<{ secret: string; otpauthUrl: string }> {
+    const res = await this.api('/api/auth/2fa/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'setup_failed');
+    return asJson(res);
+  }
+
+  /** Confirm enrolment with the password + a code; returns one-time backup codes. */
+  async twoFactorEnable(email: string, currentPassword: string, code: string): Promise<{ backupCodes: string[] }> {
+    const currentAuthKeyB64 = await this.provePassword(email, currentPassword);
+    const res = await this.api('/api/auth/2fa/enable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentAuthKeyB64, code: code.trim() }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'enable_failed');
+    return asJson(res);
+  }
+
+  async twoFactorDisable(email: string, currentPassword: string): Promise<void> {
+    const currentAuthKeyB64 = await this.provePassword(email, currentPassword);
+    const res = await this.api('/api/auth/2fa/disable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentAuthKeyB64 }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'disable_failed');
+  }
+
+  /** Re-derive the auth key from a password (to re-prove it for sensitive ops). */
+  private async provePassword(email: string, password: string): Promise<string> {
+    const pre = await asJson(
+      await this.api('/api/auth/prelogin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }),
+    );
+    return deriveAuthKey(password, pre.kdfSalt, pre.kdfParams);
+  }
+
+  // ── Active sessions (devices) ───────────────────────────────────────────────
+  async listSessions(): Promise<SessionInfo[]> {
+    return (await asJson(await this.api('/api/auth/sessions'))).sessions ?? [];
+  }
+  async revokeSession(id: string): Promise<void> {
+    await this.api('/api/auth/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+  }
+  async revokeOtherSessions(): Promise<void> {
+    await this.api('/api/auth/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    });
   }
 
   async getProfile(): Promise<{ email: string; createdAt: number; itemCount: number; connectionCount: number }> {
