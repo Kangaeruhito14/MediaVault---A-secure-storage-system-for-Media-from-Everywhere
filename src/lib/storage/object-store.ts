@@ -29,6 +29,18 @@ export type ProviderConfig =
 
 export type ProviderKind = ProviderConfig['kind'];
 
+/**
+ * Incremental upload sink for STREAMING large files: the caller feeds encrypted
+ * chunks via write() and the implementation flushes them to the provider's
+ * resumable upload (Dropbox upload-session / S3 multipart), so the whole file
+ * never sits in memory. close() finalizes; abort() cancels.
+ */
+export interface UploadWriter {
+  write(chunk: Uint8Array): Promise<void>;
+  close(): Promise<void>;
+  abort(): Promise<void>;
+}
+
 export interface ObjectStore {
   /** Store ciphertext; returns the canonical object key/id to persist (for S3
    *  the given key, for Drive the assigned file id). `onProgress` (optional)
@@ -39,6 +51,8 @@ export interface ObjectStore {
     contentType?: string,
     onProgress?: (loaded: number, total: number) => void,
   ): Promise<string>;
+  /** Optional streaming writer for large files (provider session/multipart). */
+  createWriter?(key: string): UploadWriter;
   /** Fetch ciphertext, optionally a byte range. */
   get(key: string, range?: { start: number; end: number }): Promise<Response>;
   del(key: string): Promise<void>;

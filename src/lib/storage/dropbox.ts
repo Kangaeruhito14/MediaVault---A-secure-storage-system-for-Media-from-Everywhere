@@ -11,6 +11,7 @@
  */
 import { refreshDropboxToken, type DropboxTokens } from './dropbox-oauth';
 import { hasXhr, xhrUpload, type ProgressFn } from './http-upload';
+import type { UploadWriter } from './object-store';
 
 export interface DropboxConfig {
   clientId: string;
@@ -142,54 +143,51 @@ export class DropboxClient {
     if (r.status < 200 || r.status >= 300) throw new Error(`Dropbox upload failed: ${r.status} ${r.text.slice(0, 200)}`);
   }
 
-  /** Chunked upload session for files above the single-shot limit. Progress is
-   *  reported per completed chunk (coarse but real). */
-  private async sessionUpload(path: string, body: Uint8Array, onProgress?: ProgressFn): Promise<void> {
-    const total = body.length;
-    const first = body.subarray(0, this.sessionChunk);
-    const startRes = await this.authed(`${CONTENT}/files/upload_session/start`, {
+  // ── Upload-session primitives (used by both the buffered path and the
+  //    streaming UploadWriter) ────────────────────────────────────────────────
+  async sessionStart(chunk: Uint8Array): Promise<string> {
+    const res = await this.authed(`${CONTENT}/files/upload_session/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream', 'Dropbox-API-Arg': JSON.stringify({ close: false }) },
+      body: chunk as BodyInit,
+    });
+    if (!res.ok) throw new Error(`Dropbox session start failed: ${res.status} ${await safeText(res)}`);
+    return (await res.json()).session_id;
+  }
+  async sessionAppend(sessionId: string, offset: number, chunk: Uint8Array): Promise<void> {
+    const res = await this.authed(`${CONTENT}/files/upload_session/append_v2`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream', 'Dropbox-API-Arg': JSON.stringify({ cursor: { session_id: sessionId, offset }, close: false }) },
+      body: chunk as BodyInit,
+    });
+    if (!res.ok) throw new Error(`Dropbox session append failed: ${res.status} ${await safeText(res)}`);
+  }
+  async sessionFinish(sessionId: string, offset: number, key: string, lastChunk: Uint8Array = new Uint8Array()): Promise<void> {
+    const res = await this.authed(`${CONTENT}/files/upload_session/finish`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({ close: false }),
+        'Dropbox-API-Arg': JSON.stringify({ cursor: { session_id: sessionId, offset }, commit: { path: toPath(key), mode: 'overwrite', mute: true } }),
       },
-      body: first as BodyInit,
+      body: lastChunk as BodyInit,
     });
-    if (!startRes.ok) throw new Error(`Dropbox session start failed: ${startRes.status} ${await safeText(startRes)}`);
-    const sessionId: string = (await startRes.json()).session_id;
-    onProgress?.(first.length, total);
+    if (!res.ok) throw new Error(`Dropbox session finish failed: ${res.status} ${await safeText(res)}`);
+  }
 
-    let offset = first.length;
-    while (offset < body.length) {
-      const chunk = body.subarray(offset, Math.min(offset + this.sessionChunk, body.length));
-      const isLast = offset + chunk.length >= body.length;
-      if (isLast) {
-        const finRes = await this.authed(`${CONTENT}/files/upload_session/finish`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Dropbox-API-Arg': JSON.stringify({
-              cursor: { session_id: sessionId, offset },
-              commit: { path, mode: 'overwrite', mute: true },
-            }),
-          },
-          body: chunk as BodyInit,
-        });
-        if (!finRes.ok) throw new Error(`Dropbox session finish failed: ${finRes.status} ${await safeText(finRes)}`);
-      } else {
-        const appRes = await this.authed(`${CONTENT}/files/upload_session/append_v2`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Dropbox-API-Arg': JSON.stringify({ cursor: { session_id: sessionId, offset }, close: false }),
-          },
-          body: chunk as BodyInit,
-        });
-        if (!appRes.ok) throw new Error(`Dropbox session append failed: ${appRes.status} ${await safeText(appRes)}`);
-      }
-      offset += chunk.length;
-      onProgress?.(offset, total);
+  /** A streaming writer that pushes encrypted chunks into an upload session. */
+  createWriter(key: string): DropboxUploadWriter {
+    return new DropboxUploadWriter(this, key);
+  }
+
+  /** Chunked upload of a full in-memory buffer (the non-streaming large-file path). */
+  private async sessionUpload(path: string, body: Uint8Array, onProgress?: ProgressFn): Promise<void> {
+    const total = body.length;
+    const writer = new DropboxUploadWriter(this, path);
+    for (let off = 0; off < body.length; off += this.sessionChunk) {
+      await writer.write(body.subarray(off, Math.min(off + this.sessionChunk, body.length)));
+      onProgress?.(Math.min(off + this.sessionChunk, body.length), total);
     }
+    await writer.close();
   }
 
   /** Fetch ciphertext, optionally a byte range. Returns the raw Response. */
@@ -235,4 +233,57 @@ async function safeText(res: Response): Promise<string> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Streams encrypted chunks into a Dropbox upload session. Buffers writes and
+ * flushes in ~8 MB pieces (a multiple of 4 MB, as Dropbox prefers), so a
+ * multi-GB file uploads with only a small buffer in memory.
+ */
+class DropboxUploadWriter implements UploadWriter {
+  private parts: Uint8Array[] = [];
+  private bufLen = 0;
+  private sessionId: string | null = null;
+  private offset = 0;
+  private closed = false;
+  private readonly flushAt = 8 * 1024 * 1024;
+
+  constructor(private client: DropboxClient, private key: string) {}
+
+  async write(chunk: Uint8Array): Promise<void> {
+    if (chunk.length) { this.parts.push(chunk); this.bufLen += chunk.length; }
+    while (this.bufLen >= this.flushAt) await this.flushPiece(this.flushAt);
+  }
+
+  async close(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.bufLen > 0) await this.flushPiece(this.bufLen);
+    if (this.sessionId === null) this.sessionId = await this.client.sessionStart(new Uint8Array()); // empty file
+    await this.client.sessionFinish(this.sessionId, this.offset, this.key);
+  }
+
+  async abort(): Promise<void> {
+    this.parts = [];
+    this.bufLen = 0; // a started session simply expires server-side
+  }
+
+  private merged(): Uint8Array {
+    if (this.parts.length === 1) return this.parts[0];
+    const out = new Uint8Array(this.bufLen);
+    let p = 0;
+    for (const part of this.parts) { out.set(part, p); p += part.length; }
+    return out;
+  }
+
+  private async flushPiece(n: number): Promise<void> {
+    const all = this.merged();
+    const piece = all.subarray(0, n);
+    const rest = all.subarray(n);
+    this.parts = rest.length ? [rest.slice()] : [];
+    this.bufLen = rest.length;
+    if (this.sessionId === null) this.sessionId = await this.client.sessionStart(piece);
+    else await this.client.sessionAppend(this.sessionId, this.offset, piece);
+    this.offset += piece.length;
+  }
 }
