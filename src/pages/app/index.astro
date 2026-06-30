@@ -1025,6 +1025,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   // advances to the next file (no stack of N rows for N files).
   async function uploadFiles(files: File[]) {
     if (!files.length || !connections.length) return;
+    // Honest size warning: in-browser encryption holds the file in memory today.
+    const BIG = 500 * 1024 * 1024;
+    const big = files.filter((f) => f.size > BIG).length;
+    if (big) toast('info', `${big} file${big === 1 ? ' is' : 's are'} over 500 MB and may fail in the browser — large-file streaming is coming.`);
     const conn = connections[0];
     const panel = $('upload-status');
     $('empty').hidden = true; // don't show the dropzone behind the progress card
