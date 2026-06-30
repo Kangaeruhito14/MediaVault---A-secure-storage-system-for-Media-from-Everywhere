@@ -17,6 +17,9 @@ const CSP = [
   "media-src 'self' blob:",
   // Decrypted PDFs are previewed in a blob: iframe (in-page document viewer).
   "frame-src 'self' blob:",
+  // hash-wasm runs Argon2id in a blob: Web Worker (off the main thread). Without
+  // this, worker-src falls back to script-src, blocking it → slow main-thread KDF.
+  "worker-src 'self' blob:",
   // The browser talks directly to the user's own S3-compatible bucket, so any
   // HTTPS origin must be allowed for storage upload/download.
   "connect-src 'self' https:",
