@@ -36,7 +36,7 @@ const threats = [
   { attack: 'A government demand or subpoena hits the operator', result: 'There is nothing readable to hand over: no plaintext, no keys, no storage credentials.' },
   { attack: 'Someone brute-forces your login', result: 'Per-account and per-IP rate limits throttle attempts; the password is stretched with Argon2id, making guesses expensive.' },
   { attack: 'You forget your password', result: 'Reset with your one-time recovery key. Lose both and the data is gone — there is no backdoor, by design.' },
-  { attack: 'The developer wants to read your files', result: 'Impossible. Encryption happens in your browser and the keys never reach us — we only ever store ciphertext.' },
+  { attack: 'The developer wants to read your already-stored files', result: 'They cannot. Encryption happens in your browser and the keys never reach us — what is stored is ciphertext only. (The one honest caveat: because the app is delivered as browser code, you are trusting the code we serve — see “The honest limit” below.)' },
 ];
 ---
 
@@ -101,6 +101,49 @@ const threats = [
             </div>
           ))}
         </div>
+      </div>
+
+      <!-- What we can / cannot see -->
+      <div class="seethrough-section">
+        <h2 class="section-h2">What we can — and cannot — see</h2>
+        <p class="section-sub">“Zero-knowledge” means we have no knowledge of your <strong>content</strong>. It does not mean we know nothing at all. Here is the honest, complete list.</p>
+        <div class="see-grid">
+          <div class="see-col can-not">
+            <h3>We can <span>never</span> see</h3>
+            <ul>
+              <li>Your file contents (photos, videos, audio, documents)</li>
+              <li>Your file names and metadata</li>
+              <li>Your password</li>
+              <li>Your encryption keys</li>
+              <li>Your storage credentials / OAuth tokens</li>
+            </ul>
+          </div>
+          <div class="see-col can">
+            <h3>We <span>do</span> hold (metadata)</h3>
+            <ul>
+              <li>Your email address (your account identity)</li>
+              <li>Your IP address, briefly, for rate-limiting</li>
+              <li>The <em>encrypted size</em> of each file and how many you have</li>
+              <li>Timestamps (when items were added/changed)</li>
+              <li>Which storage provider you connected (e.g. Dropbox, S3)</li>
+            </ul>
+          </div>
+        </div>
+        <p class="see-note">None of the right-hand items reveal what is <em>inside</em> your files — but an honest service should tell you they exist, rather than imply it knows nothing.</p>
+      </div>
+
+      <!-- The honest limit (trust model) -->
+      <div class="trustmodel-section">
+        <h2 class="section-h2">The honest limit: you trust the code we serve</h2>
+        <p>
+          End-to-end encryption here runs as JavaScript your browser downloads from us on each visit. That means the strongest honest claim is: <strong>the code as written cannot read your files</strong> — and a bad actor who controlled the server could, in theory, ship a future version that captures your password. This is true of every browser-based encrypted app (including the web apps of the big names). We will not pretend otherwise.
+        </p>
+        <p>How we keep that trust earnable, not blind:</p>
+        <ul class="trust-list">
+          <li><strong>Open source.</strong> The entire app is public — <a href="https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">read and audit it</a>.</li>
+          <li><strong>Verify the live demo above</strong> with your browser's dev tools — nothing it does leaves the page.</li>
+          <li><strong>On the roadmap:</strong> build verification (so you can confirm the served code matches the source) and a native/extension build that does not re-fetch code each visit.</li>
+        </ul>
       </div>
 
       <div class="sec-foot">
@@ -237,6 +280,31 @@ const threats = [
   @media (max-width: 640px) { .threat-item { grid-template-columns: 1fr; gap: 8px; } }
   .threat-attack { font-size: 14px; font-weight: 600; color: var(--text-primary); }
   .threat-result { font-size: 13.5px; line-height: 1.6; color: var(--text-body); }
+
+  /* What we can / cannot see */
+  .seethrough-section { margin-bottom: 56px; }
+  .section-sub { font-size: 14.5px; line-height: 1.65; color: var(--text-body); margin: -8px 0 24px; max-width: 680px; }
+  .see-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .see-grid { grid-template-columns: 1fr; } }
+  .see-col { border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; background: var(--surface); }
+  .see-col h3 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; }
+  .see-col.can-not { border-color: rgba(0,168,84,0.35); }
+  .see-col.can { border-color: rgba(245,158,11,0.35); }
+  .see-col.can-not h3 span { color: var(--success, #00a854); }
+  .see-col.can h3 span { color: #f59e0b; }
+  .see-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+  .see-col li { font-size: 13px; line-height: 1.5; color: var(--text-body); padding-left: 22px; position: relative; }
+  .see-col.can-not li::before { content: '✕'; position: absolute; left: 0; color: var(--success, #00a854); font-weight: 700; }
+  .see-col.can li::before { content: '•'; position: absolute; left: 4px; color: #f59e0b; font-weight: 700; }
+  .see-note { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin-top: 16px; }
+
+  /* Trust model */
+  .trustmodel-section { margin-bottom: 56px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+  .trustmodel-section p { font-size: 14px; line-height: 1.7; color: var(--text-body); margin-bottom: 14px; }
+  .trust-list { display: flex; flex-direction: column; gap: 10px; margin: 0; padding-left: 20px; }
+  .trust-list li { font-size: 13.5px; line-height: 1.6; color: var(--text-body); }
+  .trustmodel-section a { color: var(--accent); text-decoration: none; }
+  .trustmodel-section a:hover { text-decoration: underline; }
 
   .sec-foot { font-size: 14px; line-height: 1.7; color: var(--text-body); }
   .sec-foot a { color: var(--accent); text-decoration: none; }
