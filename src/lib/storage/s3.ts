@@ -13,6 +13,9 @@
  */
 import { signV4, uriEncode } from './sigv4';
 import { hasXhr, xhrUpload, type ProgressFn } from './http-upload';
+import type { UploadWriter } from './object-store';
+
+const te = new TextEncoder();
 
 export interface S3Config {
   endpoint: string; // e.g. https://<acct>.r2.cloudflarestorage.com (no bucket, no trailing slash)
@@ -123,6 +126,61 @@ export class S3Client {
     if (!res.ok && res.status !== 204) throw new Error(`S3 DELETE failed: ${res.status}`);
   }
 
+  // ---- Multipart upload (streaming large files, never buffering the whole) ----
+
+  /** Begin a multipart upload; returns the UploadId. */
+  async createMultipart(key: string, contentType = 'application/octet-stream'): Promise<string> {
+    const query = { uploads: '' };
+    const headers = await this.signedFetchHeaders('POST', key, { query, contentType });
+    const res = await this.fetchImpl(this.urlFor(key, query), { method: 'POST', headers });
+    if (!res.ok) throw new Error(`S3 multipart init failed: ${res.status} ${await safeText(res)}`);
+    const m = /<UploadId>([^<]+)<\/UploadId>/.exec(await res.text());
+    if (!m) throw new Error('S3 multipart init: no UploadId in response');
+    return m[1];
+  }
+
+  /** Upload one part (>= 5 MiB except the last); returns its ETag. */
+  async uploadPart(key: string, uploadId: string, partNumber: number, body: Uint8Array): Promise<string> {
+    const query = { partNumber: String(partNumber), uploadId };
+    const headers = await this.signedFetchHeaders('PUT', key, { query });
+    const res = await this.fetchImpl(this.urlFor(key, query), { method: 'PUT', headers, body: body as BodyInit });
+    if (!res.ok) throw new Error(`S3 uploadPart ${partNumber} failed: ${res.status} ${await safeText(res)}`);
+    const etag = res.headers.get('ETag') ?? res.headers.get('etag');
+    if (!etag) throw new Error(`S3 uploadPart ${partNumber}: no ETag (bucket CORS must expose the ETag header)`);
+    return etag;
+  }
+
+  /** Finish a multipart upload by listing the parts, in order. */
+  async completeMultipart(
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[],
+  ): Promise<void> {
+    const body = te.encode(
+      '<CompleteMultipartUpload>' +
+        parts.map((p) => `<Part><PartNumber>${p.partNumber}</PartNumber><ETag>${p.etag}</ETag></Part>`).join('') +
+        '</CompleteMultipartUpload>',
+    );
+    const query = { uploadId };
+    const headers = await this.signedFetchHeaders('POST', key, { query, contentType: 'application/xml' });
+    const res = await this.fetchImpl(this.urlFor(key, query), { method: 'POST', headers, body: body as BodyInit });
+    if (!res.ok) throw new Error(`S3 complete failed: ${res.status} ${await safeText(res)}`);
+    // S3 can return 200 with an <Error> body if finalize fails late.
+    if ((await res.text()).includes('<Error>')) throw new Error('S3 complete returned an error body');
+  }
+
+  /** Discard a multipart upload so no orphaned parts are billed. */
+  async abortMultipart(key: string, uploadId: string): Promise<void> {
+    const query = { uploadId };
+    const headers = await this.signedFetchHeaders('DELETE', key, { query });
+    await this.fetchImpl(this.urlFor(key, query), { method: 'DELETE', headers });
+  }
+
+  /** A writer that streams a large object to the bucket as a multipart upload. */
+  createWriter(key: string, contentType = 'application/octet-stream'): UploadWriter {
+    return new S3UploadWriter(this, key, contentType);
+  }
+
   /** Validate credentials + CORS by listing one object. */
   async testConnection(): Promise<{ ok: boolean; error?: string }> {
     try {
@@ -142,5 +200,83 @@ async function safeText(res: Response): Promise<string> {
     return (await res.text()).slice(0, 200);
   } catch {
     return '';
+  }
+}
+
+/**
+ * Buffers incoming ciphertext and flushes it as >= 5 MiB multipart parts, so a
+ * multi-GB upload never sits whole in memory. If the object turns out smaller
+ * than one part, close() falls back to a single PUT (cheaper, no multipart).
+ */
+class S3UploadWriter implements UploadWriter {
+  private bufs: Uint8Array[] = [];
+  private bufLen = 0;
+  private uploadId: string | null = null;
+  private partNumber = 0;
+  private etags: { partNumber: number; etag: string }[] = [];
+  private closed = false;
+  private readonly flushAt = 8 * 1024 * 1024; // comfortably above S3's 5 MiB minimum
+
+  constructor(
+    private client: S3Client,
+    private key: string,
+    private contentType: string,
+  ) {}
+
+  async write(chunk: Uint8Array): Promise<void> {
+    if (this.closed) throw new Error('S3UploadWriter: write after close');
+    if (chunk.length) {
+      this.bufs.push(chunk);
+      this.bufLen += chunk.length;
+    }
+    while (this.bufLen >= this.flushAt) await this.flushPart(this.flushAt);
+  }
+
+  async close(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.uploadId === null) {
+      // Never reached the multipart threshold — a single PUT is simpler/cheaper.
+      await this.client.put(this.key, this.merged(), this.contentType);
+      return;
+    }
+    if (this.bufLen > 0) await this.flushPart(this.bufLen); // final part, any size
+    await this.client.completeMultipart(this.key, this.uploadId, this.etags);
+  }
+
+  async abort(): Promise<void> {
+    this.closed = true;
+    if (this.uploadId) {
+      try {
+        await this.client.abortMultipart(this.key, this.uploadId);
+      } catch {
+        /* best effort — abort failures shouldn't mask the original error */
+      }
+    }
+    this.bufs = [];
+    this.bufLen = 0;
+  }
+
+  private merged(): Uint8Array {
+    if (this.bufs.length === 1) return this.bufs[0];
+    const out = new Uint8Array(this.bufLen);
+    let o = 0;
+    for (const b of this.bufs) {
+      out.set(b, o);
+      o += b.length;
+    }
+    return out;
+  }
+
+  private async flushPart(n: number): Promise<void> {
+    if (this.uploadId === null) this.uploadId = await this.client.createMultipart(this.key, this.contentType);
+    const all = this.merged();
+    const piece = all.subarray(0, n);
+    const rest = all.subarray(n);
+    this.bufs = rest.length ? [rest.slice()] : [];
+    this.bufLen = rest.length;
+    this.partNumber += 1;
+    const etag = await this.client.uploadPart(this.key, this.uploadId, this.partNumber, piece);
+    this.etags.push({ partNumber: this.partNumber, etag });
   }
 }

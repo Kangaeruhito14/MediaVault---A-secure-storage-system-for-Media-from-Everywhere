@@ -62,6 +62,114 @@ describe('S3Client request signing', () => {
     expect(r.error).toContain('403');
   });
 
+  it('multipart: streams parts, completes in order, reassembles intact', async () => {
+    // A faithful in-memory S3 multipart endpoint.
+    const log: string[] = [];
+    const parts = new Map<number, Uint8Array>();
+    const objects = new Map<string, Uint8Array>();
+    let completedOrder: number[] = [];
+    let completedEtags: string[] = [];
+
+    const fetchImpl = async (url: string, init?: RequestInit) => {
+      const u = new URL(url);
+      const q = u.searchParams;
+      const method = init?.method ?? 'GET';
+      const key = decodeURIComponent(u.pathname.replace('/my-vault/', ''));
+      const body = init?.body ? new Uint8Array(init.body as ArrayBuffer) : new Uint8Array(0);
+
+      if (method === 'POST' && q.has('uploads')) {
+        log.push('initiate');
+        return new Response('<InitiateMultipartUploadResult><UploadId>up-9</UploadId></InitiateMultipartUploadResult>', {
+          status: 200,
+        });
+      }
+      if (method === 'PUT' && q.has('partNumber')) {
+        const pn = Number(q.get('partNumber'));
+        expect(q.get('uploadId')).toBe('up-9');
+        parts.set(pn, body.slice());
+        log.push(`part:${pn}:${body.length}`);
+        return new Response('', { status: 200, headers: { ETag: `"etag-${pn}"` } });
+      }
+      if (method === 'POST' && q.has('uploadId')) {
+        const xml = new TextDecoder().decode(body);
+        completedOrder = [...xml.matchAll(/<PartNumber>(\d+)<\/PartNumber>/g)].map((m) => Number(m[1]));
+        completedEtags = [...xml.matchAll(/<ETag>([^<]+)<\/ETag>/g)].map((m) => m[1]);
+        const assembled = new Uint8Array(completedOrder.reduce((n, pn) => n + parts.get(pn)!.length, 0));
+        let o = 0;
+        for (const pn of completedOrder) {
+          assembled.set(parts.get(pn)!, o);
+          o += parts.get(pn)!.length;
+        }
+        objects.set(key, assembled);
+        log.push('complete');
+        return new Response('<CompleteMultipartUploadResult/>', { status: 200 });
+      }
+      if (method === 'PUT') {
+        objects.set(key, body.slice()); // simple-PUT fallback
+        log.push('put');
+        return new Response('', { status: 200 });
+      }
+      return new Response('', { status: 200 });
+    };
+
+    const c = new S3Client(cfg, fetchImpl);
+    const writer = c.createWriter('mv/big.enc');
+
+    // ~18 MiB of patterned bytes, fed in irregular chunks (like encrypted MV1 pieces).
+    const TOTAL = 18 * 1024 * 1024 + 777;
+    const src = new Uint8Array(TOTAL);
+    for (let i = 0; i < TOTAL; i++) src[i] = (i * 31 + 7) & 0xff;
+    for (let off = 0; off < TOTAL; off += 3_000_000) await writer.write(src.subarray(off, off + 3_000_000));
+    await writer.close();
+
+    expect(log[0]).toBe('initiate');
+    expect(log.filter((l) => l.startsWith('part:'))).toHaveLength(3); // 8+8+~2 MiB
+    expect(log[log.length - 1]).toBe('complete');
+    expect(completedOrder).toEqual([1, 2, 3]); // parts listed in order
+    expect(completedEtags).toEqual(['"etag-1"', '"etag-2"', '"etag-3"']);
+
+    const out = objects.get('mv/big.enc')!;
+    expect(out.length).toBe(TOTAL); // nothing lost or duplicated
+    for (const i of [0, 8 * 1024 * 1024 - 1, 8 * 1024 * 1024, TOTAL - 1]) {
+      expect(out[i]).toBe((i * 31 + 7) & 0xff); // boundary bytes intact
+    }
+  });
+
+  it('multipart writer: falls back to a single PUT for sub-part content', async () => {
+    const log: string[] = [];
+    const fetchImpl = async (url: string, init?: RequestInit) => {
+      log.push(`${init?.method}:${new URL(url).search}`);
+      return new Response('', { status: 200 });
+    };
+    const c = new S3Client(cfg, fetchImpl);
+    const writer = c.createWriter('mv/small.enc');
+    await writer.write(new Uint8Array(1024)); // well under the 8 MiB part size
+    await writer.close();
+    expect(log).toEqual(['PUT:']); // one plain PUT, no ?uploads / multipart calls
+  });
+
+  it('multipart writer: abort cancels the upload session', async () => {
+    const log: string[] = [];
+    const fetchImpl = async (url: string, init?: RequestInit) => {
+      const q = new URL(url).searchParams;
+      if (init?.method === 'POST' && q.has('uploads'))
+        return new Response('<InitiateMultipartUploadResult><UploadId>up-1</UploadId></InitiateMultipartUploadResult>', {
+          status: 200,
+        });
+      if (init?.method === 'PUT') return new Response('', { status: 200, headers: { ETag: '"e1"' } });
+      if (init?.method === 'DELETE') {
+        log.push('abort');
+        return new Response('', { status: 204 });
+      }
+      return new Response('', { status: 200 });
+    };
+    const c = new S3Client(cfg, fetchImpl);
+    const writer = c.createWriter('mv/x.enc');
+    await writer.write(new Uint8Array(9 * 1024 * 1024)); // forces a multipart session
+    await writer.abort();
+    expect(log).toContain('abort');
+  });
+
   it('invokes the global fetch with the correct receiver when none is injected', async () => {
     // Regression guard for the "Illegal invocation" bug (fetch called as a method).
     const orig = globalThis.fetch;

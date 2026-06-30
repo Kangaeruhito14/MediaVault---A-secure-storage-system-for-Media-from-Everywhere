@@ -1,6 +1,6 @@
 /** S3-compatible ObjectStore (R2 / B2 / Wasabi / AWS S3), wrapping S3Client. */
 import { S3Client, type S3Config } from './s3';
-import type { ObjectStore } from './object-store';
+import type { ObjectStore, UploadWriter } from './object-store';
 
 export class S3Store implements ObjectStore {
   private client: S3Client;
@@ -15,6 +15,9 @@ export class S3Store implements ObjectStore {
   ): Promise<string> {
     await this.client.put(key, body, contentType, onProgress);
     return key; // S3 keys are caller-chosen
+  }
+  createWriter(key: string): UploadWriter {
+    return this.client.createWriter(key);
   }
   get(key: string, range?: { start: number; end: number }): Promise<Response> {
     return this.client.get(key, range);
