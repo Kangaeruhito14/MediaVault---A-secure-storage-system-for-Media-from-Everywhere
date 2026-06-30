@@ -84,7 +84,7 @@ const faqSections = [
       },
       {
         q: 'Is there a file size or storage limit?',
-        a: 'Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours. Per file: because encryption happens in your browser, very large single files are limited by your device memory today, so we recommend keeping individual files under about 500 MB for now. True streaming for multi-GB files is on our roadmap — we would rather tell you the honest limit than over-promise.',
+        a: 'Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours. Per file: large files are streamed — encrypted and uploaded a chunk at a time — so they do not load into your browser memory all at once, and multi-GB files work (they just take longer, since the encryption runs in your browser). Streaming is live for Dropbox today; S3-compatible providers use a simpler path for now, with multipart streaming coming.',
       },
       {
         q: 'Does MediaVault compress my photos and videos?',
