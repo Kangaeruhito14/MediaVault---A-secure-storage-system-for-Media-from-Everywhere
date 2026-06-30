@@ -1,16 +1,12 @@
 import type { APIRoute } from 'astro';
 import { clientIp, deviceLabel, getServerContext } from '../../../lib/server/context';
-import { login } from '../../../lib/server/auth-service';
+import { verifyTwoFactorLogin } from '../../../lib/server/auth-service';
 import { SESSION_COOKIE, cookieOptions, json } from '../../../lib/server/http';
 
-// Step 2 of login: client posts its derived auth key. The session token is set
-// as an httpOnly cookie (never returned in the body). The wrapped account key
-// is returned so the client can unlock it locally — the server can't.
-//
-// If the account has 2FA on, we issue NO session and return NO wrapped key here;
-// the client must clear the second factor at /api/auth/2fa-login first.
+// Step 3 of login (only when 2FA is on): exchange the pending token + a TOTP or
+// backup code for a real session + the wrapped account key.
 export const POST: APIRoute = async ({ request, cookies }) => {
-  let body: { email?: string; authKeyB64?: string };
+  let body: { pendingToken?: string; code?: string };
   try {
     body = await request.json();
   } catch {
@@ -18,14 +14,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   const ctx = getServerContext();
-  const r = await login(ctx, {
-    email: String(body.email ?? ''),
-    authKeyB64: String(body.authKeyB64 ?? ''),
+  const r = await verifyTwoFactorLogin(ctx, {
+    pendingToken: String(body.pendingToken ?? ''),
+    code: String(body.code ?? ''),
     ipKey: clientIp(request),
     userAgent: deviceLabel(request),
   });
   if (!r.ok) return json({ error: r.error }, r.error === 'rate_limited' ? 429 : 401);
-  if (r.twofaRequired) return json({ ok: true, twofaRequired: true, pendingToken: r.pendingToken });
 
   cookies.set(SESSION_COOKIE, r.result.token, cookieOptions(new URL(request.url)));
   return json({
