@@ -84,7 +84,7 @@ const faqSections = [
       },
       {
         q: 'Is there a file size or storage limit?',
-        a: 'Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours. Per file: large files are streamed — encrypted and uploaded a chunk at a time — so they do not load into your browser memory all at once, and multi-GB files work (they just take longer, since the encryption runs in your browser). Streaming is live for Dropbox today; S3-compatible providers use a simpler path for now, with multipart streaming coming.',
+        a: 'Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours. Per file: large files are streamed — encrypted and uploaded a chunk at a time — so they do not load into your browser memory all at once, and multi-GB files work (they just take longer, since the encryption runs in your browser). This works on both Dropbox and S3-compatible buckets. For S3 multipart uploads, your bucket CORS must expose the ETag response header (a one-line config) so the browser can finalize the upload.',
       },
       {
         q: 'Does MediaVault compress my photos and videos?',
