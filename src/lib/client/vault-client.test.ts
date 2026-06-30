@@ -30,6 +30,10 @@ class MemSessions implements SessionStore {
   async getByTokenHash(h: string) { return this.rows.get(h) ?? null; }
   async deleteByTokenHash(h: string) { this.rows.delete(h); }
   async deleteAllForAccount(a: string) { for (const [k, v] of this.rows) if (v.account_id === a) this.rows.delete(k); }
+  async listForAccount(a: string) { return [...this.rows.values()].filter((r) => r.account_id === a); }
+  async deleteByIdForAccount(a: string, id: string) { for (const [k, v] of this.rows) if (v.account_id === a && v.id === id) { this.rows.delete(k); return true; } return false; }
+  async deleteOthersForAccount(a: string, keep: string) { for (const [k, v] of this.rows) if (v.account_id === a && k !== keep) this.rows.delete(k); }
+  async touch(id: string, ts: number) { for (const v of this.rows.values()) if (v.id === id) v.last_seen = ts; }
 }
 class MemKV implements KVLike {
   m = new Map<string, string>();
@@ -84,7 +88,7 @@ function makeFakeApi() {
     if (p === '/api/auth/prelogin') return J(await getLoginParams(accounts, body.email));
     if (p === '/api/auth/login') {
       const r = await login({ accounts, sessions, kv }, { email: body.email, authKeyB64: body.authKeyB64, ipKey: 't' });
-      if (!r.ok) return J({ error: r.error }, 401);
+      if (!r.ok || r.twofaRequired) return J({ error: r.ok ? 'twofa_required' : r.error }, 401);
       jar.token = r.result.token;
       return J({ ok: true, wrappedAccountKey: r.result.wrappedAccountKey, kdfSalt: r.result.kdfSalt, kdfParams: r.result.kdfParams });
     }
