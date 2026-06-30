@@ -48,6 +48,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <form id="auth-form" class="stack">
           <input id="email" class="inp" type="email" placeholder="Email" autocomplete="username" required />
           <input id="password" class="inp" type="password" placeholder="Password" autocomplete="current-password" required minlength="8" />
+          <div id="pw-strength" class="pw-strength" hidden>
+            <div class="pw-track"><div id="pw-fill" class="pw-fill"></div></div>
+            <span id="pw-label" class="pw-label"></span>
+          </div>
           <input id="password2" class="inp" type="password" placeholder="Confirm password" autocomplete="new-password" hidden />
           <button id="auth-submit" class="btn-primary" type="submit">Sign in</button>
         </form>
@@ -404,6 +408,40 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     show('unlock-view');
   }
 
+  // ── Password strength (advisory; weak password = weak encryption) ───────────
+  const COMMON_PW = ['password', '12345678', '123456789', 'qwerty', 'letmein', 'iloveyou', 'admin', 'welcome', 'monkey', 'dragon', '111111', 'abc123', 'password1', 'qwerty123'];
+  function passwordStrength(pw: string) {
+    const buckets = [
+      { label: 'Too short', color: '#ef4444' },
+      { label: 'Weak', color: '#ef4444' },
+      { label: 'Fair', color: '#f59e0b' },
+      { label: 'Good', color: '#3b82f6' },
+      { label: 'Strong', color: '#10b981' },
+      { label: 'Very strong', color: '#10b981' },
+    ];
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (COMMON_PW.some((c) => pw.toLowerCase().includes(c))) score = Math.min(score, 1);
+    if (pw.length < 8) score = 0;
+    const b = buckets[Math.min(score, 5)];
+    return { label: b.label, color: b.color, pct: Math.min(100, (score / 5) * 100) };
+  }
+  function updatePwStrength() {
+    const pw = ($('password') as HTMLInputElement).value;
+    if (mode !== 'signup' || !pw) { $('pw-strength').hidden = true; return; }
+    const s = passwordStrength(pw);
+    $('pw-strength').hidden = false;
+    ($('pw-fill') as HTMLElement).style.width = `${s.pct}%`;
+    ($('pw-fill') as HTMLElement).style.background = s.color;
+    $('pw-label').textContent = s.label;
+    ($('pw-label') as HTMLElement).style.color = s.color;
+  }
+  $('password').addEventListener('input', updatePwStrength);
+
   // ── Auth ────────────────────────────────────────────────────────────────────
   document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) =>
     t.addEventListener('click', () => {
@@ -412,6 +450,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       ($('password2') as HTMLInputElement).hidden = mode !== 'signup';
       $('auth-submit').textContent = mode === 'signup' ? 'Create account' : 'Sign in';
       $('forgot-link').hidden = mode !== 'signin'; // recovery only makes sense on sign in
+      updatePwStrength();
     }),
   );
   $('forgot-link').hidden = false; // default tab is sign in
@@ -1194,6 +1233,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .keep-row input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
   .keep-row em { color: var(--text-muted); font-style: normal; }
   .hint { font-size: 12px; color: var(--text-muted); margin: 16px 0 0; line-height: 1.5; }
+  .pw-strength { display: flex; align-items: center; gap: 10px; margin-top: -2px; }
+  .pw-track { flex: 1; height: 5px; background: var(--bg-inset); border-radius: 100px; overflow: hidden; }
+  .pw-fill { height: 100%; width: 0%; border-radius: 100px; transition: width .2s ease, background .2s ease; }
+  .pw-label { font-size: 11px; font-weight: 600; min-width: 70px; text-align: right; }
   .error { font-size: 13px; color: #ef4444; margin: 14px 0 0; }
   .tabs { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 22px; }
   .tab { flex: 1; background: transparent; border: none; border-radius: 7px; padding: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; font-family: inherit; }
