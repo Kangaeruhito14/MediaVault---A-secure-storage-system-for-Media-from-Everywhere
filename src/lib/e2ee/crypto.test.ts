@@ -12,6 +12,7 @@ import {
   encryptJson,
   decryptJson,
   encryptFile,
+  encryptFileStream,
   decryptFile,
   decryptFileRange,
   parseFileHeader,
@@ -102,6 +103,20 @@ describe('chunked file encryption', () => {
     const h = parseFileHeader(ct);
     expect(h.chunkSize).toBe(CHUNK);
     expect(h.baseNonce.length).toBe(8);
+  });
+
+  it('encryptFileStream output is the same MV1 format and decrypts back', async () => {
+    for (const size of [0, 1, 63, 64, 65, 200]) {
+      const data = bytes(size);
+      const pieces: Uint8Array[] = [];
+      for await (const p of encryptFileStream(new Blob([data]), key, CHUNK)) pieces.push(p);
+      const total = pieces.reduce((n, p) => n + p.length, 0);
+      const ct = new Uint8Array(total);
+      let o = 0;
+      for (const p of pieces) { ct.set(p, o); o += p.length; }
+      expect(parseFileHeader(ct).chunkSize).toBe(CHUNK); // valid MV1 header
+      expect(await decryptFile(ct, key)).toEqual(data);   // round-trips
+    }
   });
 
   it('rejects a tampered chunk', async () => {

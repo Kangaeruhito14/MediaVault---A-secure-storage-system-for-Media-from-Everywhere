@@ -207,6 +207,34 @@ export async function encryptFile(
   return out;
 }
 
+/**
+ * Streaming variant of encryptFile: reads the file slice-by-slice and yields the
+ * MV1 header followed by each encrypted chunk, so a multi-GB file never sits in
+ * memory whole. Output bytes are byte-identical in FORMAT to encryptFile, so
+ * decryptFile / decryptFileRange (and seekable streaming) work unchanged.
+ */
+export async function* encryptFileStream(
+  file: Blob,
+  fileKey: Uint8Array,
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+): AsyncGenerator<Uint8Array, void, unknown> {
+  const baseNonce = randomBytes(8);
+  const header = new Uint8Array(HEADER_LEN);
+  header.set(MAGIC, 0);
+  new DataView(header.buffer).setUint32(3, chunkSize, false);
+  header.set(baseNonce, 7);
+  yield header;
+
+  const total = file.size;
+  let counter = 0;
+  for (let off = 0; off < total || (total === 0 && counter === 0); off += chunkSize) {
+    const slice = new Uint8Array(await file.slice(off, off + chunkSize).arrayBuffer());
+    yield await aesGcmEncrypt(fileKey, chunkIv(baseNonce, counter), slice, counterAad(counter));
+    counter++;
+    if (total === 0) break;
+  }
+}
+
 export async function decryptFile(ciphertext: Uint8Array, fileKey: Uint8Array): Promise<Uint8Array> {
   const { chunkSize, baseNonce } = parseFileHeader(ciphertext);
   const encChunkLen = chunkSize + GCM_TAG_LEN;
