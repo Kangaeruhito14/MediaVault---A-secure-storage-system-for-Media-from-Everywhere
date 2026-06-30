@@ -1064,10 +1064,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   // advances to the next file (no stack of N rows for N files).
   async function uploadFiles(files: File[]) {
     if (!files.length || !connections.length) return;
-    // Honest size warning: in-browser encryption holds the file in memory today.
-    const BIG = 500 * 1024 * 1024;
-    const big = files.filter((f) => f.size > BIG).length;
-    if (big) toast('info', `${big} file${big === 1 ? ' is' : 's are'} over 500 MB and may fail in the browser — large-file streaming is coming.`);
+    // Large files now stream (flat memory); just flag that very large ones take a while.
+    const HUGE = 2 * 1024 * 1024 * 1024;
+    const huge = files.filter((f) => f.size > HUGE).length;
+    if (huge) toast('info', `${huge} very large file${huge === 1 ? '' : 's'} (over 2 GB) — encryption may take a few minutes; keep this tab open.`);
     const conn = connections[0];
     const panel = $('upload-status');
     $('empty').hidden = true; // don't show the dropzone behind the progress card
@@ -1095,13 +1095,11 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       head.textContent = files.length === 1 ? 'Uploading…' : `Uploading file ${i + 1} of ${files.length}`;
 
       try {
-        const [bytes, thumbnail] = await Promise.all([
-          file.arrayBuffer().then((b) => new Uint8Array(b)),
-          makeThumbnail(file), // never blocks: times out → null
-        ]);
-        await client.upload(
+        const thumbnail = await makeThumbnail(file); // never blocks: times out → null
+        // uploadFile streams large files (slice→encrypt→upload) so memory stays flat.
+        await client.uploadFile(
           conn,
-          { bytes, name: file.name, mime: file.type || 'application/octet-stream', thumbnail },
+          { file, name: file.name, mime: file.type || 'application/octet-stream', thumbnail },
           (loaded: number, total: number) => {
             stageEl.textContent = `Uploading ${fmtBytes(loaded)} / ${fmtBytes(total)}`;
             fillEl.style.width = `${total ? Math.min(100, (loaded / total) * 100) : 0}%`;
