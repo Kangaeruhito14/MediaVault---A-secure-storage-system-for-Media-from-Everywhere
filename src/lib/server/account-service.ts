@@ -11,6 +11,7 @@ import type {
   AccountStore,
   SessionStore,
   StorageConnectionStore,
+  TotpStore,
   VaultItemStore,
 } from './types';
 
@@ -104,6 +105,7 @@ interface DeleteCtx {
   connections: StorageConnectionStore;
   items: VaultItemStore;
   sessions: SessionStore;
+  totp: TotpStore;
 }
 
 /**
@@ -117,6 +119,7 @@ export async function deleteAccount(ctx: DeleteCtx, accountId: string): Promise<
   await ctx.items.deleteAllForAccount(accountId);
   await ctx.connections.deleteAllForAccount(accountId);
   await ctx.sessions.deleteAllForAccount(accountId);
+  await ctx.totp.delete(accountId);
   await ctx.accounts.deleteById(accountId);
   return true;
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { exportAccount, deleteAccount } from './account-service';
 import type {
   AccountRow, AccountStore, SessionRow, SessionStore,
-  StorageConnectionRow, StorageConnectionStore, VaultItemRow, VaultItemStore, ItemCursor,
+  StorageConnectionRow, StorageConnectionStore, TotpRow, TotpStore, VaultItemRow, VaultItemStore, ItemCursor,
 } from './types';
 
 class MemAccounts implements AccountStore {
@@ -19,6 +19,10 @@ class MemSessions implements SessionStore {
   async getByTokenHash(h: string) { return this.rows.get(h) ?? null; }
   async deleteByTokenHash(h: string) { this.rows.delete(h); }
   async deleteAllForAccount(a: string) { for (const [k, v] of this.rows) if (v.account_id === a) this.rows.delete(k); }
+  async listForAccount(a: string) { return [...this.rows.values()].filter((r) => r.account_id === a); }
+  async deleteByIdForAccount(a: string, id: string) { for (const [k, v] of this.rows) if (v.account_id === a && v.id === id) { this.rows.delete(k); return true; } return false; }
+  async deleteOthersForAccount(a: string, keep: string) { for (const [k, v] of this.rows) if (v.account_id === a && k !== keep) this.rows.delete(k); }
+  async touch(id: string, ts: number) { for (const v of this.rows.values()) if (v.id === id) v.last_seen = ts; }
 }
 class MemItems implements VaultItemStore {
   rows: VaultItemRow[] = [];
@@ -38,9 +42,15 @@ class MemConns implements StorageConnectionStore {
   async remove() { return true; }
   async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
 }
+class MemTotp implements TotpStore {
+  rows = new Map<string, TotpRow>();
+  async get(a: string) { return this.rows.get(a) ?? null; }
+  async upsert(r: TotpRow) { this.rows.set(r.account_id, { ...r }); }
+  async delete(a: string) { this.rows.delete(a); }
+}
 
 function seed() {
-  const accounts = new MemAccounts(), sessions = new MemSessions(), items = new MemItems(), connections = new MemConns();
+  const accounts = new MemAccounts(), sessions = new MemSessions(), items = new MemItems(), connections = new MemConns(), totp = new MemTotp();
   const now = Date.now();
   const acct: AccountRow = {
     id: 'acc-1', email: 'z@example.com', email_verified: 0, kdf: 'argon2id',
@@ -58,7 +68,9 @@ function seed() {
   items.rows.push({ id: 'i3', account_id: 'acc-2', enc_metadata: 'X', wrapped_item_key: 'X', connection_id: 'c2', object_key: 'mv/x.enc', thumb_key: null, size: 5, bookmarked: 0, created_at: now, updated_at: now });
   sessions.rows.set('t1', { id: 's1', account_id: 'acc-1', token_hash: 't1', created_at: now, expires_at: now + 1000 });
   sessions.rows.set('t2', { id: 's2', account_id: 'acc-2', token_hash: 't2', created_at: now, expires_at: now + 1000 });
-  return { accounts, sessions, items, connections };
+  totp.rows.set('acc-1', { account_id: 'acc-1', secret: 'S1', enabled: 1, backup_codes: null, created_at: now, confirmed_at: now });
+  totp.rows.set('acc-2', { account_id: 'acc-2', secret: 'S2', enabled: 1, backup_codes: null, created_at: now, confirmed_at: now });
+  return { accounts, sessions, items, connections, totp };
 }
 
 describe('exportAccount', () => {
@@ -91,10 +103,12 @@ describe('deleteAccount', () => {
     expect(ctx.items.rows.filter((r) => r.account_id === 'acc-1')).toHaveLength(0);
     expect(ctx.connections.rows.filter((r) => r.account_id === 'acc-1')).toHaveLength(0);
     expect([...ctx.sessions.rows.values()].filter((s) => s.account_id === 'acc-1')).toHaveLength(0);
+    expect(ctx.totp.rows.has('acc-1')).toBe(false); // 2FA secret removed too
     // The other account is untouched.
     expect(ctx.accounts.rows.has('acc-2')).toBe(true);
     expect(ctx.items.rows.filter((r) => r.account_id === 'acc-2')).toHaveLength(1);
     expect(ctx.connections.rows.filter((r) => r.account_id === 'acc-2')).toHaveLength(1);
+    expect(ctx.totp.rows.has('acc-2')).toBe(true);
   });
 
   it('returns false for an unknown account', async () => {

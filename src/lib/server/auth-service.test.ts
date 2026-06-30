@@ -18,8 +18,17 @@ import {
   changePassword,
   startSession,
   validateSession,
+  setupTotp,
+  enableTotp,
+  disableTotp,
+  getTotpStatus,
+  verifyTwoFactorLogin,
+  listSessions,
+  revokeSession,
+  revokeOtherSessions,
 } from './auth-service';
-import type { AccountRow, AccountStore, KVLike, SessionRow, SessionStore, SignupSecrets } from './types';
+import { totpCode } from './totp';
+import type { AccountRow, AccountStore, KVLike, SessionRow, SessionStore, SignupSecrets, TotpRow, TotpStore } from './types';
 
 const FAST: KdfParams = { m: 256, t: 1, p: 1 };
 
@@ -55,6 +64,35 @@ class MemSessions implements SessionStore {
   }
   async deleteAllForAccount(id: string) {
     for (const [k, v] of this.rows) if (v.account_id === id) this.rows.delete(k);
+  }
+  async listForAccount(id: string) {
+    return [...this.rows.values()].filter((r) => r.account_id === id && r.expires_at > Date.now());
+  }
+  async deleteByIdForAccount(id: string, sid: string) {
+    for (const [k, v] of this.rows)
+      if (v.account_id === id && v.id === sid) {
+        this.rows.delete(k);
+        return true;
+      }
+    return false;
+  }
+  async deleteOthersForAccount(id: string, keepHash: string) {
+    for (const [k, v] of this.rows) if (v.account_id === id && k !== keepHash) this.rows.delete(k);
+  }
+  async touch(sid: string, ts: number) {
+    for (const v of this.rows.values()) if (v.id === sid) v.last_seen = ts;
+  }
+}
+class MemTotp implements TotpStore {
+  rows = new Map<string, TotpRow>();
+  async get(id: string) {
+    return this.rows.get(id) ?? null;
+  }
+  async upsert(r: TotpRow) {
+    this.rows.set(r.account_id, { ...r });
+  }
+  async delete(id: string) {
+    this.rows.delete(id);
   }
 }
 class MemKV implements KVLike {
@@ -141,7 +179,7 @@ describe('login handshake', () => {
 
     const res = await login({ accounts, sessions, kv }, { email: s.email, authKeyB64: s.secrets.authKeyB64, ipKey: '1.1.1.1' });
     expect(res.ok).toBe(true);
-    if (res.ok) {
+    if (res.ok && !res.twofaRequired) {
       expect(res.result.token).toBeTruthy();
       expect(res.result.wrappedAccountKey).toBe(s.secrets.wrappedAccountKey);
       expect(res.result.kdfSalt).toBe(s.secrets.kdfSalt);
@@ -201,7 +239,7 @@ describe('sessions', () => {
     const s = await newSecrets();
     await signup(accounts, s);
     const res = await login({ accounts, sessions, kv }, { email: s.email, authKeyB64: s.secrets.authKeyB64, ipKey: '1.1.1.1' });
-    if (!res.ok) throw new Error('login failed');
+    if (!res.ok || res.twofaRequired) throw new Error('login failed');
 
     const v = await validateSession(sessions, res.result.token);
     expect(v?.accountId).toBe(res.result.accountId);
@@ -302,5 +340,115 @@ describe('changePassword', () => {
     const wrongAuth = await deriveAuthKey('WRONG-password', acct.secrets.kdfSalt, acct.secrets.kdfParams);
     const r = await changePassword({ accounts, sessions }, { accountId: id, currentAuthKeyB64: wrongAuth, secrets });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('two-factor (TOTP)', () => {
+  async function enrolled(pw = 'tf-pw-12345') {
+    const accounts = new MemAccounts(), sessions = new MemSessions(), totp = new MemTotp(), kv = new MemKV();
+    const acct = await createAccount(pw, FAST);
+    await signup(accounts, { email: 't@example.com', secrets: acct.secrets });
+    const id = (await accounts.getByEmail('t@example.com'))!.id;
+    const authKey = await deriveAuthKey(pw, acct.secrets.kdfSalt, acct.secrets.kdfParams);
+    const setup = await setupTotp(totp, id, 't@example.com');
+    if (!setup.ok) throw new Error('setup failed');
+    return { accounts, sessions, totp, kv, id, authKey, secret: setup.secret, acct };
+  }
+
+  it('setup → enable with a valid code turns 2FA on and yields backup codes', async () => {
+    const { accounts, totp, id, authKey, secret } = await enrolled();
+    expect((await getTotpStatus(totp, id))).toEqual({ enabled: false, pending: true });
+
+    const bad = await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey, code: '000000' });
+    expect(bad).toEqual({ ok: false, error: 'twofa_invalid' });
+
+    const ok = await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey, code: await totpCode(secret) });
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.backupCodes).toHaveLength(8);
+    expect((await getTotpStatus(totp, id))).toEqual({ enabled: true, pending: false });
+  });
+
+  it('enable rejects a wrong password even with a valid code', async () => {
+    const { accounts, totp, id, secret } = await enrolled();
+    const r = await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: btoa('not-the-key'), code: await totpCode(secret) });
+    expect(r).toEqual({ ok: false, error: 'invalid_credentials' });
+  });
+
+  it('once enabled, login requires a code; verifying with a TOTP code completes it', async () => {
+    const { accounts, sessions, totp, kv, id, authKey, secret, acct } = await enrolled();
+    await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey, code: await totpCode(secret) });
+
+    const first = await login({ accounts, sessions, totp, kv }, { email: 't@example.com', authKeyB64: acct.secrets.authKeyB64, ipKey: 'x' });
+    expect(first.ok && first.twofaRequired).toBe(true);
+    if (!first.ok || !first.twofaRequired) throw new Error('expected 2FA challenge');
+    expect(sessions.rows.size).toBe(0); // no session issued before the 2nd factor
+
+    const wrong = await verifyTwoFactorLogin({ accounts, sessions, totp, kv }, { pendingToken: first.pendingToken, code: '000000', ipKey: 'x' });
+    expect(wrong).toEqual({ ok: false, error: 'twofa_invalid' });
+
+    const done = await verifyTwoFactorLogin({ accounts, sessions, totp, kv }, { pendingToken: first.pendingToken, code: await totpCode(secret), ipKey: 'x' });
+    expect(done.ok).toBe(true);
+    if (done.ok) {
+      expect(done.result.wrappedAccountKey).toBe(acct.secrets.wrappedAccountKey);
+      expect(await validateSession(sessions, done.result.token)).not.toBeNull();
+    }
+  });
+
+  it('a backup code works exactly once', async () => {
+    const { accounts, sessions, totp, kv, id, authKey, secret, acct } = await enrolled();
+    const en = await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey, code: await totpCode(secret) });
+    if (!en.ok) throw new Error('enable failed');
+    const backup = en.backupCodes[0];
+
+    const l1 = await login({ accounts, sessions, totp, kv }, { email: 't@example.com', authKeyB64: acct.secrets.authKeyB64, ipKey: 'x' });
+    if (!l1.ok || !l1.twofaRequired) throw new Error('expected challenge');
+    expect((await verifyTwoFactorLogin({ accounts, sessions, totp, kv }, { pendingToken: l1.pendingToken, code: backup, ipKey: 'x' })).ok).toBe(true);
+
+    // Same backup code must now be rejected.
+    const l2 = await login({ accounts, sessions, totp, kv }, { email: 't@example.com', authKeyB64: acct.secrets.authKeyB64, ipKey: 'x' });
+    if (!l2.ok || !l2.twofaRequired) throw new Error('expected challenge');
+    expect((await verifyTwoFactorLogin({ accounts, sessions, totp, kv }, { pendingToken: l2.pendingToken, code: backup, ipKey: 'x' })).ok).toBe(false);
+  });
+
+  it('disable (with password) removes the 2FA requirement', async () => {
+    const { accounts, sessions, totp, kv, id, authKey, secret, acct } = await enrolled();
+    await enableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey, code: await totpCode(secret) });
+    expect((await disableTotp({ accounts, totp }, { accountId: id, currentAuthKeyB64: authKey })).ok).toBe(true);
+
+    const l = await login({ accounts, sessions, totp, kv }, { email: 't@example.com', authKeyB64: acct.secrets.authKeyB64, ipKey: 'x' });
+    expect(l.ok && !l.twofaRequired).toBe(true); // straight through, no challenge
+  });
+
+  it('expired/unknown pending token is rejected', async () => {
+    const { accounts, sessions, totp, kv } = await enrolled();
+    const r = await verifyTwoFactorLogin({ accounts, sessions, totp, kv }, { pendingToken: 'nope', code: '123456', ipKey: 'x' });
+    expect(r).toEqual({ ok: false, error: 'twofa_expired' });
+  });
+});
+
+describe('active sessions', () => {
+  it('lists sessions (flagging current), revokes one, and revokes all others', async () => {
+    const sessions = new MemSessions();
+    const id = 'acct-1';
+    const t1 = await startSession(sessions, id, { userAgent: 'Chrome · macOS', ip: '1.1.1.1' });
+    const t2 = await startSession(sessions, id, { userAgent: 'Firefox · Linux', ip: '2.2.2.2' });
+    const t3 = await startSession(sessions, id, { userAgent: 'Safari · iOS', ip: '3.3.3.3' });
+
+    let list = await listSessions(sessions, id, t2);
+    expect(list).toHaveLength(3);
+    expect(list.filter((s) => s.current)).toHaveLength(1);
+    expect(list.find((s) => s.current)!.device).toBe('Firefox · Linux');
+
+    // Revoke a specific (non-current) session.
+    const target = list.find((s) => s.device === 'Chrome · macOS')!;
+    expect(await revokeSession(sessions, id, target.id)).toBe(true);
+    expect(await validateSession(sessions, t1)).toBeNull();
+    expect((await listSessions(sessions, id, t2))).toHaveLength(2);
+
+    // Sign out everywhere else — only t2 survives.
+    await revokeOtherSessions(sessions, id, t2);
+    expect(await validateSession(sessions, t2)).not.toBeNull();
+    expect(await validateSession(sessions, t3)).toBeNull();
+    expect((await listSessions(sessions, id, t2))).toHaveLength(1);
   });
 });
