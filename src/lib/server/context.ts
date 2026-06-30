@@ -4,16 +4,17 @@
  * scoped), not from Astro.locals.runtime.
  */
 import { env } from 'cloudflare:workers';
-import { D1AccountStore, D1SessionStore, D1StorageConnectionStore, D1VaultItemStore } from './stores';
+import { D1AccountStore, D1SessionStore, D1StorageConnectionStore, D1TotpStore, D1VaultItemStore } from './stores';
 import { validateSession } from './auth-service';
 import { SESSION_COOKIE } from './http';
-import type { AccountStore, KVLike, SessionStore, StorageConnectionStore, VaultItemStore } from './types';
+import type { AccountStore, KVLike, SessionStore, StorageConnectionStore, TotpStore, VaultItemStore } from './types';
 
 export interface ServerContext {
   accounts: AccountStore;
   sessions: SessionStore;
   items: VaultItemStore;
   connections: StorageConnectionStore;
+  totp: TotpStore;
   kv: KVLike;
 }
 
@@ -27,8 +28,19 @@ export function getServerContext(): ServerContext {
     sessions: new D1SessionStore(e.DB as never),
     items: new D1VaultItemStore(e.DB as never),
     connections: new D1StorageConnectionStore(e.DB as never),
+    totp: new D1TotpStore(e.DB as never),
     kv: e.KV as unknown as KVLike,
   };
+}
+
+/** A coarse, human-readable device label from the User-Agent (best effort). */
+export function deviceLabel(request: Request): string {
+  const ua = request.headers.get('user-agent') ?? '';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox'
+    : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad|iOS/.test(ua) ? 'iOS' : /Mac OS X/.test(ua) ? 'macOS'
+    : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
+  return os ? `${browser} · ${os}` : browser;
 }
 
 /** Resolve the logged-in account id from the session cookie, or null. */

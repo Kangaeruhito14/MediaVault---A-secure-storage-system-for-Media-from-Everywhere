@@ -28,6 +28,20 @@ export interface SessionRow {
   token_hash: string;
   created_at: number;
   expires_at: number;
+  user_agent?: string | null; // best-effort device label (added in 0003)
+  ip?: string | null;         // best-effort client IP (added in 0003)
+  last_seen?: number | null;  // last validated use (added in 0003)
+}
+
+/** Per-account TOTP 2FA state (added in 0003). The secret is a conventional
+ *  server-side shared secret; it gates login only, never the vault keys. */
+export interface TotpRow {
+  account_id: string;
+  secret: string;             // base32
+  enabled: number;            // 0 until a code is confirmed
+  backup_codes: string | null; // JSON array of sha256(hex) of UNUSED one-time codes
+  created_at: number;
+  confirmed_at: number | null;
 }
 
 /** Secrets the client produces at signup; the server stores them verbatim. */
@@ -60,6 +74,20 @@ export interface SessionStore {
   getByTokenHash(tokenHash: string): Promise<SessionRow | null>;
   deleteByTokenHash(tokenHash: string): Promise<void>;
   deleteAllForAccount(accountId: string): Promise<void>;
+  /** All live sessions for an account, newest-first (for the devices list). */
+  listForAccount(accountId: string): Promise<SessionRow[]>;
+  /** Revoke one session by id (scoped to the account). Returns whether it existed. */
+  deleteByIdForAccount(accountId: string, id: string): Promise<boolean>;
+  /** Revoke every session for the account EXCEPT the one with keepTokenHash. */
+  deleteOthersForAccount(accountId: string, keepTokenHash: string): Promise<void>;
+  /** Bump last_seen (called lazily during validation). */
+  touch(id: string, lastSeen: number): Promise<void>;
+}
+
+export interface TotpStore {
+  get(accountId: string): Promise<TotpRow | null>;
+  upsert(row: TotpRow): Promise<void>;
+  delete(accountId: string): Promise<void>;
 }
 
 // ── Encrypted file index ───────────────────────────────────────────────────────

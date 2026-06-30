@@ -12,6 +12,8 @@ import type {
   SessionStore,
   StorageConnectionRow,
   StorageConnectionStore,
+  TotpRow,
+  TotpStore,
   VaultItemRow,
   VaultItemStore,
 } from './types';
@@ -24,6 +26,7 @@ import type {
  *   - accounts.recovery_salt: ADD if missing (migration 0002).
  *   - vault_items.iv: DROP if present — an older schema had `iv NOT NULL`, which
  *     makes every current insert (no `iv`) fail with a NOT NULL constraint.
+ *   - account_totp table + sessions.{user_agent,ip,last_seen}: ADD if missing (0003).
  */
 let schemaEnsure: Promise<void> | null = null;
 async function ensureSchema(db: D1Like): Promise<void> {
@@ -36,6 +39,21 @@ async function ensureSchema(db: D1Like): Promise<void> {
     const itemCols = (await db.prepare('PRAGMA table_info(vault_items)').all<{ name: string }>()).results ?? [];
     if (itemCols.some((c) => c.name === 'iv')) {
       await db.prepare('ALTER TABLE vault_items DROP COLUMN iv').run();
+    }
+    // migration 0003 — 2FA table + session device metadata.
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS account_totp (
+           account_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+           secret TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0,
+           backup_codes TEXT, created_at INTEGER NOT NULL, confirmed_at INTEGER)`,
+      )
+      .run();
+    const sessCols = (await db.prepare('PRAGMA table_info(sessions)').all<{ name: string }>()).results ?? [];
+    for (const col of ['user_agent TEXT', 'ip TEXT', 'last_seen INTEGER']) {
+      if (!sessCols.some((c) => c.name === col.split(' ')[0])) {
+        await db.prepare(`ALTER TABLE sessions ADD COLUMN ${col}`).run();
+      }
     }
   })().catch((e) => {
     schemaEnsure = null; // allow a retry on a later request
@@ -95,9 +113,13 @@ export class D1SessionStore implements SessionStore {
   constructor(private db: D1Like) {}
 
   async insert(s: SessionRow): Promise<void> {
+    await ensureSchema(this.db);
     await this.db
-      .prepare('INSERT INTO sessions (id, account_id, token_hash, created_at, expires_at) VALUES (?,?,?,?,?)')
-      .bind(s.id, s.account_id, s.token_hash, s.created_at, s.expires_at)
+      .prepare(
+        `INSERT INTO sessions (id, account_id, token_hash, created_at, expires_at, user_agent, ip, last_seen)
+         VALUES (?,?,?,?,?,?,?,?)`,
+      )
+      .bind(s.id, s.account_id, s.token_hash, s.created_at, s.expires_at, s.user_agent ?? null, s.ip ?? null, s.last_seen ?? s.created_at)
       .run();
   }
 
@@ -111,6 +133,61 @@ export class D1SessionStore implements SessionStore {
 
   async deleteAllForAccount(accountId: string): Promise<void> {
     await this.db.prepare('DELETE FROM sessions WHERE account_id = ?').bind(accountId).run();
+  }
+
+  async listForAccount(accountId: string): Promise<SessionRow[]> {
+    const now = Date.now();
+    const res = await this.db
+      .prepare('SELECT * FROM sessions WHERE account_id = ? AND expires_at > ? ORDER BY last_seen DESC, created_at DESC')
+      .bind(accountId, now)
+      .all<SessionRow>();
+    return res.results ?? [];
+  }
+
+  async deleteByIdForAccount(accountId: string, id: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('DELETE FROM sessions WHERE account_id = ? AND id = ?')
+      .bind(accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async deleteOthersForAccount(accountId: string, keepTokenHash: string): Promise<void> {
+    await this.db
+      .prepare('DELETE FROM sessions WHERE account_id = ? AND token_hash != ?')
+      .bind(accountId, keepTokenHash)
+      .run();
+  }
+
+  async touch(id: string, lastSeen: number): Promise<void> {
+    await this.db.prepare('UPDATE sessions SET last_seen = ? WHERE id = ?').bind(lastSeen, id).run();
+  }
+}
+
+export class D1TotpStore implements TotpStore {
+  constructor(private db: D1Like) {}
+
+  async get(accountId: string): Promise<TotpRow | null> {
+    await ensureSchema(this.db);
+    return this.db.prepare('SELECT * FROM account_totp WHERE account_id = ?').bind(accountId).first<TotpRow>();
+  }
+
+  async upsert(r: TotpRow): Promise<void> {
+    await ensureSchema(this.db);
+    await this.db
+      .prepare(
+        `INSERT INTO account_totp (account_id, secret, enabled, backup_codes, created_at, confirmed_at)
+         VALUES (?,?,?,?,?,?)
+         ON CONFLICT(account_id) DO UPDATE SET
+           secret=excluded.secret, enabled=excluded.enabled, backup_codes=excluded.backup_codes,
+           confirmed_at=excluded.confirmed_at`,
+      )
+      .bind(r.account_id, r.secret, r.enabled, r.backup_codes ?? null, r.created_at, r.confirmed_at ?? null)
+      .run();
+  }
+
+  async delete(accountId: string): Promise<void> {
+    await this.db.prepare('DELETE FROM account_totp WHERE account_id = ?').bind(accountId).run();
   }
 }
 
