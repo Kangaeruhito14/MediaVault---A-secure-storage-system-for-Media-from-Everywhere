@@ -208,7 +208,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <span class="dropzone-sub">Photos, videos, audio, PDFs &amp; documents — encrypted in your browser before they leave this device.</span>
       </button>
 
-      <div class="center"><button id="load-more" class="btn-ghost" hidden>Load more</button></div>
+      <div class="center"><span id="lib-status" class="lib-status" hidden></span></div>
 
       <!-- Drag & drop overlay -->
       <div id="drop-overlay" class="drop-overlay" hidden>
@@ -677,21 +677,41 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   }
 
   // ── List + render ─────────────────────────────────────────────────────────────
+  // We load the ENTIRE encrypted index, not just one page. Names, types and
+  // categories live inside each item's end-to-end-encrypted metadata, so the
+  // server can't sort, filter or search by them without breaking zero-knowledge.
+  // The index itself is tiny (opaque blobs), so the client pulls it all and does
+  // sort/filter/search locally over the complete set — correct, not per-page.
+  let loadingAll = false;
   async function loadFirstPage() {
     items = [];
     cursor = null;
     revokeThumbs();
     $('grid').innerHTML = '';
-    await loadMore();
+    await loadAll();
   }
-  async function loadMore() {
-    const page = await client.listPage({ cursor });
-    items.push(...page.items);
-    cursor = page.nextCursor;
-    render();
-    ($('load-more') as HTMLButtonElement).hidden = !cursor;
+  async function loadAll() {
+    if (loadingAll) return;
+    loadingAll = true;
+    const status = $('lib-status');
+    let first = true;
+    try {
+      do {
+        const page = await client.listPage({ cursor, limit: 200 });
+        items.push(...page.items);
+        cursor = page.nextCursor;
+        if (first) { render(); first = false; } // paint the first batch immediately
+        if (cursor) {
+          status.hidden = false;
+          status.textContent = `Loading your library… ${items.length}`;
+        }
+      } while (cursor);
+    } finally {
+      loadingAll = false;
+      status.hidden = true;
+      render(); // final render over the full set → sort/filter/search now complete
+    }
   }
-  $('load-more').addEventListener('click', () => loadMore());
   $('search').addEventListener('input', render);
 
   // Category tabs + sort
@@ -1296,6 +1316,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .undo-btn:hover { background: color-mix(in srgb, var(--bg) 15%, transparent) !important; }
 
   .more-bar { text-align: center; margin: 28px 0 8px; font-size: 13px; color: var(--text-muted); }
+  .lib-status { display: inline-block; margin: 18px 0 8px; font-size: 12.5px; color: var(--text-muted); }
   .no-match { text-align: center; padding: 48px 0; }
 
   /* Empty-state dropzone */
