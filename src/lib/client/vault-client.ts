@@ -12,7 +12,9 @@ import {
   decryptDownloaded,
   deriveAuthKey,
   encryptForUpload,
+  encryptThumbnail,
   normalizeRecoveryKey,
+  prepareStreamingUpload,
   readMetadata,
   rewrapForNewPassword,
   unlockWithPassword,
@@ -20,9 +22,13 @@ import {
   type FileMetadata,
   type KdfParams,
 } from '../e2ee/account';
-import { decryptJson, encryptJson, sha256Hex, unwrapKey, type FileHeader } from '../e2ee/crypto';
+import { DEFAULT_CHUNK_SIZE, decryptJson, encryptJson, sha256Hex, unwrapKey, type FileHeader } from '../e2ee/crypto';
 import { makeStore, type ObjectStore, type ProviderConfig } from '../storage/object-store';
-import { fetchHeader } from './stream';
+import { ciphertextSize, fetchHeader } from './stream';
+
+// Below this size, the simple (read-whole-file) path is used; at/above it we
+// stream-encrypt + stream-upload so memory stays flat for large files.
+const STREAM_THRESHOLD = 8 * 1024 * 1024;
 
 type ApiFetch = (path: string, init?: RequestInit) => Promise<Response>;
 type MakeStore = (config: ProviderConfig) => ObjectStore;
@@ -288,6 +294,76 @@ export class VaultClient {
     });
     if (!res.ok) {
       // best-effort: don't leave orphan objects if the index write failed
+      await store.del(objectKey).catch(() => {});
+      if (thumbKey) await store.del(thumbKey).catch(() => {});
+      throw new Error((await asJson(res)).error || 'index_write_failed');
+    }
+    return { id: (await asJson(res)).id };
+  }
+
+  /**
+   * Upload a File. Large files are STREAM-encrypted and STREAM-uploaded (the file
+   * is read slice-by-slice and each encrypted chunk is pushed to a resumable
+   * provider upload), so memory stays flat regardless of file size. Small files
+   * (or providers without a streaming writer) fall back to the simple buffered
+   * path. Same E2EE + same MV1 format → downloads/seeking are unaffected.
+   */
+  async uploadFile(
+    conn: Connection,
+    file: { file: File; name: string; mime: string; thumbnail?: Uint8Array | null },
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<{ id: string }> {
+    this.requireKey();
+    const store = this.store(conn.config);
+
+    if (file.file.size < STREAM_THRESHOLD || !store.createWriter) {
+      const bytes = new Uint8Array(await file.file.arrayBuffer());
+      return this.upload(conn, { bytes, name: file.name, mime: file.mime, thumbnail: file.thumbnail }, onProgress);
+    }
+
+    const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.file.size };
+    const prep = await prepareStreamingUpload(file.file, meta, this.accountKey!);
+    const base = `mv/${globalThis.crypto.randomUUID()}`;
+    const objectKey = `${base}.enc`;
+    const total = ciphertextSize(file.file.size, DEFAULT_CHUNK_SIZE);
+
+    const writer = store.createWriter(objectKey);
+    let written = 0;
+    try {
+      for await (const piece of prep.stream) {
+        await writer.write(piece);
+        written += piece.length;
+        onProgress?.(written, total);
+      }
+      await writer.close();
+    } catch (e) {
+      await writer.abort().catch(() => {});
+      await store.del(objectKey).catch(() => {});
+      throw e;
+    }
+
+    let thumbKey: string | null = null;
+    if (file.thumbnail) {
+      try {
+        thumbKey = await store.put(`${base}.thumb.enc`, await encryptThumbnail(file.thumbnail, prep.fileKey));
+      } catch {
+        thumbKey = null; // optional
+      }
+    }
+
+    const res = await this.api('/api/vault/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        encMetadata: prep.encMetadata,
+        wrappedItemKey: prep.wrappedFileKey,
+        connectionId: conn.id,
+        objectKey,
+        thumbKey,
+        size: total,
+      }),
+    });
+    if (!res.ok) {
       await store.del(objectKey).catch(() => {});
       if (thumbKey) await store.del(thumbKey).catch(() => {});
       throw new Error((await asJson(res)).error || 'index_write_failed');

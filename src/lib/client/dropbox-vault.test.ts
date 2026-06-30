@@ -122,6 +122,7 @@ function makeFakeApi() {
 // ── Faithful in-memory Dropbox HTTP API ────────────────────────────────────────
 function makeFakeDropbox() {
   const files = new Map<string, Uint8Array>();
+  const sessions = new Map<string, Uint8Array[]>();
   const log: string[] = [];
   let serveCount = 0;
   let failNextDownloadWith401 = false;
@@ -137,6 +138,26 @@ function makeFakeDropbox() {
     if (!h.get('authorization')?.startsWith('Bearer ')) return new Response('missing auth', { status: 401 });
 
     if (url.endsWith('/files/upload')) { files.set(arg.path, await bodyBytes(init.body)); return J({ name: arg.path }); }
+    if (url.endsWith('/upload_session/start')) {
+      const id = `sess-${sessions.size + 1}`;
+      sessions.set(id, [await bodyBytes(init.body)]);
+      return J({ session_id: id });
+    }
+    if (url.endsWith('/upload_session/append_v2')) {
+      sessions.get(arg.cursor.session_id)!.push(await bodyBytes(init.body));
+      return J({});
+    }
+    if (url.endsWith('/upload_session/finish')) {
+      const parts = sessions.get(arg.cursor.session_id)!;
+      parts.push(await bodyBytes(init.body));
+      const total = parts.reduce((n, p) => n + p.length, 0);
+      const out = new Uint8Array(total);
+      let o = 0;
+      for (const p of parts) { out.set(p, o); o += p.length; }
+      files.set(arg.commit.path, out);
+      sessions.delete(arg.cursor.session_id);
+      return J({ name: arg.commit.path });
+    }
     if (url.endsWith('/files/download')) {
       if (failNextDownloadWith401) { failNextDownloadWith401 = false; return new Response('expired', { status: 401 }); }
       const bytes = files.get(arg.path);
@@ -245,5 +266,38 @@ describe('Dropbox connector — full vault lifecycle over a faithful Dropbox API
     const dl = await client.download(item, conn);
     expect(Array.from(dl.bytes)).toEqual(Array.from(original));
     expect(dbx.log.some((l) => l.includes('oauth2/token'))).toBe(true); // a refresh happened
+  });
+
+  it('STREAMS a large file via an upload session and downloads it back intact', async () => {
+    const { apiFetch } = makeFakeApi();
+    const dbx = makeFakeDropbox();
+    const makeStore = (cfg: ProviderConfig) => new DropboxStore(cfg as never, dbx.fetchImpl);
+    const client = new VaultClient({ apiFetch, makeStore });
+    await client.signup('stream@example.com', 'password-123', FAST);
+    const dbxCfg: ProviderConfig = {
+      kind: 'dropbox', clientId: 'pc4qfb65x6bpowd',
+      accessToken: 'srv-token-0', refreshToken: 'refresh-abc', expiresAt: Date.now() + 3_600_000,
+    };
+    await client.addConnection(dbxCfg, 'Dropbox');
+    const conn = (await client.getConnections())[0];
+
+    // 9 MiB > the 8 MiB streaming threshold → the chunked upload-session path.
+    const SIZE = 9 * 1024 * 1024;
+    const original = new Uint8Array(SIZE);
+    for (let i = 0; i < SIZE; i++) original[i] = (i * 31 + 7) & 0xff;
+    const file = new File([original], 'big.bin', { type: 'application/octet-stream' });
+
+    await client.uploadFile(conn, { file, name: 'big.bin', mime: 'application/octet-stream' });
+    expect(dbx.files.size).toBe(1);
+    expect(dbx.log.some((l) => l.includes('upload_session/start'))).toBe(true);
+    expect(dbx.log.some((l) => l.includes('upload_session/finish'))).toBe(true);
+    expect(dbx.log.includes('/files/upload')).toBe(false); // NOT the simple (whole-file) path
+
+    const item = (await client.listPage()).items[0];
+    expect(item.metadata.size).toBe(SIZE);
+    const dl = await client.download(item, conn);
+    expect(dl.bytes.length).toBe(SIZE);
+    expect(Array.from(dl.bytes.subarray(0, 32))).toEqual(Array.from(original.subarray(0, 32)));
+    expect(Array.from(dl.bytes.subarray(SIZE - 32))).toEqual(Array.from(original.subarray(SIZE - 32)));
   });
 });
