@@ -26,6 +26,7 @@ import {
   unwrapKey,
   wrapKey,
   encryptFile,
+  encryptFileStream,
   decryptFile,
 } from './crypto';
 import { DEFAULT_KDF, type KdfParams } from './params';
@@ -194,6 +195,37 @@ export async function encryptForUpload(
   // nonce per call, so there is no nonce reuse between file and thumbnail.
   if (thumbnail) out.encThumbnail = await encryptFile(thumbnail, fileKey);
   return out;
+}
+
+/**
+ * Streaming upload prep: returns the wrapped key + encrypted metadata, plus a
+ * generator that yields the file's encrypted MV1 pieces on demand. The caller
+ * pipes the generator into a streaming storage writer, so a multi-GB file is
+ * encrypted and uploaded a chunk at a time — never held in memory whole.
+ */
+export interface StreamingUpload {
+  fileKey: Uint8Array;
+  wrappedFileKey: string;
+  encMetadata: string;
+  stream: AsyncGenerator<Uint8Array, void, unknown>;
+}
+export async function prepareStreamingUpload(
+  file: Blob,
+  metadata: FileMetadata,
+  accountKey: Uint8Array,
+): Promise<StreamingUpload> {
+  const fileKey = generateKey();
+  return {
+    fileKey,
+    wrappedFileKey: await wrapKey(fileKey, accountKey),
+    encMetadata: await encryptJson(metadata, accountKey),
+    stream: encryptFileStream(file, fileKey),
+  };
+}
+
+/** Encrypt an optional thumbnail with an existing file key (used by streaming). */
+export function encryptThumbnail(thumbnail: Uint8Array, fileKey: Uint8Array): Promise<Uint8Array> {
+  return encryptFile(thumbnail, fileKey);
 }
 
 export async function decryptDownloaded(
