@@ -297,6 +297,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <dt>Email</dt><dd id="profile-email">—</dd>
         <dt>Member since</dt><dd id="profile-since">—</dd>
         <dt>Files</dt><dd id="profile-items">—</dd>
+        <dt>Used</dt><dd id="profile-used">—</dd>
         <dt>Storage</dt><dd id="profile-conns">—</dd>
       </dl>
 
@@ -644,6 +645,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     $('profile-items').textContent = '…';
     $('profile-conns').textContent = '…';
     $('account-modal').hidden = false;
+    // Storage used = sum of ciphertext sizes across the fully-loaded index (client-side).
+    $('profile-used').textContent = fmtBytes(items.reduce((n, i) => n + (i.size || 0), 0));
     refreshTwofa();
     refreshSessions();
     try {
