@@ -63,6 +63,7 @@ class MemItems implements VaultItemStore {
   }
   async getById(a: string, id: string) { return this.rows.find((r) => r.account_id === a && r.id === id) ?? null; }
   async setBookmark(a: string, id: string, b: boolean) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.bookmarked = b ? 1 : 0; return true; }
+  async updateMetadata(a: string, id: string, enc: string) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.enc_metadata = enc; return true; }
   async remove(a: string, id: string) { const i = this.rows.findIndex((r) => r.account_id === a && r.id === id); if (i < 0) return false; this.rows.splice(i, 1); return true; }
 }
 class MemConns implements StorageConnectionStore {

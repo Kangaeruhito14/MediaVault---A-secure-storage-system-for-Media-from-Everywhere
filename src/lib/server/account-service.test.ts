@@ -32,6 +32,7 @@ class MemItems implements VaultItemStore {
   async allForAccount(a: string) { return this.rows.filter((r) => r.account_id === a); }
   async getById(a: string, id: string) { return this.rows.find((r) => r.account_id === a && r.id === id) ?? null; }
   async setBookmark() { return true; }
+  async updateMetadata() { return true; }
   async remove() { return true; }
   async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
 }

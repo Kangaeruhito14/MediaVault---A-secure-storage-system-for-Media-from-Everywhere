@@ -574,6 +574,27 @@ export class VaultClient {
     if (!res.ok) throw new Error('bookmark_failed');
   }
 
+  /**
+   * Rename a file. The name lives inside the E2E-encrypted metadata, so we
+   * re-encrypt the whole metadata blob locally and hand the server only opaque
+   * ciphertext. Returns the updated metadata.
+   */
+  async rename(item: VaultItem, newName: string): Promise<FileMetadata> {
+    this.requireKey();
+    const name = newName.trim();
+    if (!name) throw new Error('empty_name');
+    const meta: FileMetadata = { ...item.metadata, name };
+    const encMetadata = await encryptJson(meta, this.accountKey!);
+    const res = await this.api(`/api/vault/items/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encMetadata }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'rename_failed');
+    item.metadata = meta;
+    return meta;
+  }
+
   private requireKey(): void {
     if (!this.accountKey) throw new Error('vault_locked');
   }
