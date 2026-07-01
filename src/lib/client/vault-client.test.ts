@@ -47,8 +47,9 @@ class MemItems implements VaultItemStore {
   async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
   async countForAccount(a: string) { return this.rows.filter((r) => r.account_id === a).length; }
   async insert(r: VaultItemRow) { this.rows.push(r); }
-  async page(a: string, o: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }) {
+  async page(a: string, o: { limit: number; bookmarked?: boolean; trashed?: boolean; cursor?: ItemCursor }) {
     let rows = this.rows.filter((r) => r.account_id === a);
+    rows = rows.filter((r) => (o.trashed ? r.deleted_at != null : r.deleted_at == null));
     if (o.bookmarked) rows = rows.filter((r) => r.bookmarked === 1);
     rows.sort((x, y) => y.created_at - x.created_at || (x.id < y.id ? 1 : -1));
     if (o.cursor) { const c = o.cursor; rows = rows.filter((r) => r.created_at < c.createdAt || (r.created_at === c.createdAt && r.id < c.id)); }
@@ -57,6 +58,7 @@ class MemItems implements VaultItemStore {
   async getById(a: string, id: string) { return this.rows.find((r) => r.account_id === a && r.id === id) ?? null; }
   async setBookmark(a: string, id: string, b: boolean) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.bookmarked = b ? 1 : 0; return true; }
   async updateMetadata(a: string, id: string, enc: string) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.enc_metadata = enc; return true; }
+  async setDeleted(a: string, id: string, d: number | null) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.deleted_at = d; return true; }
   async remove(a: string, id: string) { const i = this.rows.findIndex((r) => r.account_id === a && r.id === id); if (i < 0) return false; this.rows.splice(i, 1); return true; }
 }
 class MemConns implements StorageConnectionStore {

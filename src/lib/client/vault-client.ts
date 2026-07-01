@@ -471,8 +471,8 @@ export class VaultClient {
     return { id: (await asJson(res)).id };
   }
 
-  /** One page of the library, with decrypted metadata. */
-  async listPage(opts: { cursor?: string | null; bookmarked?: boolean; limit?: number } = {}): Promise<{
+  /** One page of the library, with decrypted metadata. `trashed` lists the trash. */
+  async listPage(opts: { cursor?: string | null; bookmarked?: boolean; trashed?: boolean; limit?: number } = {}): Promise<{
     items: VaultItem[];
     nextCursor: string | null;
   }> {
@@ -480,6 +480,7 @@ export class VaultClient {
     const q = new URLSearchParams();
     if (opts.cursor) q.set('cursor', opts.cursor);
     if (opts.bookmarked) q.set('bookmarked', '1');
+    if (opts.trashed) q.set('trashed', '1');
     if (opts.limit) q.set('limit', String(opts.limit));
     const data = await asJson(await this.api(`/api/vault/items?${q.toString()}`));
 
@@ -572,6 +573,24 @@ export class VaultClient {
       body: JSON.stringify({ bookmarked }),
     });
     if (!res.ok) throw new Error('bookmark_failed');
+  }
+
+  /** Move a file to the trash (recoverable; bytes stay in the user's storage). */
+  async trash(item: VaultItem): Promise<void> {
+    await this.setTrashed(item, true);
+  }
+  /** Restore a file from the trash. */
+  async restore(item: VaultItem): Promise<void> {
+    await this.setTrashed(item, false);
+  }
+  private async setTrashed(item: VaultItem, trashed: boolean): Promise<void> {
+    this.requireKey();
+    const res = await this.api(`/api/vault/items/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trashed }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || (trashed ? 'trash_failed' : 'restore_failed'));
   }
 
   /**
