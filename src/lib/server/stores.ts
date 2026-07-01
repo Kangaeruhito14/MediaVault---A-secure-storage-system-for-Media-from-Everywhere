@@ -40,6 +40,9 @@ async function ensureSchema(db: D1Like): Promise<void> {
     if (itemCols.some((c) => c.name === 'iv')) {
       await db.prepare('ALTER TABLE vault_items DROP COLUMN iv').run();
     }
+    if (!itemCols.some((c) => c.name === 'deleted_at')) {
+      await db.prepare('ALTER TABLE vault_items ADD COLUMN deleted_at INTEGER').run(); // migration 0004
+    }
     // migration 0003 — 2FA table + session device metadata.
     await db
       .prepare(
@@ -195,8 +198,9 @@ export class D1VaultItemStore implements VaultItemStore {
   constructor(private db: D1Like) {}
 
   async countForAccount(accountId: string): Promise<number> {
+    await ensureSchema(this.db);
     const row = await this.db
-      .prepare('SELECT COUNT(*) AS n FROM vault_items WHERE account_id = ?')
+      .prepare('SELECT COUNT(*) AS n FROM vault_items WHERE account_id = ? AND deleted_at IS NULL')
       .bind(accountId)
       .first<{ n: number }>();
     return row?.n ?? 0;
@@ -221,10 +225,12 @@ export class D1VaultItemStore implements VaultItemStore {
   // a million rows (no large OFFSET scans).
   async page(
     accountId: string,
-    opts: { limit: number; bookmarked?: boolean; cursor?: ItemCursor },
+    opts: { limit: number; bookmarked?: boolean; trashed?: boolean; cursor?: ItemCursor },
   ): Promise<VaultItemRow[]> {
+    await ensureSchema(this.db); // page() filters on deleted_at (0004); make sure it exists
     const where: string[] = ['account_id = ?'];
     const binds: unknown[] = [accountId];
+    where.push(opts.trashed ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL');
     if (opts.bookmarked) where.push('bookmarked = 1');
     if (opts.cursor) {
       where.push('(created_at < ? OR (created_at = ? AND id < ?))');
@@ -268,6 +274,14 @@ export class D1VaultItemStore implements VaultItemStore {
     const res: any = await this.db
       .prepare('UPDATE vault_items SET enc_metadata = ?, updated_at = ? WHERE account_id = ? AND id = ?')
       .bind(encMetadata, Date.now(), accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async setDeleted(accountId: string, id: string, deletedAt: number | null): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('UPDATE vault_items SET deleted_at = ?, updated_at = ? WHERE account_id = ? AND id = ?')
+      .bind(deletedAt, Date.now(), accountId, id)
       .run();
     return (res?.meta?.changes ?? 0) > 0;
   }

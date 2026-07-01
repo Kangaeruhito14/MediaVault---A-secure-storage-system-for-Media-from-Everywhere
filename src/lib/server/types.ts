@@ -103,6 +103,7 @@ export interface VaultItemRow {
   bookmarked: number;
   created_at: number;
   updated_at: number;
+  deleted_at?: number | null; // NULL = live; timestamp = in trash (added in 0004)
 }
 
 /** A keyset page cursor: items strictly older than (created_at, id). */
@@ -114,8 +115,10 @@ export interface ItemCursor {
 export interface VaultItemStore {
   countForAccount(accountId: string): Promise<number>;
   insert(row: VaultItemRow): Promise<void>;
-  /** Newest-first page; optional bookmarked-only; keyset paginated. */
-  page(accountId: string, opts: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }): Promise<VaultItemRow[]>;
+  /** Newest-first page. `trashed` selects live (default) vs trashed rows. */
+  page(accountId: string, opts: { limit: number; bookmarked?: boolean; trashed?: boolean; cursor?: ItemCursor }): Promise<VaultItemRow[]>;
+  /** Soft-delete (deletedAt = now) or restore (deletedAt = null). */
+  setDeleted(accountId: string, id: string, deletedAt: number | null): Promise<boolean>;
   /** Every row for an account, oldest-first — used for data export. */
   allForAccount(accountId: string): Promise<VaultItemRow[]>;
   getById(accountId: string, id: string): Promise<VaultItemRow | null>;
