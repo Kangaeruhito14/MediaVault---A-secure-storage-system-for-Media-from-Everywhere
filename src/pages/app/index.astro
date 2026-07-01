@@ -1257,13 +1257,31 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     const name = document.createElement('span');
     name.className = 'v-name';
     name.textContent = item.metadata.name; // textContent — XSS-safe
+    const dl = document.createElement('button');
+    dl.className = 'v-icon-btn';
+    dl.title = 'Download';
+    dl.setAttribute('aria-label', 'Download');
+    dl.textContent = '⬇';
+    dl.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      dl.disabled = true;
+      try {
+        const { bytes } = await client.download(item, connFor(item));
+        const url = URL.createObjectURL(new Blob([bytes], { type: item.metadata.mime || 'application/octet-stream' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = item.metadata.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } catch (err) { toast('error', (err as Error).message || 'Download failed'); }
+      finally { dl.disabled = false; }
+    });
     const edit = document.createElement('button');
     edit.className = 'v-icon-btn';
     edit.title = 'Rename';
     edit.setAttribute('aria-label', 'Rename');
     edit.textContent = '✎';
     edit.addEventListener('click', (e) => { e.stopPropagation(); enterRename(item); });
-    row.append(name, edit);
+    row.append(name, dl, edit);
     const k = kind(item.metadata.mime);
     const meta = document.createElement('div');
     meta.className = 'v-meta';
