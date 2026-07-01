@@ -120,6 +120,8 @@ export interface VaultItemStore {
   allForAccount(accountId: string): Promise<VaultItemRow[]>;
   getById(accountId: string, id: string): Promise<VaultItemRow | null>;
   setBookmark(accountId: string, id: string, bookmarked: boolean): Promise<boolean>;
+  /** Replace the encrypted metadata blob (e.g. after a rename). */
+  updateMetadata(accountId: string, id: string, encMetadata: string): Promise<boolean>;
   remove(accountId: string, id: string): Promise<boolean>;
   deleteAllForAccount(accountId: string): Promise<void>;
 }

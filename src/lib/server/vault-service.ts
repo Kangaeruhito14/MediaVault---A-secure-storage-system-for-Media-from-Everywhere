@@ -122,6 +122,17 @@ export function setBookmark(items: VaultItemStore, accountId: string, id: string
   return items.setBookmark(accountId, id, bookmarked);
 }
 
+/** Replace an item's encrypted metadata (rename etc.). The server only ever sees
+ *  the opaque ciphertext; the new name is encrypted client-side. */
+export function updateItemMetadata(
+  items: VaultItemStore,
+  accountId: string,
+  id: string,
+  encMetadata: string,
+): Promise<boolean> {
+  return items.updateMetadata(accountId, id, encMetadata);
+}
+
 // ── Storage connections ────────────────────────────────────────────────────────
 export interface PublicConnection {
   id: string;

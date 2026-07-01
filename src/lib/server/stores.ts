@@ -264,6 +264,14 @@ export class D1VaultItemStore implements VaultItemStore {
     return (res?.meta?.changes ?? 0) > 0;
   }
 
+  async updateMetadata(accountId: string, id: string, encMetadata: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('UPDATE vault_items SET enc_metadata = ?, updated_at = ? WHERE account_id = ? AND id = ?')
+      .bind(encMetadata, Date.now(), accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
   async remove(accountId: string, id: string): Promise<boolean> {
     const res: any = await this.db
       .prepare('DELETE FROM vault_items WHERE account_id = ? AND id = ?')

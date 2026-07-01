@@ -4,6 +4,7 @@ import {
   listItems,
   deleteItem,
   setBookmark,
+  updateItemMetadata,
   createConnection,
   listConnections,
   deleteConnection,
@@ -48,6 +49,12 @@ class MemItems implements VaultItemStore {
     const r = this.rows.find((x) => x.account_id === a && x.id === id);
     if (!r) return false;
     r.bookmarked = b ? 1 : 0;
+    return true;
+  }
+  async updateMetadata(a: string, id: string, enc: string) {
+    const r = this.rows.find((x) => x.account_id === a && x.id === id);
+    if (!r) return false;
+    r.enc_metadata = enc;
     return true;
   }
   async remove(a: string, id: string) {
@@ -166,6 +173,18 @@ describe('mutations are account-scoped', () => {
     expect(await deleteItem(items, 'B', 'a')).toBe(false); // wrong account
     expect(await setBookmark(items, 'B', 'a', true)).toBe(false);
     expect(await deleteItem(items, 'A', 'a')).toBe(true);
+  });
+});
+
+describe('updateItemMetadata (rename)', () => {
+  it('replaces the encrypted metadata blob for the owner only', async () => {
+    const items = new MemItems();
+    seed(items, 'A', 1); // id 'a'
+    expect(await updateItemMetadata(items, 'B', 'a', 'NEWENC')).toBe(false); // wrong account
+    expect((await items.getById('A', 'a'))!.enc_metadata).not.toBe('NEWENC');
+    expect(await updateItemMetadata(items, 'A', 'a', 'NEWENC')).toBe(true);
+    expect((await items.getById('A', 'a'))!.enc_metadata).toBe('NEWENC');
+    expect(await updateItemMetadata(items, 'A', 'missing', 'X')).toBe(false); // unknown id
   });
 });
 

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getServerContext, requireAccountId } from '../../../../lib/server/context';
-import { deleteItem, setBookmark } from '../../../../lib/server/vault-service';
+import { deleteItem, setBookmark, updateItemMetadata } from '../../../../lib/server/vault-service';
 import { json } from '../../../../lib/server/http';
 
 // Remove the index row (the client deletes the bucket object itself, since only
@@ -21,12 +21,20 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   if (!accountId) return json({ error: 'unauthorized' }, 401);
   if (!params.id) return json({ error: 'missing_id' }, 400);
 
-  let body: { bookmarked?: boolean };
+  let body: { bookmarked?: boolean; encMetadata?: string };
   try {
     body = await request.json();
   } catch {
     return json({ error: 'invalid_json' }, 400);
   }
+
+  // Rename (or any metadata edit): store the new encrypted blob.
+  if (typeof body.encMetadata === 'string') {
+    if (!body.encMetadata) return json({ error: 'missing_fields' }, 400);
+    const ok = await updateItemMetadata(ctx.items, accountId, params.id, body.encMetadata);
+    return ok ? json({ ok: true }) : json({ error: 'not_found' }, 404);
+  }
+
   const ok = await setBookmark(ctx.items, accountId, params.id, !!body.bookmarked);
   return ok ? json({ ok: true, bookmarked: !!body.bookmarked }) : json({ error: 'not_found' }, 404);
 };
