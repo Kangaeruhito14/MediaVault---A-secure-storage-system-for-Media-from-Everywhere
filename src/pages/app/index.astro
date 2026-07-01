@@ -31,6 +31,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <svg id="app-icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
       </button>
       <div id="appbar-actions" class="appbar-actions" hidden>
+        <button id="trash-btn" class="btn-ghost" title="Trash">Trash</button>
         <button id="account-btn" class="btn-ghost">Account</button>
         <button id="lock-btn" class="btn-ghost">Lock</button>
       </div>
@@ -282,8 +283,22 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       <p class="muted" id="confirm-text">This permanently removes it from your storage.</p>
       <div class="confirm-actions">
         <button id="confirm-cancel" type="button" class="btn-outline">Cancel</button>
-        <button id="confirm-ok" type="button" class="btn-danger">Delete</button>
+        <button id="confirm-ok" type="button" class="btn-danger">Move to trash</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Trash modal -->
+  <div id="trash-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button id="trash-close" class="modal-close" aria-label="Close">✕</button>
+      <h2 class="card-h">Trash</h2>
+      <p class="account-p">Deleted files stay here — recoverable — until you delete them for good. They still occupy space in your own storage until then.</p>
+      <ul id="trash-list" class="sessions-list"><li class="muted">Loading…</li></ul>
+      <div class="row" id="trash-actions" hidden>
+        <button id="trash-empty" class="btn-danger" type="button">Empty trash</button>
+      </div>
+      <p id="trash-msg" class="error" hidden></p>
     </div>
   </div>
 
@@ -844,6 +859,86 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     }
   });
 
+  // ── Trash (soft-deleted files: restore or delete forever) ───────────────────
+  let trashList: VaultItem[] = [];
+  $('trash-btn').addEventListener('click', () => openTrash());
+  $('trash-close').addEventListener('click', () => { $('trash-modal').hidden = true; });
+  $('trash-modal').addEventListener('click', (e) => { if (e.target === $('trash-modal')) $('trash-modal').hidden = true; });
+
+  async function openTrash() {
+    await commitPending(); // make sure any in-flight "moving to trash" has landed
+    $('trash-modal').hidden = false;
+    $('trash-msg').hidden = true;
+    $('trash-list').innerHTML = '<li class="muted">Loading…</li>';
+    try {
+      trashList = [];
+      let cursor: string | null = null;
+      do {
+        const page = await client.listPage({ cursor, trashed: true, limit: 200 });
+        trashList.push(...page.items);
+        cursor = page.nextCursor;
+      } while (cursor);
+      renderTrash();
+    } catch (err) { $('trash-list').innerHTML = ''; showErr('trash-msg', err); }
+  }
+
+  function renderTrash() {
+    const list = $('trash-list');
+    list.innerHTML = '';
+    $('trash-actions').hidden = trashList.length === 0;
+    if (trashList.length === 0) { list.innerHTML = '<li class="muted">Trash is empty.</li>'; return; }
+    for (const item of trashList) {
+      const li = document.createElement('li');
+      li.className = 'session-row';
+      const info = document.createElement('div');
+      const name = document.createElement('div'); name.className = 'session-device'; name.textContent = item.metadata.name;
+      const k = kind(item.metadata.mime);
+      const meta = document.createElement('div'); meta.className = 'session-meta';
+      meta.textContent = `${k === 'file' ? 'FILE' : k.toUpperCase()} · ${fmtBytes(item.metadata.size)}`;
+      info.append(name, meta);
+      li.appendChild(info);
+      const actions = document.createElement('div'); actions.className = 'trash-row-actions';
+      const restoreBtn = document.createElement('button'); restoreBtn.className = 'btn-outline btn-sm'; restoreBtn.textContent = 'Restore';
+      restoreBtn.addEventListener('click', async () => {
+        restoreBtn.disabled = true;
+        try {
+          await client.restore(item);
+          trashList = trashList.filter((i) => i.id !== item.id);
+          items = items.concat(item); // back into the live gallery
+          renderTrash(); render();
+          toast('success', 'Restored');
+        } catch (err) { showErr('trash-msg', err); restoreBtn.disabled = false; }
+      });
+      const delBtn = document.createElement('button'); delBtn.className = 'btn-sm trash-del'; delBtn.textContent = 'Delete forever';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(`Permanently delete "${item.metadata.name}"? This removes it from your storage too and cannot be undone.`)) return;
+        delBtn.disabled = true;
+        try {
+          await client.remove(item, connFor(item)); // purge bucket object + index row
+          trashList = trashList.filter((i) => i.id !== item.id);
+          renderTrash();
+          toast('success', 'Deleted permanently');
+        } catch (err) { showErr('trash-msg', err); delBtn.disabled = false; }
+      });
+      actions.append(restoreBtn, delBtn);
+      li.appendChild(actions);
+      list.appendChild(li);
+    }
+  }
+
+  $('trash-empty').addEventListener('click', async () => {
+    if (!trashList.length) return;
+    if (!confirm(`Permanently delete all ${trashList.length} file(s) in the trash? This removes them from your storage and cannot be undone.`)) return;
+    const btn = $('trash-empty') as HTMLButtonElement; btn.disabled = true;
+    let failed = 0;
+    for (const item of [...trashList]) {
+      try { await client.remove(item, connFor(item)); trashList = trashList.filter((i) => i.id !== item.id); }
+      catch { failed++; }
+    }
+    renderTrash(); btn.disabled = false;
+    toast(failed ? 'error' : 'success', failed ? `${failed} could not be deleted` : 'Trash emptied');
+  });
+
   // ── After unlock ──────────────────────────────────────────────────────────────
   async function afterUnlock() {
     try { connections = await client.getConnections(); } catch { connections = []; }
@@ -1104,10 +1199,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   function askDelete(batch: VaultItem[]) {
     if (!batch.length) return;
     confirmBatch = batch;
-    $('confirm-modal').querySelector('.card-h')!.textContent = batch.length === 1 ? 'Delete file?' : `Delete ${batch.length} files?`;
+    $('confirm-modal').querySelector('.card-h')!.textContent = batch.length === 1 ? 'Move to trash?' : `Move ${batch.length} files to trash?`;
     $('confirm-text').textContent = batch.length === 1
-      ? `“${batch[0].metadata.name}” will be permanently removed from your storage. You'll have 5 seconds to undo.`
-      : `These ${batch.length} files will be permanently removed from your storage. You'll have 5 seconds to undo.`;
+      ? `“${batch[0].metadata.name}” will move to the Trash. You can restore it later, or delete it for good from there.`
+      : `These ${batch.length} files will move to the Trash. You can restore them later, or delete them for good from there.`;
     $('confirm-modal').hidden = false;
   }
   function closeConfirm() { $('confirm-modal').hidden = true; confirmBatch = []; }
@@ -1131,20 +1226,20 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     clearInterval(pendingDelete.interval);
     pendingDelete = null;
     ($('undo-btn') as HTMLButtonElement).hidden = true;
-    $('undo-text').textContent = `Deleting ${batch.length} file${batch.length === 1 ? '' : 's'}…`;
+    $('undo-text').textContent = `Moving ${batch.length} file${batch.length === 1 ? '' : 's'} to trash…`;
     $('undo-bar').hidden = false;
     let done = 0;
     for (const item of batch) {
       try {
-        await client.remove(item, connFor(item));
+        await client.trash(item); // soft-delete: recoverable from Trash, bytes stay put
         const u = thumbUrls.get(item.id); if (u) { URL.revokeObjectURL(u); thumbUrls.delete(item.id); }
         done++;
       } catch { /* leave it; it will reappear on next refresh */ }
     }
     $('undo-bar').hidden = true;
     ($('undo-btn') as HTMLButtonElement).hidden = false;
-    if (done) toast('success', `Deleted ${done} file${done === 1 ? '' : 's'}`);
-    if (done < batch.length) toast('error', `${batch.length - done} could not be deleted`);
+    if (done) toast('success', `Moved ${done} file${done === 1 ? '' : 's'} to trash`);
+    if (done < batch.length) toast('error', `${batch.length - done} could not be moved`);
   }
 
   async function softDelete(batch: VaultItem[]) {
@@ -1155,7 +1250,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     batch.forEach((i) => selected.delete(i.id));
     render();
     let secs = 5;
-    const label = () => { $('undo-text').textContent = `Deleted ${batch.length} file${batch.length === 1 ? '' : 's'} · undo (${secs}s)`; };
+    const label = () => { $('undo-text').textContent = `Moved ${batch.length} file${batch.length === 1 ? '' : 's'} to trash · undo (${secs}s)`; };
     label();
     ($('undo-btn') as HTMLButtonElement).hidden = false;
     $('undo-bar').hidden = false;
@@ -1630,6 +1725,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .session-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
   .session-current { font-size: 11px; font-weight: 600; color: var(--accent); }
   .btn-sm { padding: 6px 12px; font-size: 12px; flex: none; }
+  .trash-row-actions { display: flex; gap: 8px; flex: none; }
+  .trash-del { background: transparent; border: 1px solid rgba(239,68,68,.5); color: #ef4444; border-radius: 9px; cursor: pointer; font: inherit; }
+  .trash-del:hover { background: #ef4444; color: #fff; }
+  .trash-del:disabled { opacity: .5; cursor: default; }
 
   .provider-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
   .provider-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; color: var(--text-muted); font-size: 11.5px; }
