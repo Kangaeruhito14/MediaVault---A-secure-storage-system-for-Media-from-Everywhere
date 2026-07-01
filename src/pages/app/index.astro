@@ -1245,12 +1245,71 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     clearViewerUrl();
     unregisterStreams();
   }
+  // Viewer caption: filename + type/size/date, with inline rename.
+  function renderCaption(item: VaultItem) {
+    const cap = $('v-caption');
+    cap.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'v-name-row';
+    const name = document.createElement('span');
+    name.className = 'v-name';
+    name.textContent = item.metadata.name; // textContent — XSS-safe
+    const edit = document.createElement('button');
+    edit.className = 'v-icon-btn';
+    edit.title = 'Rename';
+    edit.setAttribute('aria-label', 'Rename');
+    edit.textContent = '✎';
+    edit.addEventListener('click', (e) => { e.stopPropagation(); enterRename(item); });
+    row.append(name, edit);
+    const k = kind(item.metadata.mime);
+    const meta = document.createElement('div');
+    meta.className = 'v-meta';
+    meta.textContent = `${k === 'file' ? 'FILE' : k.toUpperCase()} · ${fmtBytes(item.metadata.size)} · ${new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`;
+    cap.append(row, meta);
+  }
+  function enterRename(item: VaultItem) {
+    const cap = $('v-caption');
+    cap.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'v-name-edit';
+    const input = document.createElement('input');
+    input.className = 'v-name-input';
+    input.value = item.metadata.name;
+    input.setAttribute('aria-label', 'New file name');
+    const save = document.createElement('button');
+    save.className = 'v-icon-btn'; save.textContent = '✓'; save.title = 'Save';
+    const cancel = document.createElement('button');
+    cancel.className = 'v-icon-btn'; cancel.textContent = '✕'; cancel.title = 'Cancel';
+    const doSave = async () => {
+      const val = input.value.trim();
+      if (!val || val === item.metadata.name) return renderCaption(item);
+      save.disabled = true;
+      try {
+        await client.rename(item, val);
+        renderCaption(item);
+        render();               // reflect the new name in the grid tile
+        toast('success', 'Renamed');
+      } catch (err) { toast('error', (err as Error).message || 'Rename failed'); save.disabled = false; }
+    };
+    save.addEventListener('click', (e) => { e.stopPropagation(); doSave(); });
+    cancel.addEventListener('click', (e) => { e.stopPropagation(); renderCaption(item); });
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();      // don't let the viewer's arrow/Escape nav fire while typing
+      if (e.key === 'Enter') { e.preventDefault(); doSave(); }
+      else if (e.key === 'Escape') renderCaption(item);
+    });
+    wrap.append(input, save, cancel);
+    cap.appendChild(wrap);
+    input.focus();
+    input.select();
+  }
   async function renderViewer() {
     const item = visible[viewerIdx];
     if (!item) return;
     const stage = $('v-stage');
     stage.innerHTML = '<div class="v-spin">Decrypting…</div>';
-    $('v-caption').textContent = item.metadata.name;
+    renderCaption(item);
     clearViewerUrl();
     const k = kind(item.metadata.mime);
 
@@ -1606,6 +1665,15 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .v-prev { left: 20px; }
   .v-next { right: 20px; }
   .v-caption { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: #ddd; font-size: 13px; padding: 0 24px; }
+  .v-name-row { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+  .v-name { font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70vw; }
+  .v-meta { margin-top: 4px; color: #9aa; font-size: 11.5px; letter-spacing: .02em; }
+  .v-icon-btn { background: rgba(255,255,255,.12); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .v-icon-btn:hover { background: rgba(255,255,255,.22); }
+  .v-icon-btn:disabled { opacity: .5; cursor: default; }
+  .v-name-edit { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+  .v-name-input { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); border-radius: 8px; color: #fff; font: inherit; padding: 6px 10px; min-width: 220px; max-width: 60vw; }
+  .v-name-input:focus { outline: none; border-color: rgba(255,255,255,.6); }
   @media (max-width: 600px) { .v-nav { width: 40px; height: 40px; font-size: 26px; } }
 </style>
 
