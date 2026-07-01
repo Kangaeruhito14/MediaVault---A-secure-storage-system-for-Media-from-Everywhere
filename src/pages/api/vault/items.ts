@@ -14,6 +14,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   const result = await listItems(ctx.items, accountId, {
     limit: Number(url.searchParams.get('limit')) || 60,
     bookmarked: url.searchParams.get('bookmarked') === '1',
+    trashed: url.searchParams.get('trashed') === '1',
     cursor: url.searchParams.get('cursor'),
   });
   return json(result);

@@ -5,6 +5,8 @@ import {
   deleteItem,
   setBookmark,
   updateItemMetadata,
+  trashItem,
+  restoreItem,
   createConnection,
   listConnections,
   deleteConnection,
@@ -26,8 +28,9 @@ class MemItems implements VaultItemStore {
   async insert(r: VaultItemRow) {
     this.rows.push(r);
   }
-  async page(a: string, o: { limit: number; bookmarked?: boolean; cursor?: ItemCursor }) {
+  async page(a: string, o: { limit: number; bookmarked?: boolean; trashed?: boolean; cursor?: ItemCursor }) {
     let rows = this.rows.filter((r) => r.account_id === a);
+    rows = rows.filter((r) => (o.trashed ? r.deleted_at != null : r.deleted_at == null));
     if (o.bookmarked) rows = rows.filter((r) => r.bookmarked === 1);
     rows.sort((x, y) => y.created_at - x.created_at || (x.id < y.id ? 1 : x.id > y.id ? -1 : 0));
     if (o.cursor) {
@@ -55,6 +58,12 @@ class MemItems implements VaultItemStore {
     const r = this.rows.find((x) => x.account_id === a && x.id === id);
     if (!r) return false;
     r.enc_metadata = enc;
+    return true;
+  }
+  async setDeleted(a: string, id: string, deletedAt: number | null) {
+    const r = this.rows.find((x) => x.account_id === a && x.id === id);
+    if (!r) return false;
+    r.deleted_at = deletedAt;
     return true;
   }
   async remove(a: string, id: string) {
@@ -173,6 +182,35 @@ describe('mutations are account-scoped', () => {
     expect(await deleteItem(items, 'B', 'a')).toBe(false); // wrong account
     expect(await setBookmark(items, 'B', 'a', true)).toBe(false);
     expect(await deleteItem(items, 'A', 'a')).toBe(true);
+  });
+});
+
+describe('trash / restore', () => {
+  it('trashed items leave the live list, appear in trash, and restore back', async () => {
+    const items = new MemItems();
+    seed(items, 'A', 3); // ids a, b, c — all live
+    const live = () => listItems(items, 'A', {});
+    const trash = () => listItems(items, 'A', { trashed: true });
+
+    expect((await live()).items.map((i) => i.id).sort()).toEqual(['a', 'b', 'c']);
+    expect((await trash()).items).toHaveLength(0);
+
+    expect(await trashItem(items, 'A', 'b')).toBe(true);
+    expect((await live()).items.map((i) => i.id).sort()).toEqual(['a', 'c']); // 'b' gone from live
+    expect((await trash()).items.map((i) => i.id)).toEqual(['b']);            // 'b' in trash
+
+    expect(await restoreItem(items, 'A', 'b')).toBe(true);
+    expect((await live()).items.map((i) => i.id).sort()).toEqual(['a', 'b', 'c']);
+    expect((await trash()).items).toHaveLength(0);
+  });
+
+  it('trash / restore are account-scoped and permanent delete still works from trash', async () => {
+    const items = new MemItems();
+    seed(items, 'A', 1); // id 'a'
+    expect(await trashItem(items, 'B', 'a')).toBe(false); // wrong account
+    expect(await trashItem(items, 'A', 'a')).toBe(true);
+    expect(await deleteItem(items, 'A', 'a')).toBe(true); // purge from trash
+    expect((await listItems(items, 'A', { trashed: true })).items).toHaveLength(0);
   });
 });
 

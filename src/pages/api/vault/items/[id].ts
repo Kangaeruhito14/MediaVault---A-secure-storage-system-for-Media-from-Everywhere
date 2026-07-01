@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getServerContext, requireAccountId } from '../../../../lib/server/context';
-import { deleteItem, setBookmark, updateItemMetadata } from '../../../../lib/server/vault-service';
+import { deleteItem, restoreItem, setBookmark, trashItem, updateItemMetadata } from '../../../../lib/server/vault-service';
 import { json } from '../../../../lib/server/http';
 
 // Remove the index row (the client deletes the bucket object itself, since only
@@ -21,11 +21,19 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   if (!accountId) return json({ error: 'unauthorized' }, 401);
   if (!params.id) return json({ error: 'missing_id' }, 400);
 
-  let body: { bookmarked?: boolean; encMetadata?: string };
+  let body: { bookmarked?: boolean; encMetadata?: string; trashed?: boolean };
   try {
     body = await request.json();
   } catch {
     return json({ error: 'invalid_json' }, 400);
+  }
+
+  // Trash / restore (soft-delete toggle).
+  if (typeof body.trashed === 'boolean') {
+    const ok = body.trashed
+      ? await trashItem(ctx.items, accountId, params.id)
+      : await restoreItem(ctx.items, accountId, params.id);
+    return ok ? json({ ok: true, trashed: body.trashed }) : json({ error: 'not_found' }, 404);
   }
 
   // Rename (or any metadata edit): store the new encrypted blob.

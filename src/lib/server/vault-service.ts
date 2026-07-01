@@ -101,11 +101,11 @@ export async function createItem(
 export async function listItems(
   items: VaultItemStore,
   accountId: string,
-  opts: { limit?: number; bookmarked?: boolean; cursor?: string | null },
+  opts: { limit?: number; bookmarked?: boolean; trashed?: boolean; cursor?: string | null },
 ): Promise<{ items: PublicItem[]; nextCursor: string | null }> {
   const limit = Math.min(Math.max(opts.limit ?? 60, 1), 200);
   // Fetch one extra to detect whether another page exists.
-  const rows = await items.page(accountId, { limit: limit + 1, bookmarked: opts.bookmarked, cursor: decodeCursor(opts.cursor) });
+  const rows = await items.page(accountId, { limit: limit + 1, bookmarked: opts.bookmarked, trashed: opts.trashed, cursor: decodeCursor(opts.cursor) });
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   return {
@@ -114,8 +114,19 @@ export async function listItems(
   };
 }
 
+/** Permanently remove the index row (the client also purges the bucket object). */
 export function deleteItem(items: VaultItemStore, accountId: string, id: string): Promise<boolean> {
   return items.remove(accountId, id);
+}
+
+/** Move an item to the trash (recoverable; bytes stay in the user's storage). */
+export function trashItem(items: VaultItemStore, accountId: string, id: string): Promise<boolean> {
+  return items.setDeleted(accountId, id, Date.now());
+}
+
+/** Restore an item from the trash. */
+export function restoreItem(items: VaultItemStore, accountId: string, id: string): Promise<boolean> {
+  return items.setDeleted(accountId, id, null);
 }
 
 export function setBookmark(items: VaultItemStore, accountId: string, id: string, bookmarked: boolean): Promise<boolean> {
