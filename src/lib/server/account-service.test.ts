@@ -3,6 +3,7 @@ import { exportAccount, deleteAccount } from './account-service';
 import type {
   AccountRow, AccountStore, SessionRow, SessionStore,
   StorageConnectionRow, StorageConnectionStore, TotpRow, TotpStore, VaultItemRow, VaultItemStore, ItemCursor,
+  FolderRow, FolderStore,
 } from './types';
 
 class MemAccounts implements AccountStore {
@@ -50,9 +51,17 @@ class MemTotp implements TotpStore {
   async upsert(r: TotpRow) { this.rows.set(r.account_id, { ...r }); }
   async delete(a: string) { this.rows.delete(a); }
 }
+class MemFolders implements FolderStore {
+  rows: FolderRow[] = [];
+  async listForAccount(a: string) { return this.rows.filter((r) => r.account_id === a); }
+  async insert(r: FolderRow) { this.rows.push(r); }
+  async rename() { return true; }
+  async remove() { return true; }
+  async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
+}
 
 function seed() {
-  const accounts = new MemAccounts(), sessions = new MemSessions(), items = new MemItems(), connections = new MemConns(), totp = new MemTotp();
+  const accounts = new MemAccounts(), sessions = new MemSessions(), items = new MemItems(), connections = new MemConns(), totp = new MemTotp(), folders = new MemFolders();
   const now = Date.now();
   const acct: AccountRow = {
     id: 'acc-1', email: 'z@example.com', email_verified: 0, kdf: 'argon2id',
@@ -72,7 +81,9 @@ function seed() {
   sessions.rows.set('t2', { id: 's2', account_id: 'acc-2', token_hash: 't2', created_at: now, expires_at: now + 1000 });
   totp.rows.set('acc-1', { account_id: 'acc-1', secret: 'S1', enabled: 1, backup_codes: null, created_at: now, confirmed_at: now });
   totp.rows.set('acc-2', { account_id: 'acc-2', secret: 'S2', enabled: 1, backup_codes: null, created_at: now, confirmed_at: now });
-  return { accounts, sessions, items, connections, totp };
+  folders.rows.push({ id: 'f1', account_id: 'acc-1', enc_name: 'ENC1', created_at: now });
+  folders.rows.push({ id: 'f2', account_id: 'acc-2', enc_name: 'ENC2', created_at: now });
+  return { accounts, sessions, items, connections, totp, folders };
 }
 
 describe('exportAccount', () => {
@@ -106,11 +117,13 @@ describe('deleteAccount', () => {
     expect(ctx.connections.rows.filter((r) => r.account_id === 'acc-1')).toHaveLength(0);
     expect([...ctx.sessions.rows.values()].filter((s) => s.account_id === 'acc-1')).toHaveLength(0);
     expect(ctx.totp.rows.has('acc-1')).toBe(false); // 2FA secret removed too
+    expect(ctx.folders.rows.filter((r) => r.account_id === 'acc-1')).toHaveLength(0); // folders removed too
     // The other account is untouched.
     expect(ctx.accounts.rows.has('acc-2')).toBe(true);
     expect(ctx.items.rows.filter((r) => r.account_id === 'acc-2')).toHaveLength(1);
     expect(ctx.connections.rows.filter((r) => r.account_id === 'acc-2')).toHaveLength(1);
     expect(ctx.totp.rows.has('acc-2')).toBe(true);
+    expect(ctx.folders.rows.filter((r) => r.account_id === 'acc-2')).toHaveLength(1);
   });
 
   it('returns false for an unknown account', async () => {

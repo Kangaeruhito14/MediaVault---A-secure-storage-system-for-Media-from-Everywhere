@@ -9,6 +9,7 @@
  */
 import type {
   AccountStore,
+  FolderStore,
   SessionStore,
   StorageConnectionStore,
   TotpStore,
@@ -106,6 +107,7 @@ interface DeleteCtx {
   items: VaultItemStore;
   sessions: SessionStore;
   totp: TotpStore;
+  folders: FolderStore;
 }
 
 /**
@@ -120,6 +122,7 @@ export async function deleteAccount(ctx: DeleteCtx, accountId: string): Promise<
   await ctx.connections.deleteAllForAccount(accountId);
   await ctx.sessions.deleteAllForAccount(accountId);
   await ctx.totp.delete(accountId);
+  await ctx.folders.deleteAllForAccount(accountId);
   await ctx.accounts.deleteById(accountId);
   return true;
 }

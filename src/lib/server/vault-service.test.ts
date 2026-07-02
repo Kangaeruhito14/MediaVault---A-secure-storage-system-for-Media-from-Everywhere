@@ -11,7 +11,10 @@ import {
   listConnections,
   deleteConnection,
 } from './vault-service';
+import { createFolder, listFolders, renameFolder, deleteFolder } from './vault-service';
 import type {
+  FolderRow,
+  FolderStore,
   ItemCursor,
   StorageConnectionRow,
   StorageConnectionStore,
@@ -90,6 +93,14 @@ class MemConns implements StorageConnectionStore {
   async deleteAllForAccount(a: string) {
     this.rows = this.rows.filter((r) => r.account_id !== a);
   }
+}
+class MemFolders implements FolderStore {
+  rows: FolderRow[] = [];
+  async listForAccount(a: string) { return this.rows.filter((r) => r.account_id === a); }
+  async insert(r: FolderRow) { this.rows.push(r); }
+  async rename(a: string, id: string, enc: string) { const r = this.rows.find((x) => x.account_id === a && x.id === id); if (!r) return false; r.enc_name = enc; return true; }
+  async remove(a: string, id: string) { const i = this.rows.findIndex((r) => r.account_id === a && r.id === id); if (i < 0) return false; this.rows.splice(i, 1); return true; }
+  async deleteAllForAccount(a: string) { this.rows = this.rows.filter((r) => r.account_id !== a); }
 }
 
 function seed(store: MemItems, account: string, n: number) {
@@ -182,6 +193,35 @@ describe('mutations are account-scoped', () => {
     expect(await deleteItem(items, 'B', 'a')).toBe(false); // wrong account
     expect(await setBookmark(items, 'B', 'a', true)).toBe(false);
     expect(await deleteItem(items, 'A', 'a')).toBe(true);
+  });
+});
+
+describe('folders', () => {
+  it('creates, lists, renames and deletes — account-scoped', async () => {
+    const folders = new MemFolders();
+    const a = await createFolder(folders, 'A', 'ENC_travel');
+    const b = await createFolder(folders, 'A', 'ENC_work');
+    expect(a.ok && b.ok).toBe(true);
+    if (!a.ok) throw new Error('create failed');
+
+    let list = await listFolders(folders, 'A');
+    expect(list.map((f) => f.encName).sort()).toEqual(['ENC_travel', 'ENC_work']);
+    expect(list[0]).toHaveProperty('id');
+
+    expect(await renameFolder(folders, 'A', a.id, 'ENC_holidays')).toBe(true);
+    expect(await renameFolder(folders, 'B', a.id, 'ENC_x')).toBe(false); // wrong account
+    list = await listFolders(folders, 'A');
+    expect(list.find((f) => f.id === a.id)!.encName).toBe('ENC_holidays');
+
+    expect(await deleteFolder(folders, 'B', a.id)).toBe(false); // wrong account
+    expect(await deleteFolder(folders, 'A', a.id)).toBe(true);
+    expect((await listFolders(folders, 'A')).map((f) => f.encName)).toEqual(['ENC_work']);
+    expect(await listFolders(folders, 'B')).toHaveLength(0); // never saw A's folders
+  });
+
+  it('rejects an empty name', async () => {
+    const folders = new MemFolders();
+    expect(await createFolder(folders, 'A', '')).toEqual({ ok: false, error: 'missing_fields' });
   });
 });
 

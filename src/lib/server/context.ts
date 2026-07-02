@@ -4,16 +4,17 @@
  * scoped), not from Astro.locals.runtime.
  */
 import { env } from 'cloudflare:workers';
-import { D1AccountStore, D1SessionStore, D1StorageConnectionStore, D1TotpStore, D1VaultItemStore } from './stores';
+import { D1AccountStore, D1FolderStore, D1SessionStore, D1StorageConnectionStore, D1TotpStore, D1VaultItemStore } from './stores';
 import { validateSession } from './auth-service';
 import { SESSION_COOKIE } from './http';
-import type { AccountStore, KVLike, SessionStore, StorageConnectionStore, TotpStore, VaultItemStore } from './types';
+import type { AccountStore, FolderStore, KVLike, SessionStore, StorageConnectionStore, TotpStore, VaultItemStore } from './types';
 
 export interface ServerContext {
   accounts: AccountStore;
   sessions: SessionStore;
   items: VaultItemStore;
   connections: StorageConnectionStore;
+  folders: FolderStore;
   totp: TotpStore;
   kv: KVLike;
 }
@@ -28,6 +29,7 @@ export function getServerContext(): ServerContext {
     sessions: new D1SessionStore(e.DB as never),
     items: new D1VaultItemStore(e.DB as never),
     connections: new D1StorageConnectionStore(e.DB as never),
+    folders: new D1FolderStore(e.DB as never),
     totp: new D1TotpStore(e.DB as never),
     kv: e.KV as unknown as KVLike,
   };

@@ -8,6 +8,7 @@
  */
 import { LIMITS } from '../storage/provider';
 import type {
+  FolderStore,
   ItemCursor,
   StorageConnectionStore,
   VaultItemRow,
@@ -185,4 +186,42 @@ export async function listConnections(conns: StorageConnectionStore, accountId: 
 
 export function deleteConnection(conns: StorageConnectionStore, accountId: string, id: string): Promise<boolean> {
   return conns.remove(accountId, id);
+}
+
+// ── Folders ──────────────────────────────────────────────────────────────────
+// Only the (encrypted) name lives server-side. Which items belong to a folder is
+// recorded inside each item's E2E-encrypted metadata, so the server can't tell.
+export interface PublicFolder {
+  id: string;
+  encName: string; // client decrypts
+  createdAt: number;
+}
+
+export async function createFolder(
+  folders: FolderStore,
+  accountId: string,
+  encName: string,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  if (!encName) return { ok: false, error: 'missing_fields' };
+  if ((await folders.listForAccount(accountId)).length >= LIMITS.MAX_FOLDERS_PER_ACCOUNT) {
+    return { ok: false, error: 'folder_limit_reached' };
+  }
+  const id = uuid();
+  await folders.insert({ id, account_id: accountId, enc_name: encName, created_at: Date.now() });
+  return { ok: true, id };
+}
+
+export async function listFolders(folders: FolderStore, accountId: string): Promise<PublicFolder[]> {
+  const rows = await folders.listForAccount(accountId);
+  return rows.map((r) => ({ id: r.id, encName: r.enc_name, createdAt: r.created_at }));
+}
+
+export function renameFolder(folders: FolderStore, accountId: string, id: string, encName: string): Promise<boolean> {
+  return folders.rename(accountId, id, encName);
+}
+
+/** Delete the folder row only. Moving its files back to "All files" is done
+ *  client-side (each item's encrypted metadata is re-written to drop the id). */
+export function deleteFolder(folders: FolderStore, accountId: string, id: string): Promise<boolean> {
+  return folders.remove(accountId, id);
 }
