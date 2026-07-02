@@ -164,6 +164,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <input id="file-input" type="file" multiple accept="image/*,video/*,audio/*,.pdf,.txt,.md,.rtf,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,application/pdf,text/plain" hidden />
       </div>
 
+      <!-- Folder selector -->
+      <div id="folder-bar" class="folder-bar" hidden>
+        <span class="folder-ico" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        </span>
+        <select id="folder-select" class="sort-select" aria-label="Filter by folder"></select>
+        <button id="folder-new" class="btn-outline btn-sm" type="button">＋ New folder</button>
+        <button id="folder-rename" class="btn-outline btn-sm" type="button" hidden>Rename</button>
+        <button id="folder-delete" class="btn-outline btn-sm" type="button" hidden>Delete folder</button>
+      </div>
+
       <!-- Category tabs + sort -->
       <div id="filter-bar" class="filter-bar" hidden>
         <div class="cat-tabs" role="tablist">
@@ -399,7 +410,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 <script src="/vendor/qrcode.js" is:inline></script>
 
 <script>
-  import { VaultClient, type Connection, type VaultItem } from '../../lib/client/vault-client';
+  import { VaultClient, type Connection, type VaultItem, type Folder } from '../../lib/client/vault-client';
   import { makeThumbnail } from '../../lib/client/thumbnail';
   import { startDropboxAuth, exchangeDropboxCode } from '../../lib/storage/dropbox-oauth';
 
@@ -442,6 +453,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   let mode: 'signin' | 'signup' = 'signin';
   let category = 'all';
   let sortKey = 'new';
+  let folders: Folder[] = [];
+  let folderFilter = '__all'; // '__all' | '__unfiled' | <folderId>
   const thumbUrls = new Map<string, string>(); // id -> object URL (decrypted thumbnail)
   const connFor = (i: VaultItem) => connMap[i.connectionId] ?? connections[0];
 
@@ -946,8 +959,77 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     if (connections.length === 0) { show('connect-view'); return; }
     $('storage-label').textContent = connections[0].label || connections[0].provider.toUpperCase();
     show('vault-view');
+    try { folders = await client.listFolders(); } catch { folders = []; }
+    populateFolderSelect();
     await loadFirstPage();
   }
+
+  // ── Folders ─────────────────────────────────────────────────────────────────
+  function folderName(id: string): string { return folders.find((f) => f.id === id)?.name ?? 'Folder'; }
+  function populateFolderSelect() {
+    const sel = $('folder-select') as HTMLSelectElement;
+    const counts = new Map<string, number>();
+    let unfiled = 0;
+    for (const i of items) { const f = folderOf(i); if (f) counts.set(f, (counts.get(f) ?? 0) + 1); else unfiled++; }
+    const opts = [`<option value="__all">All files (${items.length})</option>`,
+                  `<option value="__unfiled">Unfiled (${unfiled})</option>`];
+    for (const f of folders) opts.push(`<option value="${f.id}">${escapeHtml(f.name)} (${counts.get(f.id) ?? 0})</option>`);
+    // if the current folderFilter no longer exists, fall back to All
+    if (folderFilter !== '__all' && folderFilter !== '__unfiled' && !folders.some((f) => f.id === folderFilter)) folderFilter = '__all';
+    sel.innerHTML = opts.join('');
+    sel.value = folderFilter;
+    const realFolder = folderFilter !== '__all' && folderFilter !== '__unfiled';
+    $('folder-rename').hidden = !realFolder;
+    $('folder-delete').hidden = !realFolder;
+  }
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  }
+
+  $('folder-select').addEventListener('change', (e) => {
+    folderFilter = (e.target as HTMLSelectElement).value;
+    populateFolderSelect(); // refresh rename/delete visibility
+    render();
+  });
+  $('folder-new').addEventListener('click', async () => {
+    const name = prompt('New folder name:')?.trim();
+    if (!name) return;
+    try {
+      const f = await client.createFolder(name);
+      folders.push(f);
+      folderFilter = f.id;
+      populateFolderSelect();
+      render();
+      toast('success', `Folder “${f.name}” created`);
+    } catch (err) { toast('error', (err as Error).message || 'Could not create folder'); }
+  });
+  $('folder-rename').addEventListener('click', async () => {
+    if (folderFilter === '__all' || folderFilter === '__unfiled') return;
+    const cur = folderName(folderFilter);
+    const name = prompt('Rename folder:', cur)?.trim();
+    if (!name || name === cur) return;
+    try {
+      await client.renameFolder(folderFilter, name);
+      const f = folders.find((x) => x.id === folderFilter); if (f) f.name = name;
+      populateFolderSelect();
+      toast('success', 'Folder renamed');
+    } catch (err) { toast('error', (err as Error).message || 'Could not rename folder'); }
+  });
+  $('folder-delete').addEventListener('click', async () => {
+    if (folderFilter === '__all' || folderFilter === '__unfiled') return;
+    const id = folderFilter;
+    const inThis = items.filter((i) => folderOf(i) === id);
+    if (!confirm(`Delete folder “${folderName(id)}”? Its ${inThis.length} file${inThis.length === 1 ? '' : 's'} will move to All files (not deleted).`)) return;
+    try {
+      for (const item of inThis) await client.moveToFolder(item, null); // re-file to root first
+      await client.deleteFolder(id);
+      folders = folders.filter((f) => f.id !== id);
+      folderFilter = '__all';
+      populateFolderSelect();
+      render();
+      toast('success', 'Folder deleted');
+    } catch (err) { toast('error', (err as Error).message || 'Could not delete folder'); }
+  });
 
   $('connect-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1056,6 +1138,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       loadingAll = false;
       status.hidden = true;
       render(); // final render over the full set → sort/filter/search now complete
+      populateFolderSelect(); // now that item counts are known
     }
   }
   $('search').addEventListener('input', render);
@@ -1102,15 +1185,22 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     });
   }
 
+  const folderOf = (i: VaultItem) => (i.metadata.folderId as string | undefined) || null;
+  function inFolder(i: VaultItem): boolean {
+    if (folderFilter === '__all') return true;
+    if (folderFilter === '__unfiled') return folderOf(i) === null;
+    return folderOf(i) === folderFilter;
+  }
   function render() {
     const q = ($('search') as HTMLInputElement).value.toLowerCase();
-    let list = items;
+    let list = items.filter(inFolder);
     if (q) list = list.filter((i) => i.metadata.name.toLowerCase().includes(q));
     list = list.filter((i) => inCategory(kind(i.metadata.mime), category));
     visible = sortFiltered(list);
 
     $('empty').hidden = items.length !== 0;            // first-run dropzone
     $('filter-bar').hidden = items.length === 0;
+    $('folder-bar').hidden = items.length === 0 && folders.length === 0;
     $('more-bar').hidden = items.length === 0;
     $('no-match').hidden = items.length === 0 || visible.length !== 0; // have files but filter empties them
     const grid = $('grid');
@@ -1370,13 +1460,19 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       } catch (err) { toast('error', (err as Error).message || 'Download failed'); }
       finally { dl.disabled = false; }
     });
+    const mv = document.createElement('button');
+    mv.className = 'v-icon-btn';
+    mv.title = 'Move to folder';
+    mv.setAttribute('aria-label', 'Move to folder');
+    mv.textContent = '🗂';
+    mv.addEventListener('click', (e) => { e.stopPropagation(); enterMove(item); });
     const edit = document.createElement('button');
     edit.className = 'v-icon-btn';
     edit.title = 'Rename';
     edit.setAttribute('aria-label', 'Rename');
     edit.textContent = '✎';
     edit.addEventListener('click', (e) => { e.stopPropagation(); enterRename(item); });
-    row.append(name, dl, edit);
+    row.append(name, mv, dl, edit);
     const k = kind(item.metadata.mime);
     const meta = document.createElement('div');
     meta.className = 'v-meta';
@@ -1419,6 +1515,46 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     cap.appendChild(wrap);
     input.focus();
     input.select();
+  }
+  // Inline "move to folder" picker in the viewer caption.
+  function enterMove(item: VaultItem) {
+    const cap = $('v-caption');
+    cap.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'v-name-edit';
+    const label = document.createElement('span'); label.className = 'v-meta'; label.textContent = 'Move to:';
+    const sel = document.createElement('select');
+    sel.className = 'v-name-input';
+    sel.setAttribute('aria-label', 'Move to folder');
+    const cur = folderOf(item);
+    sel.add(new Option('Unfiled', '__unfiled', false, cur === null));
+    for (const f of folders) sel.add(new Option(f.name, f.id, false, cur === f.id));
+    sel.add(new Option('＋ New folder…', '__new'));
+    const cancel = document.createElement('button');
+    cancel.className = 'v-icon-btn'; cancel.textContent = '✕'; cancel.title = 'Cancel';
+    cancel.addEventListener('click', (e) => { e.stopPropagation(); renderCaption(item); });
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    sel.addEventListener('keydown', (e) => e.stopPropagation());
+    sel.addEventListener('change', async () => {
+      let target = sel.value;
+      if (target === '__new') {
+        const name = prompt('New folder name:')?.trim();
+        if (!name) return renderCaption(item);
+        try { const f = await client.createFolder(name); folders.push(f); target = f.id; }
+        catch (err) { toast('error', (err as Error).message || 'Could not create folder'); return renderCaption(item); }
+      }
+      const folderId = target === '__unfiled' ? null : target;
+      try {
+        await client.moveToFolder(item, folderId);
+        renderCaption(item);
+        populateFolderSelect();
+        render(); // it may leave the currently-filtered folder view
+        toast('success', folderId ? `Moved to “${folderName(folderId)}”` : 'Moved to All files');
+      } catch (err) { toast('error', (err as Error).message || 'Move failed'); renderCaption(item); }
+    });
+    wrap.append(label, sel, cancel);
+    cap.appendChild(wrap);
+    sel.focus();
   }
   async function renderViewer() {
     const item = visible[viewerIdx];
@@ -1725,6 +1861,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .session-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
   .session-current { font-size: 11px; font-weight: 600; color: var(--accent); }
   .btn-sm { padding: 6px 12px; font-size: 12px; flex: none; }
+  .folder-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .folder-ico { display: inline-flex; color: var(--text-muted); }
+  .folder-bar .sort-select { min-width: 180px; }
   .trash-row-actions { display: flex; gap: 8px; flex: none; }
   .trash-del { background: transparent; border: 1px solid rgba(239,68,68,.5); color: #ef4444; border-radius: 9px; cursor: pointer; font: inherit; }
   .trash-del:hover { background: #ef4444; color: #fff; }
