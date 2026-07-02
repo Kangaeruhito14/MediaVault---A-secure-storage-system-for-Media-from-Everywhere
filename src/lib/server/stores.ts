@@ -10,6 +10,8 @@ import type {
   ItemCursor,
   SessionRow,
   SessionStore,
+  FolderRow,
+  FolderStore,
   StorageConnectionRow,
   StorageConnectionStore,
   TotpRow,
@@ -43,6 +45,15 @@ async function ensureSchema(db: D1Like): Promise<void> {
     if (!itemCols.some((c) => c.name === 'deleted_at')) {
       await db.prepare('ALTER TABLE vault_items ADD COLUMN deleted_at INTEGER').run(); // migration 0004
     }
+    // migration 0005 — folders (names encrypted; membership lives in item metadata).
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS folders (
+           id TEXT PRIMARY KEY,
+           account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+           enc_name TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      )
+      .run();
     // migration 0003 — 2FA table + session device metadata.
     await db
       .prepare(
@@ -327,5 +338,46 @@ export class D1StorageConnectionStore implements StorageConnectionStore {
 
   async deleteAllForAccount(accountId: string): Promise<void> {
     await this.db.prepare('DELETE FROM storage_connections WHERE account_id = ?').bind(accountId).run();
+  }
+}
+
+export class D1FolderStore implements FolderStore {
+  constructor(private db: D1Like) {}
+
+  async listForAccount(accountId: string): Promise<FolderRow[]> {
+    await ensureSchema(this.db);
+    const res = await this.db
+      .prepare('SELECT * FROM folders WHERE account_id = ? ORDER BY created_at ASC')
+      .bind(accountId)
+      .all<FolderRow>();
+    return res.results ?? [];
+  }
+
+  async insert(r: FolderRow): Promise<void> {
+    await ensureSchema(this.db);
+    await this.db
+      .prepare('INSERT INTO folders (id, account_id, enc_name, created_at) VALUES (?,?,?,?)')
+      .bind(r.id, r.account_id, r.enc_name, r.created_at)
+      .run();
+  }
+
+  async rename(accountId: string, id: string, encName: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('UPDATE folders SET enc_name = ? WHERE account_id = ? AND id = ?')
+      .bind(encName, accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async remove(accountId: string, id: string): Promise<boolean> {
+    const res: any = await this.db
+      .prepare('DELETE FROM folders WHERE account_id = ? AND id = ?')
+      .bind(accountId, id)
+      .run();
+    return (res?.meta?.changes ?? 0) > 0;
+  }
+
+  async deleteAllForAccount(accountId: string): Promise<void> {
+    await this.db.prepare('DELETE FROM folders WHERE account_id = ?').bind(accountId).run();
   }
 }

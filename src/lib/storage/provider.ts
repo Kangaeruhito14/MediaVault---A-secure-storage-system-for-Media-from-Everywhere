@@ -60,4 +60,5 @@ export interface StorageProvider {
 export const LIMITS = {
   MAX_FILE_BYTES: 2 * 1024 * 1024 * 1024, // 2 GB
   MAX_ITEMS_PER_ACCOUNT: 50_000,
+  MAX_FOLDERS_PER_ACCOUNT: 500,
 } as const;

@@ -129,6 +129,21 @@ export interface VaultItemStore {
   deleteAllForAccount(accountId: string): Promise<void>;
 }
 
+export interface FolderRow {
+  id: string;
+  account_id: string;
+  enc_name: string; // encrypted folder name (server can't read)
+  created_at: number;
+}
+
+export interface FolderStore {
+  listForAccount(accountId: string): Promise<FolderRow[]>;
+  insert(row: FolderRow): Promise<void>;
+  rename(accountId: string, id: string, encName: string): Promise<boolean>;
+  remove(accountId: string, id: string): Promise<boolean>;
+  deleteAllForAccount(accountId: string): Promise<void>;
+}
+
 export interface StorageConnectionRow {
   id: string;
   account_id: string;
