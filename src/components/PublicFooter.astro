@@ -144,7 +144,7 @@ const currentYear = new Date().getFullYear();
     font-size: 11px;
     font-weight: 500;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text-body); /* was --text-muted — failed WCAG AA on the footer bg */
     letter-spacing: 0.05em;
     margin-bottom: 16px;
   }
@@ -177,6 +177,15 @@ const currentYear = new Date().getFullYear();
     color: var(--accent-hover);
   }
 
+  /* The light-theme accent (#0070f3) doesn't hit WCAG AA as small text on the
+     light footer; use a darker blue there. Dark theme's accent already passes. */
+  :global([data-theme='light']) .footer-links-list .highlight-link {
+    color: #0059c9;
+  }
+  :global([data-theme='light']) .footer-links-list .highlight-link:hover {
+    color: #00479e;
+  }
+
   .footer-bottom {
     padding-top: 24px;
     border-top: 1px solid var(--border);
@@ -189,7 +198,7 @@ const currentYear = new Date().getFullYear();
 
   .footer-copyright {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-body); /* AA on the footer bg */
   }
 
   .footer-status-pill {
@@ -221,7 +230,7 @@ const currentYear = new Date().getFullYear();
 
   .footer-meta {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-body); /* AA on the footer bg */
     width: 100%;
     margin-top: 8px;
     text-align: left;
