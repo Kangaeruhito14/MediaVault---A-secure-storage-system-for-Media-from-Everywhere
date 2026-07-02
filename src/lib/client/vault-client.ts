@@ -66,6 +66,12 @@ export interface SessionInfo {
   current: boolean;
 }
 
+export interface Folder {
+  id: string;
+  name: string; // decrypted locally
+  createdAt: number;
+}
+
 async function asJson(res: Response): Promise<any> {
   const text = await res.text();
   try {
@@ -591,6 +597,65 @@ export class VaultClient {
       body: JSON.stringify({ trashed }),
     });
     if (!res.ok) throw new Error((await asJson(res)).error || (trashed ? 'trash_failed' : 'restore_failed'));
+  }
+
+  // ── Folders ─────────────────────────────────────────────────────────────────
+  // Only the (encrypted) name is stored server-side; an item's membership lives
+  // inside its own encrypted metadata (metadata.folderId), so grouping is private.
+  async listFolders(): Promise<Folder[]> {
+    this.requireKey();
+    const data = await asJson(await this.api('/api/vault/folders'));
+    const out: Folder[] = [];
+    for (const f of data.folders ?? []) {
+      let name = '(unreadable)';
+      try { name = (await decryptJson<{ name: string }>(f.encName, this.accountKey!)).name; } catch { /* keep placeholder */ }
+      out.push({ id: f.id, name, createdAt: f.createdAt });
+    }
+    return out;
+  }
+
+  async createFolder(name: string): Promise<Folder> {
+    this.requireKey();
+    const clean = name.trim();
+    if (!clean) throw new Error('empty_name');
+    const encName = await encryptJson({ name: clean }, this.accountKey!);
+    const res = await this.api('/api/vault/folders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ encName }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'folder_create_failed');
+    return { id: (await asJson(res)).id, name: clean, createdAt: Date.now() };
+  }
+
+  async renameFolder(id: string, name: string): Promise<void> {
+    this.requireKey();
+    const clean = name.trim();
+    if (!clean) throw new Error('empty_name');
+    const encName = await encryptJson({ name: clean }, this.accountKey!);
+    const res = await this.api(`/api/vault/folders/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ encName }),
+    });
+    if (!res.ok) throw new Error('folder_rename_failed');
+  }
+
+  /** Delete the folder record. Re-file its items to "All files" FIRST (moveToFolder(item, null)). */
+  async deleteFolder(id: string): Promise<void> {
+    this.requireKey();
+    const res = await this.api(`/api/vault/folders/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('folder_delete_failed');
+  }
+
+  /** Move a file into a folder (or to "All files" with null). Re-encrypts metadata. */
+  async moveToFolder(item: VaultItem, folderId: string | null): Promise<FileMetadata> {
+    this.requireKey();
+    const meta: FileMetadata = { ...item.metadata };
+    if (folderId) meta.folderId = folderId; else delete meta.folderId;
+    const encMetadata = await encryptJson(meta, this.accountKey!);
+    const res = await this.api(`/api/vault/items/${item.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ encMetadata }),
+    });
+    if (!res.ok) throw new Error((await asJson(res)).error || 'move_failed');
+    item.metadata = meta;
+    return meta;
   }
 
   /**
