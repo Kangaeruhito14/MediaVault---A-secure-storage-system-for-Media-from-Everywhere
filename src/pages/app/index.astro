@@ -184,14 +184,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
           <button class="cat-tab" data-cat="audio" type="button">Audio</button>
           <button class="cat-tab" data-cat="doc" type="button">Docs</button>
         </div>
-        <select id="sort-select" class="sort-select" aria-label="Sort files">
-          <option value="new">Newest first</option>
-          <option value="old">Oldest first</option>
-          <option value="az">Name A–Z</option>
-          <option value="za">Name Z–A</option>
-          <option value="big">Largest first</option>
-          <option value="small">Smallest first</option>
-        </select>
+        <div class="fb-right">
+          <select id="sort-select" class="sort-select" aria-label="Sort files">
+            <option value="new">Newest first</option>
+            <option value="old">Oldest first</option>
+            <option value="az">Name A–Z</option>
+            <option value="za">Name Z–A</option>
+            <option value="big">Largest first</option>
+            <option value="small">Smallest first</option>
+          </select>
+          <button id="view-toggle" class="view-toggle" type="button" title="Toggle grid / list view" aria-label="Toggle grid or list view"></button>
+        </div>
       </div>
 
       <div id="upload-status" class="upload-status" hidden></div>
@@ -455,6 +458,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   let sortKey = 'new';
   let folders: Folder[] = [];
   let folderFilter = '__all'; // '__all' | '__unfiled' | <folderId>
+  let viewMode: 'grid' | 'list' = (localStorage.getItem('mv-view') as 'grid' | 'list') || 'grid';
   const thumbUrls = new Map<string, string>(); // id -> object URL (decrypted thumbnail)
   const connFor = (i: VaultItem) => connMap[i.connectionId] ?? connections[0];
 
@@ -1153,6 +1157,18 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   );
   $('sort-select').addEventListener('change', (e) => { sortKey = (e.target as HTMLSelectElement).value; render(); });
 
+  // Grid / list view toggle (persisted). Shows the icon of the OTHER mode.
+  const GRID_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+  const LIST_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  function syncViewToggle() { $('view-toggle').innerHTML = viewMode === 'grid' ? LIST_ICON : GRID_ICON; }
+  syncViewToggle();
+  $('view-toggle').addEventListener('click', () => {
+    viewMode = viewMode === 'grid' ? 'list' : 'grid';
+    localStorage.setItem('mv-view', viewMode);
+    syncViewToggle();
+    render();
+  });
+
   // Lazy-load thumbnails only as cards scroll into view (scales to big libraries).
   const thumbObserver = new IntersectionObserver(
     (entries) => {
@@ -1204,6 +1220,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     $('more-bar').hidden = items.length === 0;
     $('no-match').hidden = items.length === 0 || visible.length !== 0; // have files but filter empties them
     const grid = $('grid');
+    grid.className = viewMode === 'list' ? 'list' : 'grid';
     grid.innerHTML = '';
     visible.forEach((item, idx) => {
       const k = kind(item.metadata.mime);
@@ -1892,6 +1909,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .cat-tab:hover { color: var(--text-primary); }
   .cat-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
   .sort-select { background: var(--surface); border: 1px solid var(--border-med); border-radius: 9px; padding: 8px 12px; font: inherit; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+  .fb-right { display: flex; align-items: center; gap: 8px; }
+  .view-toggle { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: var(--surface); border: 1px solid var(--border-med); border-radius: 9px; color: var(--text-muted); cursor: pointer; }
+  .view-toggle:hover { color: var(--text-primary); border-color: var(--border-strong, var(--border)); }
   .sort-select:focus { outline: none; border-color: var(--accent); }
 
   /* Undo banner */
@@ -1941,6 +1961,21 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 <style is:global>
   /* ── Gallery grid ─────────────────────────────────────────────────────────── */
   #grid.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+
+  /* List view: reflow the same tiles into compact rows. Making .tile-media
+     `position: static` re-anchors its absolute action buttons to the row. */
+  #grid.list { display: flex; flex-direction: column; gap: 8px; }
+  #grid.list .tile { display: flex; align-items: center; gap: 14px; padding: 8px 12px; border-radius: 12px; max-width: none; }
+  #grid.list .tile:hover { transform: none; }
+  #grid.list .tile-media { position: static; aspect-ratio: auto; width: 52px; height: 52px; flex: none; border-radius: 8px; }
+  #grid.list .tile-foot { flex: 1; min-width: 0; padding: 0; padding-right: 84px; }
+  #grid.list .tile-name { font-size: 14px; }
+  #grid.list .tile-sub { margin-top: 2px; }
+  #grid.list .tile-check, #grid.list .tile-type { display: none; }
+  #grid.list .tile-play, #grid.list .tile-note { transform: scale(.62); }
+  #grid.list .tile-doc::after { font-size: 24px; }
+  #grid.list .tile-fav { top: 50%; right: 46px; bottom: auto; transform: translateY(-50%); }
+  #grid.list .tile-del { top: 50%; right: 10px; bottom: auto; transform: translateY(-50%); }
 
   #grid .tile {
     position: relative; background: var(--surface); border: 1px solid var(--border);
