@@ -1183,6 +1183,13 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   );
 
   const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+  // Inline SVGs for the viewer caption actions (emoji render inconsistently across OSes).
+  const svgIcon = (paths: string) => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+  const ICON_MOVE = svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>');
+  const ICON_DOWNLOAD = svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>');
+  const ICON_RENAME = svgIcon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>');
+  const ICON_CHECK = svgIcon('<polyline points="20 6 9 17 4 12"/>');
+  const ICON_X = svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>');
 
   function sortFiltered(list: VaultItem[]): VaultItem[] {
     const byName = (a: VaultItem, b: VaultItem) => a.metadata.name.localeCompare(b.metadata.name);
@@ -1463,7 +1470,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     dl.className = 'v-icon-btn';
     dl.title = 'Download';
     dl.setAttribute('aria-label', 'Download');
-    dl.textContent = '⬇';
+    dl.innerHTML = ICON_DOWNLOAD;
     dl.addEventListener('click', async (e) => {
       e.stopPropagation();
       dl.disabled = true;
@@ -1481,13 +1488,13 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     mv.className = 'v-icon-btn';
     mv.title = 'Move to folder';
     mv.setAttribute('aria-label', 'Move to folder');
-    mv.textContent = '🗂';
+    mv.innerHTML = ICON_MOVE;
     mv.addEventListener('click', (e) => { e.stopPropagation(); enterMove(item); });
     const edit = document.createElement('button');
     edit.className = 'v-icon-btn';
     edit.title = 'Rename';
     edit.setAttribute('aria-label', 'Rename');
-    edit.textContent = '✎';
+    edit.innerHTML = ICON_RENAME;
     edit.addEventListener('click', (e) => { e.stopPropagation(); enterRename(item); });
     row.append(name, mv, dl, edit);
     const k = kind(item.metadata.mime);
@@ -1506,9 +1513,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     input.value = item.metadata.name;
     input.setAttribute('aria-label', 'New file name');
     const save = document.createElement('button');
-    save.className = 'v-icon-btn'; save.textContent = '✓'; save.title = 'Save';
+    save.className = 'v-icon-btn'; save.innerHTML = ICON_CHECK; save.title = 'Save';
     const cancel = document.createElement('button');
-    cancel.className = 'v-icon-btn'; cancel.textContent = '✕'; cancel.title = 'Cancel';
+    cancel.className = 'v-icon-btn'; cancel.innerHTML = ICON_X; cancel.title = 'Cancel';
     const doSave = async () => {
       const val = input.value.trim();
       if (!val || val === item.metadata.name) return renderCaption(item);
@@ -1548,7 +1555,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     for (const f of folders) sel.add(new Option(f.name, f.id, false, cur === f.id));
     sel.add(new Option('＋ New folder…', '__new'));
     const cancel = document.createElement('button');
-    cancel.className = 'v-icon-btn'; cancel.textContent = '✕'; cancel.title = 'Cancel';
+    cancel.className = 'v-icon-btn'; cancel.innerHTML = ICON_X; cancel.title = 'Cancel';
     cancel.addEventListener('click', (e) => { e.stopPropagation(); renderCaption(item); });
     sel.addEventListener('click', (e) => e.stopPropagation());
     sel.addEventListener('keydown', (e) => e.stopPropagation());
@@ -1802,9 +1809,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .storage-label { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 
   .app-main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; min-height: calc(100dvh - 60px - 58px); }
-  .app-footer { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 18px 24px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); }
+  .app-footer { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 18px 24px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-body); }
   .app-footer-links { display: flex; gap: 16px; }
-  .app-footer-links a { color: var(--text-muted); text-decoration: none; }
+  .app-footer-links a { color: var(--text-body); text-decoration: none; }
   .app-footer-links a:hover { color: var(--text-primary); }
   .centered { min-height: calc(100dvh - 60px - 110px); display: flex; align-items: center; justify-content: center; }
   .card { width: 100%; max-width: 380px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border-med); border-radius: 16px; padding: 32px; box-shadow: var(--shadow-xl); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
