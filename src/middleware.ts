@@ -26,8 +26,9 @@ const CSP = [
   `script-src 'self' ${INLINE_SCRIPT_HASHES} 'wasm-unsafe-eval'`,
   // style-src keeps 'unsafe-inline': Astro emits many scoped/inline <style>
   // blocks; inline CSS can't execute code, so the risk is far lower than scripts.
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  // Fonts are self-hosted now, so no Google Fonts domains are allow-listed.
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   // Decrypted PDFs are previewed in a blob: iframe (in-page document viewer).

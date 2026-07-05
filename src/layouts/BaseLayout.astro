@@ -1,5 +1,8 @@
 ---
 import Seo from '../components/Seo.astro';
+// Self-hosted fonts (privacy: no request to Google; perf: no third-party dependency).
+import '@fontsource-variable/inter/index.css';
+import '@fontsource/jetbrains-mono/400.css';
 
 interface Props {
   title: string;
@@ -40,9 +43,6 @@ const fullTitle = title.includes('MediaVault') ? title : `${title} | MediaVault`
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MediaVault" />
     <Seo title={fullTitle} description={description} image={image} noindex={noindex} keywords={keywords} jsonLd={jsonLd} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
     <!-- Apply saved theme before page renders to avoid flash -->
     <script is:inline>
       (function() {
