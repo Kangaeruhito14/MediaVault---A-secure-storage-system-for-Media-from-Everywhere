@@ -37,15 +37,15 @@ const jsonLd = [
         name: 'What is the best private alternative to Google Photos?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'For maximum privacy, MediaVault is a strong choice: it is free and end-to-end encrypted — files are encrypted in your browser and stored in cloud storage you own, so the provider can never read them. Immich and PhotoPrism offer richer AI photo-management but store files unencrypted and require you to run Docker and a database. Ente offers end-to-end encryption but keeps your files in its own cloud rather than yours.',
+          text: 'For maximum privacy, Media Reservoir is a strong choice: it is free and end-to-end encrypted — files are encrypted in your browser and stored in cloud storage you own, so the provider can never read them. Immich and PhotoPrism offer richer AI photo-management but store files unencrypted and require you to run Docker and a database. Ente offers end-to-end encryption but keeps your files in its own cloud rather than yours.',
         },
       },
       {
         '@type': 'Question',
-        name: 'How is MediaVault different from Immich?',
+        name: 'How is Media Reservoir different from Immich?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Immich is a feature-rich photo manager with AI search and face recognition, but it stores files as plaintext and requires you to run Docker plus a PostgreSQL database. MediaVault is a security-first vault: it encrypts every file end-to-end in your browser, stores them in your own cloud bucket, and requires no infrastructure beyond that bucket — prioritizing confidentiality over photo-management features.',
+          text: 'Immich is a feature-rich photo manager with AI search and face recognition, but it stores files as plaintext and requires you to run Docker plus a PostgreSQL database. Media Reservoir is a security-first vault: it encrypts every file end-to-end in your browser, stores them in your own cloud bucket, and requires no infrastructure beyond that bucket — prioritizing confidentiality over photo-management features.',
         },
       },
     ],
@@ -56,8 +56,8 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
 ---
 
 <PublicLayout
-  title="MediaVault vs Google Photos, Immich, PhotoPrism & Ente"
-  description="An honest comparison of MediaVault against Google Photos, iCloud, Immich, PhotoPrism, and Ente — end-to-end encryption, who owns the storage, who can read your files, cost, and privacy. Find the best private photo storage for you."
+  title="Media Reservoir vs Google Photos, Immich, PhotoPrism & Ente"
+  description="An honest comparison of Media Reservoir against Google Photos, iCloud, Immich, PhotoPrism, and Ente — end-to-end encryption, who owns the storage, who can read your files, cost, and privacy. Find the best private photo storage for you."
   keywords={["Google Photos alternative comparison", "Immich vs", "PhotoPrism vs", "Ente vs", "best self-hosted photo storage", "encrypted photo storage comparison"]}
   jsonLd={jsonLd}
 >
@@ -65,9 +65,9 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
     <div class="container-md">
       <header class="compare-header">
         <span class="page-eyebrow">Comparison</span>
-        <h1 class="page-title">How MediaVault compares.</h1>
+        <h1 class="page-title">How Media Reservoir compares.</h1>
         <p class="page-lead">
-          An honest look at MediaVault next to the popular options. No tool is best for everyone — here is where MediaVault wins, and where something else might suit you better.
+          An honest look at Media Reservoir next to the popular options. No tool is best for everyone — here is where Media Reservoir wins, and where something else might suit you better.
         </p>
       </header>
 
@@ -76,7 +76,7 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
           <thead>
             <tr>
               <th class="feature-col">Feature</th>
-              <th class="mv-col">MediaVault</th>
+              <th class="mv-col">Media Reservoir</th>
               <th>Google Photos</th>
               <th>Immich</th>
               <th>Ente</th>
@@ -99,7 +99,7 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
       <div class="verdict">
         <h2>The honest verdict</h2>
         <p>
-          <strong>Choose MediaVault</strong> if you want end-to-end encryption AND to keep your files in your own cloud — private by architecture, nothing to self-host beyond a storage bucket, and no provider that can read your media.
+          <strong>Choose Media Reservoir</strong> if you want end-to-end encryption AND to keep your files in your own cloud — private by architecture, nothing to self-host beyond a storage bucket, and no provider that can read your media.
         </p>
         <p>
           <strong>Choose Immich or PhotoPrism</strong> if you want a full photo-management suite — AI search, face recognition, mobile auto-backup — and don't mind running Docker and a database, with files stored unencrypted.

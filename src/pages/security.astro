@@ -5,7 +5,7 @@ import PublicLayout from '../layouts/PublicLayout.astro';
  * /security — the "verify it yourself" transparency page. A live, in-browser
  * encryption demo (Web Crypto, nothing leaves the page) lets visitors SEE
  * plaintext become ciphertext and watch a wrong password fail — mirroring how
- * MediaVault encrypts files in the browser. No competitor lets you watch it. It is the
+ * Media Reservoir encrypts files in the browser. No competitor lets you watch it. It is the
  * single most trust-building and citable page on the site.
  */
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
@@ -13,11 +13,11 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
-    headline: 'MediaVault Security Model — Verify It Yourself',
+    headline: 'Media Reservoir Security Model — Verify It Yourself',
     description:
-      'MediaVault’s threat model and a live in-browser demonstration of AES encryption, showing why neither the operator nor your cloud provider can read your files.',
-    author: { '@type': 'Organization', name: 'MediaVault' },
-    publisher: { '@type': 'Organization', name: 'MediaVault' },
+      'Media Reservoir’s threat model and a live in-browser demonstration of AES encryption, showing why neither the operator nor your cloud provider can read your files.',
+    author: { '@type': 'Organization', name: 'Media Reservoir' },
+    publisher: { '@type': 'Organization', name: 'Media Reservoir' },
     mainEntityOfPage: origin + '/security',
   },
   {
@@ -31,7 +31,7 @@ const jsonLd = [
 ];
 
 const threats = [
-  { attack: 'MediaVault’s servers are breached', result: 'The attacker gets only ciphertext and an encrypted index. Your files aren’t there (they’re in your own cloud), and the keys never were either.' },
+  { attack: 'Media Reservoir’s servers are breached', result: 'The attacker gets only ciphertext and an encrypted index. Your files aren’t there (they’re in your own cloud), and the keys never were either.' },
   { attack: 'Your cloud provider is compromised or curious', result: 'Your bucket holds AES-256 ciphertext encrypted in your browser. The provider — and we — cannot read it.' },
   { attack: 'A government demand or subpoena hits the operator', result: 'There is nothing readable to hand over: no plaintext, no keys, no storage credentials.' },
   { attack: 'Someone brute-forces your login', result: 'Per-account and per-IP rate limits throttle attempts; the password is stretched with Argon2id, making guesses expensive.' },
@@ -42,7 +42,7 @@ const threats = [
 
 <PublicLayout
   title="Security — See the Encryption Work Yourself"
-  description="MediaVault’s plain-language threat model plus a live, in-browser AES encryption demo. Watch plaintext turn into ciphertext and a wrong password fail — proof that neither we nor your cloud provider can read your files."
+  description="Media Reservoir’s plain-language threat model plus a live, in-browser AES encryption demo. Watch plaintext turn into ciphertext and a wrong password fail — proof that neither we nor your cloud provider can read your files."
   keywords={["is encrypted photo storage safe", "AES-256 encryption demo", "end-to-end encrypted media vault", "zero knowledge media storage", "bring your own storage encryption"]}
   jsonLd={jsonLd}
 >
@@ -52,7 +52,7 @@ const threats = [
         <span class="page-eyebrow">Security · Transparency</span>
         <h1 class="page-title">Don't trust us. Verify it.</h1>
         <p class="page-lead">
-          Most "secure" apps ask you to take their word for it. MediaVault lets you watch the encryption happen in your own browser — right here, with nothing sent to any server.
+          Most "secure" apps ask you to take their word for it. Media Reservoir lets you watch the encryption happen in your own browser — right here, with nothing sent to any server.
         </p>
       </header>
 
@@ -60,7 +60,7 @@ const threats = [
       <div class="demo-card">
         <div class="demo-badge"><span class="demo-dot"></span> Live · runs entirely in your browser</div>
         <h2 class="demo-title">Encrypt something, then watch a wrong password fail</h2>
-        <p class="demo-sub">This uses the same family of AES encryption MediaVault uses to seal your files. Type anything — it never leaves this page.</p>
+        <p class="demo-sub">This uses the same family of AES encryption Media Reservoir uses to seal your files. Type anything — it never leaves this page.</p>
 
         <div class="demo-grid">
           <label class="demo-field">
@@ -140,7 +140,7 @@ const threats = [
         </p>
         <p>How we keep that trust earnable, not blind:</p>
         <ul class="trust-list">
-          <li><strong>Open source.</strong> The entire app is public — <a href="https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">read and audit it</a>.</li>
+          <li><strong>Open source.</strong> The entire app is public — <a href="https://github.com/Kangaeruhito14/Media Reservoir---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">read and audit it</a>.</li>
           <li><strong>Verify the live demo above</strong> with your browser's dev tools — nothing it does leaves the page.</li>
           <li><strong>On the roadmap:</strong> build verification (so you can confirm the served code matches the source) and a native/extension build that does not re-fetch code each visit.</li>
         </ul>
@@ -148,7 +148,7 @@ const threats = [
 
       <div class="sec-foot">
         <p>
-          Want the deep technical detail? Read <a href="/about">how it works</a>, the <a href="/glossary">glossary</a>, or the <a href="https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">source code</a> — the encryption is open for anyone to audit. Report issues via <a href="/.well-known/security.txt">security.txt</a>.
+          Want the deep technical detail? Read <a href="/about">how it works</a>, the <a href="/glossary">glossary</a>, or the <a href="https://github.com/Kangaeruhito14/Media Reservoir---A-secure-storage-system-for-Media-from-Everywhere" rel="noopener">source code</a> — the encryption is open for anyone to audit. Report issues via <a href="/.well-known/security.txt">security.txt</a>.
         </p>
       </div>
     </div>

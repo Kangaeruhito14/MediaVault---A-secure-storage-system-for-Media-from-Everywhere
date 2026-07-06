@@ -68,9 +68,9 @@ describe('secret + otpauth + backup codes', () => {
   });
   it('builds a scannable otpauth URL', () => {
     const url = otpauthUrl('JBSWY3DPEHPK3PXP', 'user@example.com');
-    expect(url).toMatch(/^otpauth:\/\/totp\/MediaVault%3Auser%40example\.com\?/);
+    expect(url).toMatch(/^otpauth:\/\/totp\/Media%20Reservoir%3Auser%40example\.com\?/);
     expect(url).toContain('secret=JBSWY3DPEHPK3PXP');
-    expect(url).toContain('issuer=MediaVault');
+    expect(url).toContain('issuer=Media+Reservoir');
   });
   it('mints 8 distinct xxxx-xxxx backup codes', () => {
     const codes = generateBackupCodes();

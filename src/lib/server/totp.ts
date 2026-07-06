@@ -97,7 +97,7 @@ export async function verifyTotp(
 }
 
 /** otpauth:// URL for the enrolment QR code. */
-export function otpauthUrl(secretBase32: string, accountLabel: string, issuer = 'MediaVault'): string {
+export function otpauthUrl(secretBase32: string, accountLabel: string, issuer = 'Media Reservoir'): string {
   const label = encodeURIComponent(`${issuer}:${accountLabel}`);
   const params = new URLSearchParams({
     secret: secretBase32,

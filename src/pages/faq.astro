@@ -13,24 +13,24 @@ const faqSections = [
     category: 'Getting Started',
     items: [
       {
-        q: 'What is MediaVault?',
-        a: 'MediaVault is a free, open-source, end-to-end encrypted vault — a private alternative to Google Photos, iCloud, and cloud drives. It encrypts your photos, videos, audio, PDFs, and documents in your browser, then stores them in cloud storage you own (such as Cloudflare R2, Backblaze B2, Wasabi, or S3). Because the keys never leave your device, not even we can read your files.',
+        q: 'What is Media Reservoir?',
+        a: 'Media Reservoir is a free, open-source, end-to-end encrypted vault — a private alternative to Google Photos, iCloud, and cloud drives. It encrypts your photos, videos, audio, PDFs, and documents in your browser, then stores them in cloud storage you own (such as Cloudflare R2, Backblaze B2, Wasabi, or S3). Because the keys never leave your device, not even we can read your files.',
       },
       {
-        q: 'Is MediaVault really free? What is the catch?',
+        q: 'Is Media Reservoir really free? What is the catch?',
         a: 'Yes — free, with no subscriptions, ads, or behavioral tracking. There is no catch: we never store your files, so there are no storage bills to pass on to you. (We do hold the minimum needed to run an account — your email and an encrypted index; see the Security page for the full “what we can and cannot see” list.) You connect your own cloud storage, which has its own free tiers, and the software is free and open-source.',
       },
       {
-        q: 'How is MediaVault different from Google Photos or iCloud?',
-        a: 'Google Photos and iCloud store your media on their servers, can scan it, and charge a subscription past the free tier. MediaVault encrypts your media in your browser and keeps it in storage you own — so the provider cannot read or scan it, and you are not locked into anyone’s cloud.',
+        q: 'How is Media Reservoir different from Google Photos or iCloud?',
+        a: 'Google Photos and iCloud store your media on their servers, can scan it, and charge a subscription past the free tier. Media Reservoir encrypts your media in your browser and keeps it in storage you own — so the provider cannot read or scan it, and you are not locked into anyone’s cloud.',
       },
       {
-        q: 'How is MediaVault different from Immich, PhotoPrism, or Ente?',
-        a: 'Immich and PhotoPrism are self-hosted photo managers that store files unencrypted and require you to run Docker and a database. Ente is end-to-end encrypted but keeps your files in its own cloud. MediaVault is end-to-end encrypted AND keeps your files in your own cloud bucket, with no infrastructure for you to run beyond that bucket.',
+        q: 'How is Media Reservoir different from Immich, PhotoPrism, or Ente?',
+        a: 'Immich and PhotoPrism are self-hosted photo managers that store files unencrypted and require you to run Docker and a database. Ente is end-to-end encrypted but keeps your files in its own cloud. Media Reservoir is end-to-end encrypted AND keeps your files in your own cloud bucket, with no infrastructure for you to run beyond that bucket.',
       },
       {
         q: 'Do I need any special hardware or a server?',
-        a: 'No. MediaVault runs in your browser and stores files in a cloud bucket you connect. You just need a free or cheap S3-compatible bucket (Cloudflare R2 and Backblaze B2 both have free tiers). One-click Google Drive and Dropbox options are planned.',
+        a: 'No. Media Reservoir runs in your browser and stores files in a cloud bucket you connect. You just need a free or cheap S3-compatible bucket (Cloudflare R2 and Backblaze B2 both have free tiers). One-click Google Drive and Dropbox options are planned.',
       },
     ],
   },
@@ -39,10 +39,10 @@ const faqSections = [
     items: [
       {
         q: 'Is end-to-end encrypted photo storage safe?',
-        a: 'MediaVault is designed defensively: every file is encrypted in your browser with AES-256 before upload, your key is derived from your password with Argon2id and never leaves your device, logins are rate-limited, sessions are revocable, and strict security headers are sent on every response. The provider only ever holds ciphertext. Use a strong password and store your recovery key offline.',
+        a: 'Media Reservoir is designed defensively: every file is encrypted in your browser with AES-256 before upload, your key is derived from your password with Argon2id and never leaves your device, logins are rate-limited, sessions are revocable, and strict security headers are sent on every response. The provider only ever holds ciphertext. Use a strong password and store your recovery key offline.',
       },
       {
-        q: 'How does MediaVault encryption work?',
+        q: 'How does Media Reservoir encryption work?',
         a: 'Your password is stretched with Argon2id into a key that unwraps a random per-account key, held only in your browser. Each file gets its own AES-256 key, wrapped by the account key; filenames and metadata are encrypted too. Files use AES-256-CTR so any byte range can be decrypted on demand — which keeps encrypted video seeking instant.',
       },
       {
@@ -50,8 +50,8 @@ const faqSections = [
         a: 'It means the operator has no knowledge of your content. We store only an encrypted index and your encrypted storage settings — never your files (those live in your own cloud), your keys, or your storage credentials. There is nothing readable for us to leak, hand over, or scan.',
       },
       {
-        q: 'Can MediaVault, or my cloud provider, see my files?',
-        a: 'No. Files are encrypted in your browser before they reach any server, so MediaVault only handles ciphertext. Your cloud provider stores those encrypted blobs and cannot read them either, because the keys never leave your device.',
+        q: 'Can Media Reservoir, or my cloud provider, see my files?',
+        a: 'No. Files are encrypted in your browser before they reach any server, so Media Reservoir only handles ciphertext. Your cloud provider stores those encrypted blobs and cannot read them either, because the keys never leave your device.',
       },
       {
         q: 'How is my password handled?',
@@ -59,14 +59,14 @@ const faqSections = [
       },
       {
         q: 'What happens if I forget my password?',
-        a: 'Use your recovery key. At signup MediaVault generates a one-time recovery key and shows it once (with a printable kit). Choose "Forgot password? Use recovery key", enter it, and set a new password. A fresh recovery key is issued and the old one stops working.',
+        a: 'Use your recovery key. At signup Media Reservoir generates a one-time recovery key and shows it once (with a printable kit). Choose "Forgot password? Use recovery key", enter it, and set a new password. A fresh recovery key is issued and the old one stops working.',
       },
       {
         q: 'What happens if I lose both my password and my recovery key?',
         a: 'Your files are unrecoverable — by design. The encryption has no backdoor and there is no "reset by email", because that would mean we could access your data. This is the price of real end-to-end encryption, so save your recovery key somewhere safe.',
       },
       {
-        q: 'What if MediaVault’s servers are breached?',
+        q: 'What if Media Reservoir’s servers are breached?',
         a: 'A breach exposes only ciphertext and an encrypted index. Your actual files are not on our servers (they’re in your own cloud), and the encryption keys never were either. There is nothing readable to steal.',
       },
     ],
@@ -76,18 +76,18 @@ const faqSections = [
     items: [
       {
         q: 'Whose storage are my files kept in?',
-        a: 'Yours. You connect your own S3-compatible bucket — Cloudflare R2, Backblaze B2, Wasabi, or AWS S3 — and encrypted files transfer directly between your browser and that bucket. They never pass through or rest on MediaVault’s servers.',
+        a: 'Yours. You connect your own S3-compatible bucket — Cloudflare R2, Backblaze B2, Wasabi, or AWS S3 — and encrypted files transfer directly between your browser and that bucket. They never pass through or rest on Media Reservoir’s servers.',
       },
       {
-        q: 'What file types does MediaVault support?',
-        a: 'Images (JPEG, PNG, GIF, WebP, AVIF, SVG), video (MP4, WebM, MOV, AVI), audio (MP3, WAV, OGG, FLAC, AAC, M4A), plus PDFs and documents (TXT, Markdown, CSV, and more). Images, video, audio, PDFs, and text preview right in the app; other documents download with one click. Since files are encrypted on your device, you can store any file type — MediaVault never inspects the contents.',
+        q: 'What file types does Media Reservoir support?',
+        a: 'Images (JPEG, PNG, GIF, WebP, AVIF, SVG), video (MP4, WebM, MOV, AVI), audio (MP3, WAV, OGG, FLAC, AAC, M4A), plus PDFs and documents (TXT, Markdown, CSV, and more). Images, video, audio, PDFs, and text preview right in the app; other documents download with one click. Since files are encrypted on your device, you can store any file type — Media Reservoir never inspects the contents.',
       },
       {
         q: 'Is there a file size or storage limit?',
         a: 'Your total capacity is whatever your connected storage bucket provides — it is your storage, not ours. Per file: large files are streamed — encrypted and uploaded a chunk at a time — so they do not load into your browser memory all at once, and multi-GB files work (they just take longer, since the encryption runs in your browser). This works on both Dropbox and S3-compatible buckets. For S3 multipart uploads, your bucket CORS must expose the ETag response header (a one-line config) so the browser can finalize the upload.',
       },
       {
-        q: 'Does MediaVault compress my photos and videos?',
+        q: 'Does Media Reservoir compress my photos and videos?',
         a: 'Never. You get back the exact bytes you uploaded — no recompression or quality loss. (You can optionally strip EXIF/GPS location metadata from photos before they’re encrypted.)',
       },
       {
@@ -101,10 +101,10 @@ const faqSections = [
     items: [
       {
         q: 'Can I access my vault from my phone or other devices?',
-        a: 'Yes. Sign in from any device with a browser; your encrypted library syncs through a small metadata index, and your files come straight from your own cloud. MediaVault is fully responsive and installable as an app (PWA).',
+        a: 'Yes. Sign in from any device with a browser; your encrypted library syncs through a small metadata index, and your files come straight from your own cloud. Media Reservoir is fully responsive and installable as an app (PWA).',
       },
       {
-        q: 'Is MediaVault multi-user?',
+        q: 'Is Media Reservoir multi-user?',
         a: 'Yes. Anyone can create their own account; each account is fully isolated, with its own encryption keys and its own connected storage. One person can never access another’s files or index.',
       },
       {
@@ -145,7 +145,7 @@ const jsonLd = [
 
 <PublicLayout
   title="FAQ — End-to-End Encrypted Media Storage Questions Answered"
-  description="Is end-to-end encrypted photo storage safe? How does the encryption work? Where are my files stored? What happens if you forget your password? Every common question about MediaVault, answered clearly."
+  description="Is end-to-end encrypted photo storage safe? How does the encryption work? Where are my files stored? What happens if you forget your password? Every common question about Media Reservoir, answered clearly."
   jsonLd={jsonLd}
 >
   <section class="faq-page">

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" role="img" aria-label="MediaVault">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 48" role="img" aria-label="Media Reservoir">
   <style>
     .mark-bg { fill: #0a0a0a; }
     .mark-fg { stroke: #fafafa; }
@@ -12,5 +12,5 @@
   <rect class="mark-fg" x="11" y="22" width="16" height="11" rx="2.5" stroke-width="1.8" fill="none"/>
   <path class="mark-fg" d="M14 22v-3a4 4 0 0 1 8 0v3" stroke-width="1.8" stroke-linecap="round" fill="none"/>
   <circle class="mark-dot" cx="19" cy="27.5" r="1.7"/>
-  <text class="word" x="44" y="31">MediaVault</text>
+  <text class="word" x="44" y="31">Media Reservoir</text>
 </svg>

@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 /**
- * MediaVault Service Worker (bundled to public/sw.js by scripts/build-sw.mjs).
+ * Media Reservoir Service Worker (bundled to public/sw.js by scripts/build-sw.mjs).
  *
  * Two jobs:
  *  1. PWA shell + offline fallback (never caches /api or authenticated pages).

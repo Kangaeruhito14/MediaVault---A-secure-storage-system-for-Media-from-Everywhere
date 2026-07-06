@@ -1,6 +1,6 @@
 {
-  "name": "MediaVault — Encrypted Media Vault",
-  "short_name": "MediaVault",
+  "name": "Media Reservoir — Encrypted Media Vault",
+  "short_name": "Media Reservoir",
   "description": "Free, self-hosted, encrypted media vault. Your photos, videos, and audio — sealed with AES-256 on hardware you own.",
   "id": "/",
   "start_url": "/vault",

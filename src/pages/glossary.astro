@@ -9,51 +9,51 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 const terms = [
   {
     term: 'Media Vault',
-    def: 'A media vault is a private, access-controlled application for storing and viewing personal photos, videos, audio, PDFs, and documents. Unlike a public gallery, a vault requires authentication and keeps your files confidential. MediaVault encrypts everything end-to-end in the browser, so it stays unreadable to anyone but you.',
+    def: 'A media vault is a private, access-controlled application for storing and viewing personal photos, videos, audio, PDFs, and documents. Unlike a public gallery, a vault requires authentication and keeps your files confidential. Media Reservoir encrypts everything end-to-end in the browser, so it stays unreadable to anyone but you.',
   },
   {
     term: 'End-to-End Encryption (E2EE)',
-    def: 'End-to-end encryption means data is encrypted on your device and can only be decrypted on your device — no server in between can read it. In MediaVault, files are encrypted in your browser before upload, and the keys never leave it, so neither the operator nor your storage provider can see your media.',
+    def: 'End-to-end encryption means data is encrypted on your device and can only be decrypted on your device — no server in between can read it. In Media Reservoir, files are encrypted in your browser before upload, and the keys never leave it, so neither the operator nor your storage provider can see your media.',
   },
   {
     term: 'Bring Your Own Storage',
-    def: 'Instead of keeping your files on the provider’s servers, MediaVault stores your encrypted media in cloud storage you connect and control — your own Cloudflare R2, Backblaze B2, Wasabi, or S3 bucket. Your bytes live in your account; the app never holds them.',
+    def: 'Instead of keeping your files on the provider’s servers, Media Reservoir stores your encrypted media in cloud storage you connect and control — your own Cloudflare R2, Backblaze B2, Wasabi, or S3 bucket. Your bytes live in your account; the app never holds them.',
   },
   {
     term: 'Zero-Knowledge',
-    def: 'A zero-knowledge service has no knowledge of your content. MediaVault stores only an encrypted index and your encrypted storage settings — never your files, your keys, or your storage credentials. There is nothing readable for it to leak, scan, or hand over.',
+    def: 'A zero-knowledge service has no knowledge of your content. Media Reservoir stores only an encrypted index and your encrypted storage settings — never your files, your keys, or your storage credentials. There is nothing readable for it to leak, scan, or hand over.',
   },
   {
     term: 'Encryption at Rest',
-    def: 'Encryption at rest means stored data sits in encrypted form, so the raw files are unreadable without the key. Because MediaVault encrypts in your browser before upload, your files are at rest as ciphertext in your own cloud — readable only with keys that never left your device.',
+    def: 'Encryption at rest means stored data sits in encrypted form, so the raw files are unreadable without the key. Because Media Reservoir encrypts in your browser before upload, your files are at rest as ciphertext in your own cloud — readable only with keys that never left your device.',
   },
   {
     term: 'AES-256',
-    def: 'AES-256 (Advanced Encryption Standard with a 256-bit key) is a symmetric encryption algorithm trusted by governments and banks, infeasible to brute-force with current or foreseeable technology. MediaVault uses AES-256-CTR for file contents and AES-256-GCM for wrapping keys.',
+    def: 'AES-256 (Advanced Encryption Standard with a 256-bit key) is a symmetric encryption algorithm trusted by governments and banks, infeasible to brute-force with current or foreseeable technology. Media Reservoir uses AES-256-CTR for file contents and AES-256-GCM for wrapping keys.',
   },
   {
     term: 'Argon2id',
-    def: 'Argon2id is a modern password key-derivation function, deliberately slow and memory-hard to resist GPU/ASIC cracking. MediaVault runs it in your browser to turn your password into the key that unlocks your account — the password itself never reaches the server.',
+    def: 'Argon2id is a modern password key-derivation function, deliberately slow and memory-hard to resist GPU/ASIC cracking. Media Reservoir runs it in your browser to turn your password into the key that unlocks your account — the password itself never reaches the server.',
   },
   {
     term: 'Envelope Encryption',
-    def: 'Envelope encryption is a layered scheme: each file is encrypted with its own key, and those keys are wrapped by an account key. It lets you change your password by re-wrapping one small key instead of re-encrypting every file. MediaVault also wraps the account key with your recovery key.',
+    def: 'Envelope encryption is a layered scheme: each file is encrypted with its own key, and those keys are wrapped by an account key. It lets you change your password by re-wrapping one small key instead of re-encrypting every file. Media Reservoir also wraps the account key with your recovery key.',
   },
   {
     term: 'Recovery Key',
-    def: 'A recovery key is a long, randomly generated secret — in MediaVault, 256 bits — shown once at signup. It can reset your password because it independently unwraps your account key. If you lose both your password and recovery key, encrypted data cannot be recovered, since there is no backdoor.',
+    def: 'A recovery key is a long, randomly generated secret — in Media Reservoir, 256 bits — shown once at signup. It can reset your password because it independently unwraps your account key. If you lose both your password and recovery key, encrypted data cannot be recovered, since there is no backdoor.',
   },
   {
     term: 'HTTP Range Request',
-    def: 'An HTTP Range request asks for only part of a file (for example, the bytes for the part of a video you skipped to). MediaVault streams encrypted media by mapping range requests to encrypted chunks, fetching only those from your bucket and decrypting them in the browser — so seeking stays instant.',
+    def: 'An HTTP Range request asks for only part of a file (for example, the bytes for the part of a video you skipped to). Media Reservoir streams encrypted media by mapping range requests to encrypted chunks, fetching only those from your bucket and decrypting them in the browser — so seeking stays instant.',
   },
   {
     term: 'PWA (Progressive Web App)',
-    def: 'A Progressive Web App is a website that can be installed and used like a native app, with an icon on your home screen and an offline-capable shell. MediaVault is a PWA, so you can install it on your phone or desktop and open it like any other app.',
+    def: 'A Progressive Web App is a website that can be installed and used like a native app, with an icon on your home screen and an offline-capable shell. Media Reservoir is a PWA, so you can install it on your phone or desktop and open it like any other app.',
   },
   {
     term: 'EXIF Data',
-    def: 'EXIF (Exchangeable Image File Format) data is metadata embedded in photos — including camera model, timestamp, and often GPS coordinates of where the photo was taken. MediaVault can strip EXIF/GPS metadata on upload so your photos do not silently reveal your location.',
+    def: 'EXIF (Exchangeable Image File Format) data is metadata embedded in photos — including camera model, timestamp, and often GPS coordinates of where the photo was taken. Media Reservoir can strip EXIF/GPS metadata on upload so your photos do not silently reveal your location.',
   },
 ];
 
@@ -62,7 +62,7 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'DefinedTermSet',
-    name: 'MediaVault Glossary',
+    name: 'Media Reservoir Glossary',
     description: 'Definitions of key terms in end-to-end encrypted, bring-your-own-storage media storage.',
     url: origin + '/glossary',
     hasDefinedTerm: terms.map((t) => ({
@@ -95,7 +95,7 @@ const jsonLd = [
         <span class="page-eyebrow">Glossary</span>
         <h1 class="page-title">Media Storage & Encryption Terms.</h1>
         <p class="page-lead">
-          Clear definitions of the concepts behind MediaVault and end-to-end encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
+          Clear definitions of the concepts behind Media Reservoir and end-to-end encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
         </p>
       </header>
 

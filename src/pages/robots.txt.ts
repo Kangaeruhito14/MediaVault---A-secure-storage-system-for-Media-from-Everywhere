@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 /**
  * robots.txt — tuned for BOTH classic SEO and AI visibility (GEO/AEO).
  *
- * We explicitly WELCOME AI crawlers (most sites block them). MediaVault WANTS
+ * We explicitly WELCOME AI crawlers (most sites block them). Media Reservoir WANTS
  * to be read, summarized, and cited by ChatGPT, Claude, Gemini, Perplexity,
  * Grok, and friends — that is how new users discover a privacy tool today.
  * The app interior (/vault, /api, /login) stays disallowed for everyone.
@@ -44,7 +44,7 @@ Disallow: /login
 `,
   ).join('\n');
 
-  const body = `# MediaVault (OpenMediaVaults) — robots.txt
+  const body = `# Media Reservoir (OpenMedia Reservoirs) — robots.txt
 # Classic crawlers + AI assistants are all welcome on the public site.
 
 User-agent: *

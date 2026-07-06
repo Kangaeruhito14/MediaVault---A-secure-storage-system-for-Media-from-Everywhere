@@ -26,8 +26,8 @@ interface Props {
 
 // Site-wide keyword cluster — the core terms every page should rank for.
 const BASE_KEYWORDS = [
-  'MediaVault',
-  'OpenMediaVaults',
+  'Media Reservoir',
+  'OpenMedia Reservoirs',
   'Open Media Vault',
   'media vault',
   'media storage',
@@ -74,18 +74,18 @@ const imageUrl = image.startsWith('http') ? image : new URL(image, origin).href;
 <link rel="canonical" href={canonical} />
 <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
 <meta name="keywords" content={keywordContent} />
-<meta name="application-name" content="MediaVault (OpenMediaVaults)" />
+<meta name="application-name" content="Media Reservoir (OpenMedia Reservoirs)" />
 
 <!-- Open Graph -->
 <meta property="og:type" content={type} />
-<meta property="og:site_name" content="MediaVault" />
+<meta property="og:site_name" content="Media Reservoir" />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={imageUrl} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="MediaVault — end-to-end encrypted media vault over storage you own" />
+<meta property="og:image:alt" content="Media Reservoir — end-to-end encrypted media vault over storage you own" />
 <meta property="og:locale" content="en_US" />
 
 <!-- Twitter Card -->

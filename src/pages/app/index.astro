@@ -11,18 +11,18 @@ import Toast from '../../components/Toast.astro';
 // (the default), the button never renders and nothing about Dropbox ships.
 const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 ---
-<BaseLayout title="Your Vault" description="Your end-to-end encrypted MediaVault." noindex={true}>
+<BaseLayout title="Your Vault" description="Your end-to-end encrypted Media Reservoir." noindex={true}>
   <div class="app-bg" aria-hidden="true">
     <div class="app-orb app-orb-1"></div>
     <div class="app-orb app-orb-2"></div>
   </div>
 
   <div class="appbar">
-    <a href="/" class="appbar-logo" aria-label="MediaVault home">
+    <a href="/" class="appbar-logo" aria-label="Media Reservoir home">
       <span class="logo-mark">
         <svg width="16" height="16" viewBox="0 0 28 28" fill="none"><rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="18" r="1.5" fill="currentColor"/></svg>
       </span>
-      MediaVault
+      Media Reservoir
     </a>
     <div class="appbar-right">
       <span id="storage-label" class="storage-label" hidden></span>
@@ -247,7 +247,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   </main>
 
   <footer class="app-footer">
-    <span>&copy; {new Date().getFullYear()} MediaVault — end-to-end encrypted.</span>
+    <span>&copy; {new Date().getFullYear()} Media Reservoir — end-to-end encrypted.</span>
     <nav class="app-footer-links">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
@@ -398,7 +398,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
       <div class="account-block danger">
         <h3 class="account-h">Delete account</h3>
-        <p class="account-p">Permanently removes your account and index from MediaVault. <strong>Your files in your own storage are not deleted</strong> — remove them there if you want them gone. This cannot be undone.</p>
+        <p class="account-p">Permanently removes your account and index from Media Reservoir. <strong>Your files in your own storage are not deleted</strong> — remove them there if you want them gone. This cannot be undone.</p>
         <button id="account-delete" class="btn-danger" type="button">Delete my account</button>
       </div>
       <p id="account-error" class="error" hidden></p>
@@ -860,7 +860,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('account-close').addEventListener('click', () => { $('account-modal').hidden = true; });
   $('account-modal').addEventListener('click', (e) => { if (e.target === $('account-modal')) $('account-modal').hidden = true; });
   $('account-delete').addEventListener('click', async () => {
-    if (!confirm('Permanently delete your MediaVault account and index?\n\nYour files in your own storage are NOT deleted. This cannot be undone.')) return;
+    if (!confirm('Permanently delete your Media Reservoir account and index?\n\nYour files in your own storage are NOT deleted. This cannot be undone.')) return;
     if (!confirm('Are you absolutely sure? There is no recovery.')) return;
     $('account-error').hidden = true;
     try {

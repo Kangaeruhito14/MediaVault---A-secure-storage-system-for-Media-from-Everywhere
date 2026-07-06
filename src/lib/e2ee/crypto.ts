@@ -171,7 +171,7 @@ export interface FileHeader {
 
 export function parseFileHeader(bytes: Uint8Array): FileHeader {
   if (bytes.length < HEADER_LEN || bytes[0] !== MAGIC[0] || bytes[1] !== MAGIC[1] || bytes[2] !== MAGIC[2]) {
-    throw new Error('Not a MediaVault encrypted file');
+    throw new Error('Not a Media Reservoir encrypted file');
   }
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   return { chunkSize: dv.getUint32(3, false), baseNonce: bytes.slice(7, 15) };
