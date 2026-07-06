@@ -18,8 +18,8 @@ import type { FileHeader } from '../lib/e2ee/crypto';
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE = 'mediavault-shell-v3';
-const SHELL = ['/', '/offline.html', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest'];
+const CACHE = 'mediareservoir-shell-v4';
+const SHELL = ['/', '/offline.html', '/favicon.svg', '/web-app-manifest-192x192.png', '/site.webmanifest'];
 const STREAM_PREFIX = '/__mv_stream/';
 const WINDOW = 4 * 1024 * 1024; // max plaintext bytes served per range request
 
