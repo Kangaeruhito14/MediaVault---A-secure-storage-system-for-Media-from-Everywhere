@@ -25,32 +25,37 @@ interface Props {
 }
 
 // Site-wide keyword cluster — the core terms every page should rank for.
+// (Google largely ignores the keywords meta today; the real ranking work is in
+// titles, on-page copy, structured-data alternateName, and per-cluster pages.
+// This stays as a broad, de-duplicated synonym set — harmless and complete.)
 const BASE_KEYWORDS = [
-  'Media Reservoir',
-  'OpenMedia Reservoirs',
-  'Open Media Vault',
-  'media vault',
-  'media storage',
-  'open storage',
-  'open source media vault',
-  'end-to-end encrypted media storage',
-  'end-to-end encrypted photo storage',
-  'zero-knowledge media storage',
-  'zero-knowledge photo storage',
-  'encrypted media vault',
-  'encrypted photo storage',
-  'encrypted cloud storage',
-  'bring your own storage',
-  'client-side encryption',
-  'private media storage',
-  'private photo vault',
-  'private encrypted vault',
-  'encrypted Google Photos alternative',
-  'Google Photos alternative',
-  'iCloud alternative',
-  'AES-256 encrypted storage',
-  'secure media storage',
-  'private cloud storage',
+  // Brand + name variants
+  'Media Reservoir', 'Media Vault', 'MediaVault', 'Open Media Vault', 'media reservoir app',
+  // "media + container" synonyms
+  'media vault', 'media store', 'media storage', 'media repository', 'media archive',
+  'media library', 'media locker', 'media safe', 'media reserve', 'media cloud',
+  'media backup', 'media hub', 'media depot', 'media trove', 'media haven', 'media stash',
+  // asset variants
+  'asset vault', 'asset reserve', 'asset haven', 'asset locker', 'digital asset vault',
+  // photo/video specific
+  'photo vault', 'video vault', 'private photo vault', 'encrypted photo vault',
+  'photo locker', 'private photo storage', 'private video storage',
+  // encryption / security intent
+  'encrypted media vault', 'encrypted media storage', 'encrypted photo storage',
+  'encrypted cloud storage', 'end-to-end encrypted media storage',
+  'end-to-end encrypted photo storage', 'zero-knowledge media storage',
+  'zero-knowledge photo storage', 'zero-knowledge vault', 'AES-256 encrypted storage',
+  'client-side encryption', 'secure media storage', 'secure photo storage',
+  'private media storage', 'private media library', 'private cloud storage',
+  'private encrypted vault', 'encrypted gallery', 'encrypted photo backup',
+  // storage model
+  'bring your own storage', 'self-hosted photo storage', 'own your data storage',
+  'S3 encrypted storage', 'Cloudflare R2 photo storage', 'Backblaze B2 photo storage',
+  // competitor / alternative queries
+  'encrypted Google Photos alternative', 'Google Photos alternative', 'iCloud alternative',
+  'Dropbox alternative', 'private Google Photos', 'self-hosted Google Photos',
+  'Proton Drive alternative', 'Ente alternative', 'Immich alternative', 'PhotoPrism alternative',
+  'open source media vault', 'open storage',
 ];
 
 const {
@@ -74,7 +79,7 @@ const imageUrl = image.startsWith('http') ? image : new URL(image, origin).href;
 <link rel="canonical" href={canonical} />
 <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
 <meta name="keywords" content={keywordContent} />
-<meta name="application-name" content="Media Reservoir (OpenMedia Reservoirs)" />
+<meta name="application-name" content="Media Reservoir (Open Media Vault)" />
 
 <!-- Open Graph -->
 <meta property="og:type" content={type} />

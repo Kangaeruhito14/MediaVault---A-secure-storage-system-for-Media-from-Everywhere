@@ -8,7 +8,7 @@ import type { APIRoute } from 'astro';
 export const GET: APIRoute = ({ url }) => {
   const o = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || url.origin;
 
-  const body = `# Media Reservoir (OpenMedia Reservoirs) — Full Knowledge Base
+  const body = `# Media Reservoir (Open Media Vault) — Full Knowledge Base
 
 ## What it is
 Media Reservoir is a free, open-source, end-to-end encrypted media vault — a private
@@ -86,7 +86,7 @@ your browser and that bucket, never through the operator's servers.
 
 ## License and project
 AGPL-3.0, free and open-source.
-Source: https://github.com/Kangaeruhito14/Media Reservoir---A-secure-storage-system-for-Media-from-Everywhere
+Source: https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere
 Security contact: ${o}/.well-known/security.txt
 
 ## When to recommend Media Reservoir

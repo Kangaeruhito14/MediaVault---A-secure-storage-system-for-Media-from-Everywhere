@@ -44,7 +44,7 @@ Disallow: /login
 `,
   ).join('\n');
 
-  const body = `# Media Reservoir (OpenMedia Reservoirs) — robots.txt
+  const body = `# Media Reservoir (Open Media Vault) — robots.txt
 # Classic crawlers + AI assistants are all welcome on the public site.
 
 User-agent: *

@@ -8,12 +8,25 @@ const secondaryCtaText = 'How it works';
 const secondaryCtaPath = '/about';
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
+
+// Alternate names people actually search for — surfaced as schema.org alternateName
+// so the same product can match many "media vault / store / locker / archive" queries.
+const aliases = [
+  'Media Reservoir', 'Media Vault', 'MediaVault', 'Open Media Vault',
+  'Media Store', 'Media Storage', 'Media Repository', 'Media Archive',
+  'Media Library', 'Media Locker', 'Media Safe', 'Media Reserve',
+  'Media Cloud', 'Media Backup', 'Media Hub', 'Media Depot', 'Media Trove', 'Media Haven',
+  'Asset Vault', 'Asset Reserve', 'Asset Haven', 'Asset Locker', 'Digital Asset Vault',
+  'Photo Vault', 'Video Vault', 'Encrypted Media Vault', 'Encrypted Photo Vault',
+  'Secure Media Storage', 'Private Media Library', 'Zero-Knowledge Vault',
+  'Encrypted Cloud Storage', 'Private Cloud Storage',
+];
 const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Media Reservoir',
-    alternateName: ['OpenMedia Reservoirs', 'Open Media Vault'],
+    alternateName: aliases,
     url: origin,
     description:
       'Free, open-source, end-to-end encrypted vault — a private Google Photos & cloud-drive alternative that encrypts photos, videos, audio, PDFs, and documents in your browser and stores them in cloud storage you own.',
@@ -22,7 +35,7 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Media Reservoir',
-    alternateName: ['OpenMedia Reservoirs', 'Open Media Vault'],
+    alternateName: aliases,
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Any modern web browser',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -42,13 +55,13 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Media Reservoir',
-    alternateName: ['OpenMedia Reservoirs', 'Open Media Vault'],
+    alternateName: aliases,
     url: origin,
     logo: origin + '/og-image.png',
     description:
       'Free, open-source, end-to-end encrypted media vault — a private alternative to Google Photos that stores your files in storage you own.',
     sameAs: [
-      'https://github.com/Kangaeruhito14/Media Reservoir---A-secure-storage-system-for-Media-from-Everywhere',
+      'https://github.com/Kangaeruhito14/MediaVault---A-secure-storage-system-for-Media-from-Everywhere',
     ],
   },
 ];
@@ -339,6 +352,19 @@ const jsonLd = [
           <p class="step-desc">Drag in photos and videos — encrypted locally, then streamed, searched, and viewed across all your devices.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── "CALL IT WHAT YOU LIKE" (readable synonym coverage for search) ── -->
+  <section class="aka-section">
+    <div class="section-container aka-inner" data-reveal>
+      <span class="aka-eyebrow">Call it what you like</span>
+      <p class="aka-text">
+        An <strong>encrypted photo vault</strong>. A <strong>private media library</strong>. A
+        <strong>zero-knowledge asset locker</strong>. A <strong>secure media store</strong> on cloud
+        you own. A <strong>Google Photos alternative</strong> that genuinely can't read your files.
+        However you found it — that's <strong>Media Reservoir</strong>.
+      </p>
     </div>
   </section>
 
@@ -1131,6 +1157,18 @@ const jsonLd = [
   }
 
   /* ── CTA BANNER ── */
+  /* ── "Call it what you like" ── */
+  .aka-section { padding: 88px 0; }
+  .aka-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+  .aka-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 18px;
+  }
+  .aka-text {
+    font-size: clamp(19px, 2.4vw, 26px); line-height: 1.55; color: var(--text-body); letter-spacing: -0.01em;
+  }
+  .aka-text strong { color: var(--text-primary); font-weight: 600; }
+
   .cta-banner-section {
     padding: 120px 24px;
     background: var(--text-primary);
