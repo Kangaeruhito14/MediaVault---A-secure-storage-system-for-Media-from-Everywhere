@@ -73,163 +73,130 @@ const jsonLd = [
   jsonLd={jsonLd}
 >
 
-  <!-- ── HERO SECTION ── -->
-  <section class="hero-section mesh-gradient">
-    <!-- Atmospheric Blurred Orbs for Premium Depth -->
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-
-    <div class="section-container hero-container">
-      <!-- Eyebrow Pill -->
-      <div class="eyebrow-pill" data-reveal>
-        <span class="mono-badge">END-TO-END ENCRYPTED · YOUR STORAGE · ZERO KNOWLEDGE</span>
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="section-container hero-inner">
+      <div class="eyebrow" data-reveal>
+        <img src="/logo.png" alt="" width="18" height="18" />
+        <span>End-to-end encrypted · Zero-knowledge · Your storage</span>
       </div>
 
-      <!-- Headline -->
       <h1 class="hero-title" data-reveal data-reveal-delay="60">
         Your media, locked before<br class="hero-br" /> it leaves your device.
       </h1>
 
-      <!-- Description -->
-      <p class="hero-description" data-reveal data-reveal-delay="120">
-        Media Reservoir encrypts your photos, videos, audio and documents right in your browser —
-        then hands the sealed files to a cloud bucket <strong>you own</strong>. The keys never touch
-        our servers, so no one else can open them. Not advertisers. Not hackers.
+      <p class="hero-lead" data-reveal data-reveal-delay="120">
+        Media Reservoir seals your photos, videos, audio and documents in your browser —
+        then hands the encrypted files to a cloud bucket <strong>you own</strong>. The keys
+        never touch our servers, so no one else can open them. Not advertisers. Not hackers.
         <strong>Not even us.</strong>
       </p>
 
-      <!-- Action Button Row -->
       <div class="cta-row" data-reveal data-reveal-delay="180">
-        <a href={primaryCtaPath} class="btn-primary-hero">
+        <a href={primaryCtaPath} class="btn-hero-primary">
           {primaryCtaText}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </a>
-        <a href={secondaryCtaPath} class="btn-secondary-hero">
-          {secondaryCtaText}
-        </a>
+        <a href={secondaryCtaPath} class="btn-hero-ghost">{secondaryCtaText}</a>
       </div>
 
-      <!-- Floating App Mockup — 3D tilt reacts to scroll + pointer -->
-      <div class="mockup-stage" data-reveal data-reveal-delay="240">
-        <div class="mockup-glow"></div>
-        <div class="mockup-frame">
-        <div class="mockup-header">
-          <div class="mockup-dots">
-            <span class="dot-red"></span>
-            <span class="dot-yellow"></span>
-            <span class="dot-green"></span>
-          </div>
-          <div class="mockup-address">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-            <span>your encrypted vault</span>
-          </div>
-          <div class="mockup-spacer"></div>
-        </div>
-        
-        <!-- Inside Mockup: Media vault layout representation -->
-        <div class="mockup-body">
-          <div class="mockup-sidebar">
-            <div class="sidebar-item active">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-              All Media
-            </div>
-            <div class="sidebar-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z"/></svg>
-              Bookmarks
-            </div>
-            <div class="sidebar-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
-              Images
-            </div>
-            <div class="sidebar-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="14" height="13" rx="2.5"/><path d="m16.5 9.5 5-2.5v10l-5-2.5z"/></svg>
-              Videos
-            </div>
-            <div class="sidebar-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v11"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="15" r="3"/></svg>
-              Audio
-            </div>
-          </div>
-          <div class="mockup-content">
-            <div class="mockup-toolbar">
-              <div class="mockup-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
-                Search media…
-              </div>
-              <div class="mockup-upload">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                Upload
-              </div>
-            </div>
-            <div class="mockup-grid">
-              <div class="mockup-card">
-                <div class="card-thumb thumb-a"><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">sunset.jpg</div><div class="card-meta">1.2 MB</div></div>
-              </div>
-              <div class="mockup-card">
-                <div class="card-thumb thumb-b"><span class="thumb-play"></span><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">travel_vlog.mp4</div><div class="card-meta">18.4 MB</div></div>
-              </div>
-              <div class="mockup-card">
-                <div class="card-thumb thumb-c"><span class="thumb-wave"></span><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">live_set.mp3</div><div class="card-meta">4.1 MB</div></div>
-              </div>
-              <div class="mockup-card">
-                <div class="card-thumb thumb-d"><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">portrait.png</div><div class="card-meta">2.8 MB</div></div>
-              </div>
-              <div class="mockup-card">
-                <div class="card-thumb thumb-e"><span class="thumb-play"></span><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">birthday.mov</div><div class="card-meta">31.2 MB</div></div>
-              </div>
-              <div class="mockup-card">
-                <div class="card-thumb thumb-f"><span class="thumb-lock"></span></div>
-                <div class="card-info"><div class="card-title">mountains.jpg</div><div class="card-meta">3.5 MB</div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>
+      <ul class="trust-row" data-reveal data-reveal-delay="220">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>AES-256 in your browser</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Bring your own storage</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Free &amp; open-source</li>
+      </ul>
+
+      <figure class="hero-visual" data-reveal data-reveal-delay="280">
+        <img
+          class="hero-img"
+          src="/hero.png"
+          width="1536" height="1024"
+          alt="A glowing encrypted vault holding photos, video, and audio — sealed with a lock and key, floating in cloud storage you own."
+          fetchpriority="high" decoding="async"
+        />
+      </figure>
     </div>
   </section>
 
-  <!-- ── STATS SECTION ── -->
-  <section class="stats-section">
+  <!-- ══ STATS BAND ══ -->
+  <section class="stats">
     <div class="section-container stats-grid">
-      <div class="stat-card" data-reveal>
+      <div class="stat" data-reveal>
         <div class="stat-num">0</div>
         <p class="stat-label">Files we can read. Your keys never leave your device.</p>
       </div>
-      <div class="stat-card" data-reveal data-reveal-delay="80">
+      <div class="stat" data-reveal data-reveal-delay="80">
         <div class="stat-num">100%</div>
         <p class="stat-label">End-to-end encrypted — before anything is uploaded.</p>
       </div>
-      <div class="stat-card" data-reveal data-reveal-delay="160">
+      <div class="stat" data-reveal data-reveal-delay="160">
         <div class="stat-num">&infin;</div>
         <p class="stat-label">Bring your own storage — any S3-compatible cloud.</p>
       </div>
     </div>
   </section>
 
-  <!-- ── ENCRYPTION FLOW (animated centerpiece) ── -->
-  <section class="flow-section">
+  <!-- ══ FEATURES (icons from illustrations.png) ══ -->
+  <section class="features">
     <div class="section-container">
-      <div class="section-header" data-reveal>
-        <span class="section-eyebrow">Zero-knowledge by design</span>
-        <h2 class="section-title">Sealed before we ever touch it.</h2>
-        <p class="section-lead">Encryption happens on your device. Everything downstream — the network, our servers, your cloud — only ever handles ciphertext. There is nothing for us to read, leak, or hand over.</p>
+      <header class="section-head" data-reveal>
+        <span class="eyebrow-mono">How it protects you</span>
+        <h2 class="section-title">Private by architecture, not by promise.</h2>
+        <p class="section-lead">Security you don't have to take on faith. The design itself makes your files
+          unreadable to us — there is nothing to trust, only math to verify.</p>
+      </header>
+
+      <div class="features-grid">
+        <article class="feature" data-reveal>
+          <span class="fi fi-shield" aria-hidden="true"></span>
+          <h3>Zero-knowledge encryption</h3>
+          <p>Every file is sealed in your browser with AES-256 before it's uploaded. We only ever hold ciphertext we cannot read.</p>
+        </article>
+        <article class="feature" data-reveal data-reveal-delay="60">
+          <span class="fi fi-cloud" aria-hidden="true"></span>
+          <h3>Bring your own storage</h3>
+          <p>Connect Cloudflare R2, Backblaze B2, Wasabi, Dropbox, or any S3 bucket. Files live in your account — never on our servers.</p>
+        </article>
+        <article class="feature" data-reveal data-reveal-delay="120">
+          <span class="fi fi-stream" aria-hidden="true"></span>
+          <h3>Seekable streaming</h3>
+          <p>Range-based decryption reads only the slice you're watching, so you can jump anywhere in a multi-GB video instantly.</p>
+        </article>
+        <article class="feature" data-reveal>
+          <span class="fi fi-photo" aria-hidden="true"></span>
+          <h3>Encrypted thumbnails</h3>
+          <p>Previews are generated and encrypted in your browser, so galleries load fast without ever exposing the full files.</p>
+        </article>
+        <article class="feature" data-reveal data-reveal-delay="60">
+          <span class="fi fi-key" aria-hidden="true"></span>
+          <h3>Recovery key</h3>
+          <p>Forgot your password? A one-time recovery key restores access. Lose both and not even we can help — that's the whole point.</p>
+        </article>
+        <article class="feature" data-reveal data-reveal-delay="120">
+          <span class="fi fi-devices" aria-hidden="true"></span>
+          <h3>Every device</h3>
+          <p>Sign in from any device; your library syncs through a tiny encrypted index. Installable as an app (PWA) on phone and desktop.</p>
+        </article>
       </div>
+    </div>
+  </section>
+
+  <!-- ══ ENCRYPTION FLOW ══ -->
+  <section class="flow">
+    <div class="section-container">
+      <header class="section-head" data-reveal>
+        <span class="eyebrow-mono">Zero-knowledge by design</span>
+        <h2 class="section-title">Sealed before we ever touch it.</h2>
+        <p class="section-lead">Encryption happens on your device. Everything downstream — the network, our
+          servers, your cloud — only ever handles ciphertext. There is nothing for us to read, leak, or hand over.</p>
+      </header>
 
       <div class="flow-diagram" data-reveal data-reveal-delay="80">
         <div class="flow-node">
-          <div class="flow-icon flow-device">
+          <div class="flow-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="8.5" cy="9" r="1.4"/><path d="m4 15 4.5-4 3.5 3 3-2.5 4 3.5"/></svg>
           </div>
           <div class="flow-label">Your device</div>
@@ -250,7 +217,7 @@ const jsonLd = [
         <div class="flow-link flow-link-cipher"><span class="flow-dot"></span><span class="flow-dot"></span><span class="flow-dot"></span></div>
 
         <div class="flow-node">
-          <div class="flow-icon flow-cloud">
+          <div class="flow-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/></svg>
           </div>
           <div class="flow-label">Your cloud bucket</div>
@@ -266,99 +233,38 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- ── FEATURES GRID ── -->
-  <section class="features-section">
+  <!-- ══ HOW IT WORKS ══ -->
+  <section class="workflow">
     <div class="section-container">
-      <div class="section-header" data-reveal>
-        <span class="section-eyebrow">How it protects you</span>
-        <h2 class="section-title">Private by architecture, not by promise.</h2>
-      </div>
-
-      <div class="features-grid">
-        <!-- Feature 1 -->
-        <div class="feature-card" data-reveal>
-          <div class="feature-icon feat-a">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><rect x="9.5" y="11" width="5" height="4.5" rx="1"/><path d="M10.25 11V9.5a1.75 1.75 0 0 1 3.5 0V11"/></svg>
-          </div>
-          <h3 class="feature-name">End-to-end encrypted</h3>
-          <p class="feature-desc">Every file is sealed in your browser with AES-256 before it's uploaded. We only ever hold ciphertext we cannot read.</p>
-        </div>
-        <!-- Feature 2 -->
-        <div class="feature-card" data-reveal data-reveal-delay="60">
-          <div class="feature-icon feat-b">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/><path d="M12 12.5v4"/><path d="m10 14.5 2-2 2 2"/></svg>
-          </div>
-          <h3 class="feature-name">Your own storage</h3>
-          <p class="feature-desc">Connect your own Cloudflare R2, Backblaze B2, Wasabi, Dropbox, or S3 bucket. Files live in your account — never on our servers.</p>
-        </div>
-        <!-- Feature 3 -->
-        <div class="feature-card" data-reveal data-reveal-delay="120">
-          <div class="feature-icon feat-c">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
-          </div>
-          <h3 class="feature-name">Seekable streaming</h3>
-          <p class="feature-desc">Range-based decryption reads only the slice you're watching, so you can jump anywhere in a multi-GB video instantly.</p>
-        </div>
-        <!-- Feature 4 -->
-        <div class="feature-card" data-reveal>
-          <div class="feature-icon feat-d">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg>
-          </div>
-          <h3 class="feature-name">Encrypted thumbnails</h3>
-          <p class="feature-desc">Previews are generated and encrypted in your browser, so galleries load fast without ever downloading the full files.</p>
-        </div>
-        <!-- Feature 5 -->
-        <div class="feature-card" data-reveal data-reveal-delay="60">
-          <div class="feature-icon feat-e">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="m10.4 12.6 8.1-8.1 2 2-1.8 1.8-1.7-1.7M16.9 8.9l-2 2"/></svg>
-          </div>
-          <h3 class="feature-name">Recovery key</h3>
-          <p class="feature-desc">Forgot your password? A one-time recovery key restores access. Lose both and not even we can help — that's the whole point.</p>
-        </div>
-        <!-- Feature 6 -->
-        <div class="feature-card" data-reveal data-reveal-delay="120">
-          <div class="feature-icon feat-f">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="14" height="10" rx="1.5"/><path d="M2.5 17.5h14"/><rect x="18" y="9" width="4" height="11" rx="1.2"/></svg>
-          </div>
-          <h3 class="feature-name">Every device</h3>
-          <p class="feature-desc">Sign in from any device; your library syncs through a tiny encrypted index. Installable as an app (PWA) on phone and desktop.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── WORKFLOW / HOW IT WORKS ── -->
-  <section class="workflow-section">
-    <div class="section-container">
-      <div class="section-header" data-reveal>
-        <span class="section-eyebrow">Quick Start</span>
+      <header class="section-head" data-reveal>
+        <span class="eyebrow-mono">Quick start</span>
         <h2 class="section-title">Three steps to a private library.</h2>
-      </div>
+      </header>
 
       <div class="workflow-steps">
         <div class="workflow-step" data-reveal>
           <div class="step-badge">1</div>
-          <h3 class="step-title">Create your account</h3>
-          <p class="step-desc">Sign up — your password derives your encryption key right in the browser. Save your one-time recovery key.</p>
+          <h3>Create your account</h3>
+          <p>Sign up — your password derives your encryption key right in the browser. Save your one-time recovery key.</p>
         </div>
         <div class="workflow-step" data-reveal data-reveal-delay="80">
           <div class="step-badge">2</div>
-          <h3 class="step-title">Connect your storage</h3>
-          <p class="step-desc">Link your own cloud bucket (R2, Backblaze B2, Wasabi, S3). Files go straight there — never through us.</p>
+          <h3>Connect your storage</h3>
+          <p>Link your own cloud bucket (R2, Backblaze B2, Wasabi, S3). Files go straight there — never through us.</p>
         </div>
         <div class="workflow-step" data-reveal data-reveal-delay="160">
           <div class="step-badge">3</div>
-          <h3 class="step-title">Upload &amp; enjoy</h3>
-          <p class="step-desc">Drag in photos and videos — encrypted locally, then streamed, searched, and viewed across all your devices.</p>
+          <h3>Upload &amp; enjoy</h3>
+          <p>Drag in photos and videos — encrypted locally, then streamed, searched, and viewed across all your devices.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── "CALL IT WHAT YOU LIKE" (readable synonym coverage for search) ── -->
-  <section class="aka-section">
+  <!-- ══ "CALL IT WHAT YOU LIKE" (readable synonym coverage for search) ══ -->
+  <section class="aka">
     <div class="section-container aka-inner" data-reveal>
-      <span class="aka-eyebrow">Call it what you like</span>
+      <span class="eyebrow-mono">Call it what you like</span>
       <p class="aka-text">
         An <strong>encrypted photo vault</strong>. A <strong>private media library</strong>. A
         <strong>zero-knowledge asset locker</strong>. A <strong>secure media store</strong> on cloud
@@ -368,72 +274,23 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- ── CTA BANNER ── -->
-  <section class="cta-banner-section">
-    <div class="section-container cta-banner-container" data-reveal>
+  <!-- ══ CTA BANNER (aurora backdrop) ══ -->
+  <section class="cta-banner">
+    <div class="section-container cta-banner-inner" data-reveal>
       <h2 class="cta-banner-title">Take back your memories.</h2>
       <p class="cta-banner-desc">Free, open-source, end-to-end encrypted. Your media, your cloud, your keys — not the tech giants'.</p>
-      <div class="cta-banner-actions">
-        <a href={primaryCtaPath} class="btn-primary-hero invert">
-          {primaryCtaText}
-        </a>
-      </div>
+      <a href={primaryCtaPath} class="btn-hero-primary btn-cta">{primaryCtaText}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
     </div>
   </section>
 
 </PublicLayout>
 
 <script>
-  // Hero mockup 3D tilt: rotateX eases from tilted → flat as it scrolls into
-  // view, plus a gentle pointer parallax. Disabled for reduced-motion and on
-  // small/touch screens. Re-inits after each View Transition (astro:page-load).
-  function initHeroMockup() {
-    const stage = document.querySelector<HTMLElement>('.mockup-stage');
-    const frame = document.querySelector<HTMLElement>('.mockup-frame');
-    if (!stage || !frame) return;
-
-    // Clean up any previous instance (page-load fires again after transitions).
-    (window as any).__heroTiltCleanup?.();
-
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || window.innerWidth < 700) {
-      frame.style.transform = 'rotateX(6deg) scale(0.98)';
-      return;
-    }
-
-    let base = 14; // scroll-driven rotateX (deg)
-    let rx = 0, ry = 0; // pointer offsets (deg)
-    let raf = 0;
-
-    const render = () => {
-      frame.style.transform =
-        `rotateX(${(base + rx).toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(0.97)`;
-    };
-    const onScroll = () => {
-      const r = stage.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.9)));
-      base = 14 - p * 13; // 14deg → ~1deg as it rises
-      if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
-    };
-    const onMove = (e: MouseEvent) => {
-      const r = stage.getBoundingClientRect();
-      ry = ((e.clientX - (r.left + r.width / 2)) / r.width) * 9;
-      rx = -((e.clientY - (r.top + r.height / 2)) / r.height) * 5;
-      if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
-    };
-    const onLeave = () => { rx = 0; ry = 0; render(); };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    stage.addEventListener('mousemove', onMove);
-    stage.addEventListener('mouseleave', onLeave);
-    (window as any).__heroTiltCleanup = () => {
-      window.removeEventListener('scroll', onScroll);
-      stage.removeEventListener('mousemove', onMove);
-      stage.removeEventListener('mouseleave', onLeave);
-    };
-    onScroll();
-  }
   // Live "ciphertext" scramble in the encryption-flow callout — cycles hex while
   // in view for a sense of active encryption. Paused off-screen + for reduced-motion.
   function initCipherScramble() {
@@ -455,463 +312,210 @@ const jsonLd = [
     io.observe(el);
     (window as any).__cipherCleanup = () => { if (timer) clearInterval(timer); io.disconnect(); };
   }
-
-  function initHomeMotion() { initHeroMockup(); initCipherScramble(); }
-  document.addEventListener('astro:page-load', initHomeMotion);
+  document.addEventListener('astro:page-load', initCipherScramble);
 </script>
 
 <style>
-  /* Base Layout Container */
   .section-container {
-    max-width: 1200px;
+    max-width: 1160px;
     margin: 0 auto;
     padding: 0 24px;
     position: relative;
     z-index: 2;
   }
 
-  /* ── HERO ── */
-  .hero-section {
+  /* Shared section headers */
+  .section-head { text-align: center; max-width: 680px; margin: 0 auto 60px; }
+  .eyebrow-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    color: var(--accent); letter-spacing: 0.14em; display: block; margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(27px, 3.6vw, 38px); font-weight: 600;
+    color: var(--text-primary); letter-spacing: -0.035em; line-height: 1.12; margin: 0;
+  }
+  .section-lead {
+    font-size: 16px; line-height: 1.65; color: var(--text-body); margin: 18px auto 0; max-width: 600px;
+  }
+
+  /* ══ HERO ══ */
+  .hero {
     position: relative;
     padding: 128px 0 96px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     text-align: center;
+    overflow: hidden;
+    /* Aurora backdrop (owner's ornament.png) fading into the page background,
+       with a dark scrim so text stays legible. Composited in one property. */
+    background:
+      linear-gradient(180deg, rgba(10,10,10,0.62) 0%, rgba(10,10,10,0.35) 34%, rgba(10,10,10,0.86) 78%, #0a0a0a 100%),
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(99,102,241,0.18), transparent 70%),
+      url('/ornament.png') center top / cover no-repeat;
   }
 
-  /* Subtle dot grid, faded out toward the edges for depth. */
-  .hero-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle at center, var(--border-strong) 1px, transparent 1px);
-    background-size: 30px 30px;
-    -webkit-mask: radial-gradient(ellipse 75% 60% at 50% 32%, #000 0%, transparent 78%);
-            mask: radial-gradient(ellipse 75% 60% at 50% 32%, #000 0%, transparent 78%);
-    opacity: 0.45;
-    z-index: 0;
-    pointer-events: none;
-  }
+  .hero-inner { display: flex; flex-direction: column; align-items: center; }
 
-  .glow-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.22;
-    z-index: 1;
-    pointer-events: none;
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 7px 16px 7px 10px; margin-bottom: 26px;
+    border: 1px solid var(--border-med); border-radius: 100px;
+    background: rgba(255,255,255,0.04); backdrop-filter: blur(8px);
+    font-size: 12.5px; font-weight: 500; color: var(--text-body); letter-spacing: 0.01em;
   }
-
-  .orb-1 {
-    top: -10%;
-    left: 10%;
-    width: 400px;
-    height: 400px;
-    background: #0070f3;
-  }
-
-  .orb-2 {
-    bottom: 5%;
-    right: 10%;
-    width: 350px;
-    height: 350px;
-    background: #eb367f;
-  }
-
-  .hero-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .eyebrow-pill {
-    margin-bottom: 24px;
-  }
-
-  .mono-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    background: var(--bg-inset);
-    border: 1px solid var(--border);
-    padding: 6px 16px;
-    border-radius: 100px;
-    letter-spacing: 0.08em;
-  }
+  .eyebrow img { display: block; filter: drop-shadow(0 1px 4px rgba(124,58,237,0.5)); }
 
   .hero-title {
-    font-size: clamp(38px, 6vw, 64px);
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.04em;
-    line-height: 1.05;
-    max-width: 800px;
-    margin-bottom: 24px;
+    font-size: clamp(38px, 6.2vw, 66px); font-weight: 600;
+    color: var(--text-primary); letter-spacing: -0.045em; line-height: 1.04;
+    max-width: 860px; margin: 0 0 24px;
   }
 
-  .hero-description {
-    font-size: clamp(16px, 2.5vw, 19px);
-    color: var(--text-body);
-    line-height: 1.6;
-    max-width: 620px;
-    margin-bottom: 40px;
+  .hero-lead {
+    font-size: clamp(16px, 2.4vw, 19px); color: var(--text-body);
+    line-height: 1.62; max-width: 640px; margin: 0 0 36px;
   }
+  .hero-lead strong { color: var(--text-primary); font-weight: 600; }
 
-  .cta-row {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    margin-bottom: 72px;
+  .cta-row { display: flex; gap: 14px; align-items: center; justify-content: center; }
+  @media (max-width: 480px) { .cta-row { flex-direction: column; width: 100%; } }
+
+  .btn-hero-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 50px; padding: 0 30px; border-radius: 100px;
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: #fff;
+    box-shadow: 0 10px 30px -8px rgba(109, 74, 232, 0.6), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-
-  @media (max-width: 480px) {
-    .cta-row {
-      flex-direction: column;
-      width: 100%;
-    }
-  }
-
-  .btn-primary-hero {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 48px;
-    padding: 0 28px;
-    border-radius: 100px;
-    font-size: 15px;
-    font-weight: 500;
-    background: var(--text-primary);
-    color: var(--bg);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
-  }
-
-  .btn-primary-hero:hover {
+  .btn-hero-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    opacity: 0.95;
+    box-shadow: 0 16px 40px -10px rgba(109, 74, 232, 0.75), inset 0 1px 0 rgba(255,255,255,0.22);
+    color: #fff;
   }
+  .btn-hero-primary:active { transform: translateY(0); }
 
-  .btn-primary-hero.invert {
-    background: #ffffff;
-    color: #0a0a0a;
-    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.5);
-  }
-
-  .btn-primary-hero.invert:hover {
-    background: #ececec;
-  }
-
-  .btn-primary-hero:active {
-    transform: translateY(0);
-  }
-
-  .btn-secondary-hero {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 48px;
-    padding: 0 28px;
-    border-radius: 100px;
-    font-size: 15px;
-    font-weight: 500;
-    background: var(--surface);
-    color: var(--text-primary);
+  .btn-hero-ghost {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 50px; padding: 0 28px; border-radius: 100px;
+    font-size: 15px; font-weight: 500;
+    background: rgba(255,255,255,0.05); color: var(--text-primary);
     border: 1px solid var(--border-med);
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
+  .btn-hero-ghost:hover {
+    border-color: var(--border-strong); background: rgba(255,255,255,0.08);
+    transform: translateY(-1px); color: var(--text-primary);
+  }
+  @media (max-width: 480px) { .btn-hero-primary, .btn-hero-ghost { width: 100%; } }
 
-  .btn-secondary-hero:hover {
-    border-color: var(--border-strong);
-    background: var(--bg-inset);
-    transform: translateY(-1px);
+  .trust-row {
+    list-style: none; margin: 30px 0 0; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: center;
   }
+  .trust-row li {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: var(--text-body);
+  }
+  .trust-row svg { width: 15px; height: 15px; color: #34d399; flex: none; }
 
-  /* ── MOCKUP (3D) ── */
-  .mockup-stage {
-    width: 100%;
-    max-width: 980px;
-    position: relative;
-    perspective: 1800px;
-    margin-top: 4px;
+  /* Hero centerpiece image (owner's glass-vault). Edge-masked + glow so its dark
+     background dissolves into the section. */
+  .hero-visual { position: relative; width: 100%; max-width: 780px; margin: 66px auto 0; }
+  .hero-visual::before {
+    content: ''; position: absolute; inset: 6% 8% 10%;
+    background: radial-gradient(ellipse at 50% 48%, rgba(96,132,255,0.42), rgba(124,58,237,0.20) 46%, transparent 72%);
+    filter: blur(78px); z-index: 0; pointer-events: none;
   }
+  .hero-img {
+    position: relative; z-index: 1; width: 100%; height: auto; display: block;
+    -webkit-mask: radial-gradient(ellipse 84% 82% at 50% 48%, #000 62%, transparent 100%);
+            mask: radial-gradient(ellipse 84% 82% at 50% 48%, #000 62%, transparent 100%);
+    animation: heroFloat 8s ease-in-out infinite;
+  }
+  @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @media (prefers-reduced-motion: reduce) { .hero-img { animation: none; } }
 
-  .mockup-glow {
-    position: absolute;
-    inset: 6% 10% -8%;
-    background: radial-gradient(ellipse at 50% 38%, rgba(59,130,246,0.38), rgba(168,85,247,0.20) 45%, transparent 72%);
-    filter: blur(64px);
-    opacity: 0.75;
-    z-index: 0;
-    pointer-events: none;
+  /* ══ STATS ══ */
+  .stats {
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    background: var(--bg-inset); padding: 46px 0;
   }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; text-align: center; }
+  @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; gap: 30px; } }
+  .stat { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .stat-num {
+    font-size: clamp(36px, 5vw, 52px); font-weight: 700; letter-spacing: -0.04em; line-height: 1;
+    background: linear-gradient(135deg, #ededed 20%, #7c8cff);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .stat-label { font-size: 13px; color: var(--text-body); max-width: 240px; margin: 0; }
 
-  .mockup-frame {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    border-radius: 14px;
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    transform-style: preserve-3d;
-    /* Resting pose (no-JS / pre-JS). JS upgrades this to scroll + pointer tilt.
-       Perspective comes from .mockup-stage, so we only rotate here. */
-    transform: rotateX(12deg) scale(0.97);
-    transition: box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
-  }
+  /* ══ FEATURES ══ */
+  .features { padding: 100px 0; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 940px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
 
-  .mockup-header {
-    height: 40px;
-    background: var(--bg-inset);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
+  .feature {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 30px 26px;
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s ease, box-shadow 0.3s ease;
   }
+  .feature:hover {
+    transform: translateY(-4px); border-color: var(--border-strong);
+    box-shadow: 0 20px 50px -24px rgba(99,102,241,0.55);
+  }
+  .feature h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px; }
+  .feature p { font-size: 13.5px; line-height: 1.55; color: var(--text-body); margin: 0; }
 
-  .mockup-dots {
-    display: flex;
-    gap: 6px;
-    width: 60px;
+  /* Feature icons sliced from the owner's illustrations.png (3 cols × 2 rows).
+     The 2:3-aspect window keeps a 300%×200% background square (no distortion);
+     mix-blend-mode: screen drops the image's black backdrop over the card. */
+  .fi {
+    display: block; width: 58px; height: 87px; margin: -6px 0 14px -4px;
+    background-image: url('/illustrations.png');
+    background-repeat: no-repeat; background-size: 300% 200%;
+    mix-blend-mode: screen;
   }
+  .fi-shield  { background-position: 0%   0%;   }
+  .fi-cloud   { background-position: 50%  0%;   }
+  .fi-stream  { background-position: 100% 0%;   }
+  .fi-photo   { background-position: 0%   100%; }
+  .fi-key     { background-position: 50%  100%; }
+  .fi-devices { background-position: 100% 100%; }
 
-  .mockup-dots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .dot-red { background: #ff5f56; }
-  .dot-yellow { background: #ffbd2e; }
-  .dot-green { background: #27c93f; }
-
-  .mockup-address {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--text-muted);
-    padding: 4px 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0 auto;
-    width: 200px;
-    justify-content: center;
-  }
-
-  .mockup-spacer {
-    width: 60px;
-  }
-
-  .mockup-body {
-    display: flex;
-    height: 360px;
-  }
-
-  .mockup-sidebar {
-    width: 160px;
-    border-right: 1px solid var(--border);
-    background: var(--bg-inset);
-    padding: 16px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  @media (max-width: 600px) {
-    .mockup-sidebar {
-      display: none;
-    }
-  }
-
-  .sidebar-item {
-    font-size: 12px;
-    padding: 7px 10px;
-    border-radius: 7px;
-    color: var(--text-body);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .sidebar-item svg { width: 14px; height: 14px; opacity: 0.72; flex: none; }
-
-  .sidebar-item.active {
-    background: var(--surface);
-    color: var(--text-primary);
-    box-shadow: var(--shadow-sm);
-  }
-  .sidebar-item.active svg { opacity: 1; color: var(--accent); }
-
-  .mockup-content {
-    flex-grow: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .mockup-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .mockup-search {
-    font-size: 11px;
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    padding: 7px 12px;
-    border-radius: 7px;
-    width: 180px;
-    background: var(--bg-inset);
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .mockup-search svg { width: 12px; height: 12px; flex: none; }
-
-  .mockup-upload {
-    font-size: 11px;
-    background: var(--text-primary);
-    color: var(--bg);
-    padding: 7px 13px;
-    border-radius: 7px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .mockup-upload svg { width: 12px; height: 12px; flex: none; }
-
-  .mockup-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    flex-grow: 1;
-  }
-
-  @media (max-width: 480px) {
-    .mockup-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .mockup-card {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--surface);
-  }
-
-  .card-thumb {
-    height: 94px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Photo-like gradient previews (stand in for real encrypted thumbnails). */
-  .thumb-a { background: linear-gradient(160deg, #ff9966 0%, #ff5e62 45%, #6a3093 100%); }
-  .thumb-b { background: linear-gradient(160deg, #2193b0 0%, #6dd5ed 100%); }
-  .thumb-c { background: linear-gradient(160deg, #7028e4 0%, #e5b2ca 100%); }
-  .thumb-d { background: linear-gradient(160deg, #ee9ca7 0%, #ffdde1 100%); }
-  .thumb-e { background: linear-gradient(160deg, #11998e 0%, #38ef7d 100%); }
-  .thumb-f { background: linear-gradient(160deg, #4361ee 0%, #4cc9f0 100%); }
-
-  .thumb-lock {
-    position: absolute; top: 7px; right: 7px;
-    width: 18px; height: 18px; border-radius: 6px;
-    background: rgba(0,0,0,0.38) center / 10px 10px no-repeat;
-    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E");
-  }
-  .thumb-play {
-    position: absolute; inset: 0; margin: auto;
-    width: 0; height: 0;
-    border-left: 15px solid rgba(255,255,255,0.94);
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    filter: drop-shadow(0 1px 4px rgba(0,0,0,0.45));
-  }
-  .thumb-wave {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 42px;
-    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.85) 0 3px, transparent 3px 9px);
-    -webkit-mask: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
-            mask: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
-    opacity: 0.65;
-  }
-
-  .card-info {
-    padding: 8px 10px;
-    border-top: 1px solid var(--border);
-  }
-
-  .card-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .card-meta {
-    font-size: 9px;
-    color: var(--text-muted);
-  }
-
-  /* ── ENCRYPTION FLOW (animated) ── */
-  .flow-section { padding: 100px 0; }
-  .section-lead {
-    max-width: 660px; margin: 18px auto 0;
-    font-size: 15px; line-height: 1.65; color: var(--text-body); text-align: center;
-  }
-  .flow-diagram {
-    display: flex; align-items: flex-start; justify-content: center;
-    gap: 8px; margin: 60px auto 0; max-width: 920px;
-  }
+  /* ══ ENCRYPTION FLOW ══ */
+  .flow { padding: 100px 0; background: var(--bg-inset); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .flow-diagram { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin: 0 auto; max-width: 900px; }
   .flow-node { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px; width: 210px; flex: none; }
   .flow-icon {
-    width: 74px; height: 74px; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center; position: relative;
-    border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-md);
+    width: 74px; height: 74px; border-radius: 20px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-med); background: var(--surface); color: #7c8cff;
+    box-shadow: var(--shadow-md);
   }
   .flow-icon svg { width: 32px; height: 32px; }
-  .flow-device { color: #3b82f6; }
-  .flow-cloud { color: #06b6d4; }
   .flow-node-hl .flow-icon.flow-lock {
     color: #fff; border: none;
     background: linear-gradient(140deg, #6366f1, #7c3aed);
-    box-shadow: 0 14px 34px -10px rgba(109, 74, 232, 0.65);
+    box-shadow: 0 14px 34px -10px rgba(109, 74, 232, 0.7);
   }
-  .flow-pulse {
-    position: absolute; inset: -5px; border-radius: 24px;
-    border: 2px solid rgba(124, 58, 237, 0.55); animation: flowPulse 2.4s ease-out infinite;
-  }
+  .flow-pulse { position: absolute; inset: -5px; border-radius: 24px; border: 2px solid rgba(124,58,237,0.55); animation: flowPulse 2.4s ease-out infinite; }
   @keyframes flowPulse { 0% { transform: scale(0.92); opacity: 0.8; } 100% { transform: scale(1.32); opacity: 0; } }
   .flow-label { font-size: 14px; font-weight: 600; color: var(--text-primary); }
   .flow-sub { font-size: 12px; color: var(--text-muted); max-width: 170px; }
 
   .flow-link {
     flex: 1; min-width: 48px; height: 2px; position: relative; margin-top: 37px;
-    background: linear-gradient(90deg, transparent, var(--border-strong, var(--border)) 20% 80%, transparent);
+    background: linear-gradient(90deg, transparent, var(--border-strong) 20% 80%, transparent);
   }
   .flow-dot {
     position: absolute; top: 50%; width: 6px; height: 6px; border-radius: 50%;
-    background: #3b82f6; transform: translateY(-50%); box-shadow: 0 0 8px currentColor; color: #3b82f6;
-    animation: flowDot 2.2s linear infinite;
+    background: #6366f1; color: #6366f1; transform: translateY(-50%);
+    box-shadow: 0 0 8px currentColor; animation: flowDot 2.2s linear infinite;
   }
   .flow-dot:nth-child(2) { animation-delay: 0.73s; }
   .flow-dot:nth-child(3) { animation-delay: 1.46s; }
@@ -920,287 +524,61 @@ const jsonLd = [
 
   .flow-callout {
     display: flex; align-items: center; gap: 10px; width: max-content; max-width: 92%;
-    margin: 46px auto 0; padding: 10px 18px;
-    border: 1px solid var(--border); border-radius: 100px; background: var(--surface); box-shadow: var(--shadow-sm);
+    margin: 48px auto 0; padding: 10px 18px;
+    border: 1px solid var(--border-med); border-radius: 100px; background: var(--surface); box-shadow: var(--shadow-sm);
     font-size: 13px;
   }
   .flow-callout-dot { width: 7px; height: 7px; border-radius: 50%; background: #7c3aed; box-shadow: 0 0 9px #7c3aed; flex: none; }
   .flow-callout-label { color: var(--text-muted); }
-  .flow-cipher { font-family: 'JetBrains Mono', monospace; color: #7c3aed; font-weight: 500; letter-spacing: 0.03em; }
+  .flow-cipher { font-family: 'JetBrains Mono', monospace; color: #a78bfa; font-weight: 500; letter-spacing: 0.03em; }
 
   @media (max-width: 760px) {
     .flow-diagram { flex-direction: column; align-items: center; gap: 8px; }
     .flow-node { width: 100%; }
-    .flow-link { width: 2px; height: 34px; min-width: 0; margin: 2px 0; background: linear-gradient(180deg, transparent, var(--border-strong, var(--border)), transparent); }
+    .flow-link { width: 2px; height: 34px; min-width: 0; margin: 2px 0; background: linear-gradient(180deg, transparent, var(--border-strong), transparent); }
     .flow-dot { left: 50%; top: 0; transform: translateX(-50%); animation-name: flowDotV; }
     @keyframes flowDotV { 0% { top: 2%; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .flow-dot, .flow-pulse { animation: none; }
-    .flow-dot { opacity: 0.9; }
-  }
+  @media (prefers-reduced-motion: reduce) { .flow-dot, .flow-pulse { animation: none; } .flow-dot { opacity: 0.9; } }
 
-  /* ── STATS ── */
-  .stats-section {
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-inset);
-    padding: 48px 0;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
-    text-align: center;
-  }
-
-  @media (max-width: 768px) {
-    .stats-grid {
-      grid-template-columns: 1fr;
-      gap: 32px;
-    }
-  }
-
-  .stat-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 10px;
-  }
-
-  .stat-num {
-    font-size: clamp(36px, 5.2vw, 54px);
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    line-height: 1;
-    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
-
-  .stat-label {
-    font-size: 13px;
-    color: var(--text-body);
-    max-width: 240px;
-    margin: 0 auto;
-  }
-
-  /* ── FEATURES ── */
-  .features-section {
-    padding: 96px 0;
-    background: var(--bg);
-  }
-
-  .section-header {
-    text-align: center;
-    margin-bottom: 64px;
-  }
-
-  .section-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .section-title {
-    font-size: clamp(28px, 4vw, 36px);
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.03em;
-  }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-  }
-
-  @media (max-width: 960px) {
-    .features-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .features-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .feature-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 30px 26px;
-    border-radius: 16px;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .feature-card:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .feature-icon {
-    width: 46px;
-    height: 46px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 13px;
-    margin-bottom: 18px;
-    color: #fff;
-    box-shadow: 0 6px 16px -6px var(--feat-glow, rgba(59, 130, 246, 0.5));
-  }
-  .feature-icon svg { width: 22px; height: 22px; }
-  .feat-a { background: linear-gradient(140deg, #3b82f6, #2563eb); --feat-glow: rgba(37, 99, 235, 0.45); }
-  .feat-b { background: linear-gradient(140deg, #a78bfa, #7c3aed); --feat-glow: rgba(124, 58, 237, 0.45); }
-  .feat-c { background: linear-gradient(140deg, #fbbf24, #d97706); --feat-glow: rgba(217, 119, 6, 0.45); }
-  .feat-d { background: linear-gradient(140deg, #f472b6, #db2777); --feat-glow: rgba(219, 39, 119, 0.45); }
-  .feat-e { background: linear-gradient(140deg, #34d399, #059669); --feat-glow: rgba(5, 150, 105, 0.45); }
-  .feat-f { background: linear-gradient(140deg, #22d3ee, #0891b2); --feat-glow: rgba(8, 145, 178, 0.45); }
-
-  .feature-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
-
-  .feature-desc {
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--text-body);
-  }
-
-  /* ── WORKFLOW ── */
-  .workflow-section {
-    padding: 96px 0;
-    background: var(--bg-inset);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .workflow-steps {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-    position: relative;
-  }
-  /* Dashed timeline connecting the three badges (desktop). */
+  /* ══ WORKFLOW ══ */
+  .workflow { padding: 100px 0; }
+  .workflow-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; }
   .workflow-steps::before {
-    content: '';
-    position: absolute;
-    top: 23px;
-    left: 16.6%;
-    right: 16.6%;
-    height: 2px;
-    background: repeating-linear-gradient(90deg, var(--border-strong, var(--border)) 0 7px, transparent 7px 14px);
-    z-index: 0;
+    content: ''; position: absolute; top: 23px; left: 16.6%; right: 16.6%; height: 2px;
+    background: repeating-linear-gradient(90deg, var(--border-strong) 0 7px, transparent 7px 14px); z-index: 0;
   }
-
   @media (max-width: 768px) {
-    .workflow-steps {
-      grid-template-columns: 1fr;
-      gap: 48px;
-    }
+    .workflow-steps { grid-template-columns: 1fr; gap: 44px; }
     .workflow-steps::before { display: none; }
   }
-
-  .workflow-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    z-index: 1;
-  }
-
+  .workflow-step { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 1; }
   .step-badge {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: linear-gradient(140deg, #3b82f6, #7c3aed);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 22px;
-    border: 4px solid var(--bg-inset);
-    box-shadow: 0 8px 20px -6px rgba(109, 74, 232, 0.55);
+    width: 46px; height: 46px; border-radius: 50%;
+    background: linear-gradient(140deg, #6366f1, #7c3aed); color: #fff;
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 22px; border: 4px solid var(--bg); box-shadow: 0 8px 20px -6px rgba(109, 74, 232, 0.6);
   }
+  .workflow-step h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px; }
+  .workflow-step p { font-size: 13.5px; line-height: 1.55; color: var(--text-body); max-width: 280px; margin: 0; }
 
-  .step-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
-
-  .step-desc {
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--text-body);
-    max-width: 280px;
-  }
-
-  /* ── CTA BANNER ── */
-  /* ── "Call it what you like" ── */
-  .aka-section { padding: 88px 0; }
+  /* ══ AKA ══ */
+  .aka { padding: 96px 0; }
   .aka-inner { max-width: 760px; margin: 0 auto; text-align: center; }
-  .aka-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 18px;
-  }
-  .aka-text {
-    font-size: clamp(19px, 2.4vw, 26px); line-height: 1.55; color: var(--text-body); letter-spacing: -0.01em;
-  }
+  .aka-text { font-size: clamp(19px, 2.4vw, 26px); line-height: 1.55; color: var(--text-body); letter-spacing: -0.01em; margin: 6px 0 0; }
   .aka-text strong { color: var(--text-primary); font-weight: 600; }
 
-  .cta-banner-section {
-    padding: 120px 24px;
-    background: var(--text-primary);
-    color: var(--bg);
-    text-align: center;
+  /* ══ CTA BANNER ══ */
+  .cta-banner {
+    position: relative; padding: 116px 24px; text-align: center; overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(10,10,10,0.74), rgba(10,10,10,0.82)),
+      radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.28), transparent 70%),
+      url('/ornament.png') center / cover no-repeat;
+    border-top: 1px solid var(--border);
   }
-
-  .cta-banner-container {
-    max-width: 600px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .cta-banner-title {
-    font-size: clamp(28px, 5vw, 44px);
-    font-weight: 600;
-    color: var(--bg);
-    letter-spacing: -0.04em;
-    margin: 0;
-  }
-
-  .cta-banner-desc {
-    font-size: 16px;
-    line-height: 1.6;
-    color: var(--text-muted);
-    margin: 0 0 16px;
-  }
-
-  .overflow-hidden {
-    overflow: hidden;
-  }
+  .cta-banner-inner { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+  .cta-banner-title { font-size: clamp(28px, 5vw, 46px); font-weight: 600; color: #fff; letter-spacing: -0.04em; margin: 0 0 16px; line-height: 1.08; }
+  .cta-banner-desc { font-size: 16px; line-height: 1.6; color: rgba(237,237,237,0.72); margin: 0 0 30px; }
+  .btn-cta { height: 52px; }
 </style>
