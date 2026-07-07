@@ -11,6 +11,8 @@ interface Props {
   noindex?: boolean;
   keywords?: string[];
   jsonLd?: Record<string, unknown>[];
+  /** Pin the page to the dark theme (marketing pages built around dark imagery). */
+  forceDark?: boolean;
 }
 
 const {
@@ -20,6 +22,7 @@ const {
   noindex = false,
   keywords = [],
   jsonLd = [],
+  forceDark = false,
 } = Astro.props;
 
 // Pages that already brand themselves keep their exact title;
@@ -27,7 +30,7 @@ const {
 const fullTitle = title.includes('Media Reservoir') ? title : `${title} | Media Reservoir`;
 ---
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-force-theme={forceDark ? 'dark' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,10 +50,16 @@ const fullTitle = title.includes('Media Reservoir') ? title : `${title} | Media 
     <!-- Apply saved theme before page renders to avoid flash -->
     <script is:inline>
       (function() {
-        const saved = localStorage.getItem('mv-theme');
-        const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', saved || preferred);
-        document.documentElement.classList.add('js'); // gates reveal animations (content visible without JS)
+        const el = document.documentElement;
+        const forced = el.getAttribute('data-force-theme');
+        if (forced) {
+          el.setAttribute('data-theme', forced);
+        } else {
+          const saved = localStorage.getItem('mv-theme');
+          const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          el.setAttribute('data-theme', saved || preferred);
+        }
+        el.classList.add('js'); // gates reveal animations (content visible without JS)
       })();
     </script>
     <slot name="head" />

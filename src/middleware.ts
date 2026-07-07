@@ -14,7 +14,7 @@ import { defineMiddleware } from 'astro:middleware';
 // ⚠️ If you edit either inline script, recompute its hash:
 //    printf %s '<exact script text>' | openssl dgst -sha256 -binary | openssl base64
 const INLINE_SCRIPT_HASHES = [
-  "'sha256-j7JEbXP5+JOj//G0ohUIZsRT7yUHLdjp8oUQ1ns6Dyc='", // theme setter
+  "'sha256-xa3rhUnFjiLxAcb7jH1qA1OW+dLTi4t6KNgMjDeQ3tM='", // theme setter
   "'sha256-90IWy2I8NfkGWgNGIYs5IwCuZvEvp+XZFF057jJxXxM='", // service-worker registration
 ].join(' ');
 

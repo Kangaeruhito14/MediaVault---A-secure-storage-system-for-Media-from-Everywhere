@@ -1,6 +1,11 @@
 ---
 // Marketing header is fully static/public — auth state is determined
 // client-side in the /app area (E2EE), never server-rendered here.
+interface Props {
+  /** When the page is pinned to dark, the theme toggle is meaningless — hide it. */
+  forceDark?: boolean;
+}
+const { forceDark = false } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const navLinks = [
@@ -19,13 +24,7 @@ const ctaPath = '/app';
   <div class="header-container">
     <!-- Logo -->
     <a href="/" class="logo" aria-label="Media Reservoir Home">
-      <div class="logo-icon">
-        <svg width="14" height="14" viewBox="0 0 28 28" fill="none">
-          <rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
-          <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-          <circle cx="14" cy="18" r="1.5" fill="currentColor"/>
-        </svg>
-      </div>
+      <img src="/logo.png" alt="" width="28" height="28" class="logo-mark" />
       <span>Media Reservoir</span>
     </a>
 
@@ -47,21 +46,23 @@ const ctaPath = '/app';
 
     <!-- Header Actions -->
     <div class="header-actions">
-      <!-- Theme Toggle -->
-      <button
-        id="header-theme-toggle"
-        class="theme-toggle-btn"
-        aria-label="Toggle dark/light theme"
-        title="Toggle theme"
-      >
-        <svg id="header-icon-sun" class="icon-svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-        <svg id="header-icon-moon" class="icon-svg" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display: none;">
-          <path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-        </svg>
-      </button>
+      <!-- Theme Toggle (hidden on dark-pinned marketing pages) -->
+      {!forceDark && (
+        <button
+          id="header-theme-toggle"
+          class="theme-toggle-btn"
+          aria-label="Toggle dark/light theme"
+          title="Toggle theme"
+        >
+          <svg id="header-icon-sun" class="icon-svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <svg id="header-icon-moon" class="icon-svg" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display: none;">
+            <path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      )}
 
       <!-- CTA -->
       <a href={ctaPath} class="btn-primary-nav">
@@ -148,16 +149,12 @@ const ctaPath = '/app';
     z-index: 101; /* Stay above overlay */
   }
 
-  .logo-icon {
+  .logo-mark {
     width: 28px;
     height: 28px;
-    border-radius: 8px;
-    background: var(--text-primary);
-    color: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s ease, color 0.2s ease;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.35));
   }
 
   .desktop-nav {
@@ -401,6 +398,14 @@ const ctaPath = '/app';
     }
 
     function applySavedTheme() {
+      // Dark-pinned marketing pages carry data-force-theme; honor it over the
+      // saved preference so View-Transition swaps don't flip them to light.
+      const forced = html.getAttribute('data-force-theme');
+      if (forced) {
+        html.setAttribute('data-theme', forced);
+        syncThemeIcon();
+        return;
+      }
       const saved = localStorage.getItem('mv-theme');
       const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       html.setAttribute('data-theme', saved || preferred);
