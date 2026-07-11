@@ -110,13 +110,11 @@ const jsonLd = [
       </ul>
 
       <figure class="hero-visual" data-reveal data-reveal-delay="280">
-        <img
+        <div
           class="hero-img"
-          src="/hero.png"
-          width="1536" height="1024"
-          alt="A glowing encrypted vault holding photos, video, and audio — sealed with a lock and key, floating in cloud storage you own."
-          fetchpriority="high" decoding="async"
-        />
+          role="img"
+          aria-label="A glowing encrypted vault holding photos, video, and audio — sealed with a lock and key, floating in cloud storage you own."
+        ></div>
       </figure>
     </div>
   </section>
@@ -345,11 +343,18 @@ const jsonLd = [
     padding: 128px 0 96px;
     text-align: center;
     overflow: hidden;
-    /* Aurora backdrop (owner's ornament.png) fading into the page background,
-       with a dark scrim so text stays legible. Composited in one property. */
+    /* Light (default): the pastel aurora (owner's ornament-light.png) fades into
+       the page, with a light scrim so dark text stays legible. */
     background:
-      linear-gradient(180deg, rgba(10,10,10,0.62) 0%, rgba(10,10,10,0.35) 34%, rgba(10,10,10,0.86) 78%, #0a0a0a 100%),
-      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(99,102,241,0.18), transparent 70%),
+      linear-gradient(180deg, rgba(247,248,252,0.42) 0%, rgba(247,248,252,0.12) 34%, rgba(247,248,252,0.86) 80%, var(--bg) 100%),
+      url('/ornament-light.png') center top / cover no-repeat;
+  }
+  /* Dark: the aurora ornament backdrop (owner's ornament.png) fades into the page,
+     with a dark scrim so text stays legible. */
+  :global(html[data-theme='dark']) .hero {
+    background:
+      linear-gradient(180deg, rgba(9,10,15,0.60) 0%, rgba(9,10,15,0.34) 34%, rgba(9,10,15,0.86) 78%, var(--bg) 100%),
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(99,102,241,0.20), transparent 70%),
       url('/ornament.png') center top / cover no-repeat;
   }
 
@@ -359,9 +364,11 @@ const jsonLd = [
     display: inline-flex; align-items: center; gap: 9px;
     padding: 7px 16px 7px 10px; margin-bottom: 26px;
     border: 1px solid var(--border-med); border-radius: 100px;
-    background: rgba(255,255,255,0.04); backdrop-filter: blur(8px);
+    background: var(--surface); backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-sm);
     font-size: 12.5px; font-weight: 500; color: var(--text-body); letter-spacing: 0.01em;
   }
+  :global(html[data-theme='dark']) .eyebrow { background: rgba(255,255,255,0.04); box-shadow: none; }
   .eyebrow img { display: block; filter: drop-shadow(0 1px 4px rgba(124,58,237,0.5)); }
 
   .hero-title {
@@ -399,14 +406,16 @@ const jsonLd = [
     display: inline-flex; align-items: center; justify-content: center;
     height: 50px; padding: 0 28px; border-radius: 100px;
     font-size: 15px; font-weight: 500;
-    background: rgba(255,255,255,0.05); color: var(--text-primary);
-    border: 1px solid var(--border-med);
+    background: var(--surface); color: var(--text-primary);
+    border: 1px solid var(--border-med); box-shadow: var(--shadow-sm);
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
   .btn-hero-ghost:hover {
-    border-color: var(--border-strong); background: rgba(255,255,255,0.08);
+    border-color: var(--border-strong); background: var(--bg-inset);
     transform: translateY(-1px); color: var(--text-primary);
   }
+  :global(html[data-theme='dark']) .btn-hero-ghost { background: rgba(255,255,255,0.05); box-shadow: none; }
+  :global(html[data-theme='dark']) .btn-hero-ghost:hover { background: rgba(255,255,255,0.08); }
   @media (max-width: 480px) { .btn-hero-primary, .btn-hero-ghost { width: 100%; } }
 
   .trust-row {
@@ -419,20 +428,26 @@ const jsonLd = [
   }
   .trust-row svg { width: 15px; height: 15px; color: #34d399; flex: none; }
 
-  /* Hero centerpiece image (owner's glass-vault). Edge-masked + glow so its dark
-     background dissolves into the section. */
-  .hero-visual { position: relative; width: 100%; max-width: 780px; margin: 66px auto 0; }
+  /* Hero centerpiece (owner's glass-vault) — swapped per theme: the light-bg
+     render in light mode, the cosmic dark-bg render in dark mode. Edge-masked
+     both ways so its background dissolves seamlessly into the section. */
+  .hero-visual { position: relative; width: 100%; max-width: 800px; margin: 60px auto 0; }
   .hero-visual::before {
     content: ''; position: absolute; inset: 6% 8% 10%;
+    background: radial-gradient(ellipse at 50% 48%, rgba(96,132,255,0.32), rgba(124,58,237,0.15) 46%, transparent 72%);
+    filter: blur(80px); z-index: 0; pointer-events: none;
+  }
+  :global(html[data-theme='dark']) .hero-visual::before {
     background: radial-gradient(ellipse at 50% 48%, rgba(96,132,255,0.42), rgba(124,58,237,0.20) 46%, transparent 72%);
-    filter: blur(78px); z-index: 0; pointer-events: none;
   }
   .hero-img {
-    position: relative; z-index: 1; width: 100%; height: auto; display: block;
-    -webkit-mask: radial-gradient(ellipse 84% 82% at 50% 48%, #000 62%, transparent 100%);
-            mask: radial-gradient(ellipse 84% 82% at 50% 48%, #000 62%, transparent 100%);
+    position: relative; z-index: 1; width: 100%; aspect-ratio: 3 / 2; display: block;
+    background: url('/hero-light.png') center / contain no-repeat;
+    -webkit-mask: radial-gradient(ellipse 88% 86% at 50% 48%, #000 58%, transparent 100%);
+            mask: radial-gradient(ellipse 88% 86% at 50% 48%, #000 58%, transparent 100%);
     animation: heroFloat 8s ease-in-out infinite;
   }
+  :global(html[data-theme='dark']) .hero-img { background-image: url('/hero.png'); }
   @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
   @media (prefers-reduced-motion: reduce) { .hero-img { animation: none; } }
 
@@ -446,27 +461,32 @@ const jsonLd = [
   .stat { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .stat-num {
     font-size: clamp(36px, 5vw, 52px); font-weight: 700; letter-spacing: -0.04em; line-height: 1;
-    background: linear-gradient(135deg, #ededed 20%, #7c8cff);
+    background: linear-gradient(135deg, var(--text-primary) 20%, #7c6cff);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; color: transparent;
   }
   .stat-label { font-size: 13px; color: var(--text-body); max-width: 240px; margin: 0; }
 
   /* ══ FEATURES ══ */
-  .features { padding: 100px 0; }
+  .features { position: relative; padding: 100px 0; }
+  /* A faint indigo wash keeps the dark section from reading as flat black. */
+  :global(html[data-theme='dark']) .features::before {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse 62% 48% at 50% 0%, rgba(99,102,241,0.10), transparent 72%);
+  }
   .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   @media (max-width: 940px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
 
   .feature {
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    background: var(--surface);
     border: 1px solid var(--border); border-radius: 18px;
-    padding: 30px 26px;
+    padding: 30px 26px; box-shadow: var(--shadow-sm);
     transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s ease, box-shadow 0.3s ease;
   }
   .feature:hover {
     transform: translateY(-4px); border-color: var(--border-strong);
-    box-shadow: 0 20px 50px -24px rgba(99,102,241,0.55);
+    box-shadow: 0 20px 50px -24px rgba(99,102,241,0.5);
   }
   .feature h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px; }
   .feature p { font-size: 13.5px; line-height: 1.55; color: var(--text-body); margin: 0; }
@@ -475,17 +495,25 @@ const jsonLd = [
      The 2:3-aspect window keeps a 300%×200% background square (no distortion);
      mix-blend-mode: screen drops the image's black backdrop over the card. */
   .fi {
-    display: block; width: 58px; height: 87px; margin: -6px 0 14px -4px;
+    position: relative; display: block; width: 60px; height: 60px; margin-bottom: 18px;
+    border-radius: 15px; overflow: hidden;
+    background: linear-gradient(150deg, #1c2138 0%, #0f111b 100%);
+    border: 1px solid rgba(150,162,214,0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 16px -8px rgba(30,26,80,0.5);
+  }
+  .fi::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 40px; transform: translateX(-50%);
     background-image: url('/illustrations.png');
     background-repeat: no-repeat; background-size: 300% 200%;
     mix-blend-mode: screen;
   }
-  .fi-shield  { background-position: 0%   0%;   }
-  .fi-cloud   { background-position: 50%  0%;   }
-  .fi-stream  { background-position: 100% 0%;   }
-  .fi-photo   { background-position: 0%   100%; }
-  .fi-key     { background-position: 50%  100%; }
-  .fi-devices { background-position: 100% 100%; }
+  .fi-shield::before  { background-position: 0%   0%;   }
+  .fi-cloud::before   { background-position: 50%  0%;   }
+  .fi-stream::before  { background-position: 100% 0%;   }
+  .fi-photo::before   { background-position: 0%   100%; }
+  .fi-key::before     { background-position: 50%  100%; }
+  .fi-devices::before { background-position: 100% 100%; }
 
   /* ══ ENCRYPTION FLOW ══ */
   .flow { padding: 100px 0; background: var(--bg-inset); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -542,7 +570,11 @@ const jsonLd = [
   @media (prefers-reduced-motion: reduce) { .flow-dot, .flow-pulse { animation: none; } .flow-dot { opacity: 0.9; } }
 
   /* ══ WORKFLOW ══ */
-  .workflow { padding: 100px 0; }
+  .workflow { position: relative; padding: 100px 0; }
+  :global(html[data-theme='dark']) .workflow::before {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse 55% 55% at 50% 100%, rgba(124,58,237,0.10), transparent 72%);
+  }
   .workflow-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; }
   .workflow-steps::before {
     content: ''; position: absolute; top: 23px; left: 16.6%; right: 16.6%; height: 2px;
@@ -572,8 +604,8 @@ const jsonLd = [
   .cta-banner {
     position: relative; padding: 116px 24px; text-align: center; overflow: hidden;
     background:
-      linear-gradient(180deg, rgba(10,10,10,0.74), rgba(10,10,10,0.82)),
-      radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.28), transparent 70%),
+      linear-gradient(180deg, rgba(9,10,15,0.76), rgba(9,10,15,0.84)),
+      radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.30), transparent 70%),
       url('/ornament.png') center / cover no-repeat;
     border-top: 1px solid var(--border);
   }
