@@ -10,12 +10,13 @@ interface Props {
   title: string;
 }
 const { eyebrow, title } = Astro.props;
+const hasLead = Astro.slots.has('default');
 ---
 <header class="page-hero">
   <div class="page-hero-inner" data-reveal>
     <span class="page-hero-eyebrow">{eyebrow}</span>
     <h1 class="page-hero-title">{title}</h1>
-    <p class="page-hero-lead"><slot /></p>
+    {hasLead && <p class="page-hero-lead"><slot /></p>}
   </div>
 </header>
 

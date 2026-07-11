@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 /**
  * Glossary — definitional content optimized for AI answer engines. "What is X"
@@ -90,15 +91,10 @@ const jsonLd = [
   jsonLd={jsonLd}
 >
   <section class="glossary-page">
+    <PageHero eyebrow="Glossary" title="Media Storage & Encryption Terms.">
+      Clear definitions of the concepts behind Media Reservoir and end-to-end encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
+    </PageHero>
     <div class="container-sm">
-      <header class="glossary-header">
-        <span class="page-eyebrow">Glossary</span>
-        <h1 class="page-title">Media Storage & Encryption Terms.</h1>
-        <p class="page-lead">
-          Clear definitions of the concepts behind Media Reservoir and end-to-end encrypted media storage. Written to be genuinely understandable — no jargon for its own sake.
-        </p>
-      </header>
-
       <dl class="glossary-list">
         {terms.map((t) => (
           <div class="glossary-item" id={t.term.toLowerCase().replace(/[^a-z0-9]+/g, '-')}>
@@ -113,18 +109,8 @@ const jsonLd = [
 
 <style>
   .container-sm { max-width: 800px; margin: 0 auto; padding: 0 24px; }
-  .glossary-page { padding: 96px 0; }
-  .glossary-header { text-align: center; margin-bottom: 56px; }
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
-    text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em;
-    display: block; margin-bottom: 12px;
-  }
-  .page-title {
-    font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.04em;
-    color: var(--text-primary); line-height: 1.1; margin-bottom: 24px;
-  }
-  .page-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); }
+  .glossary-page { padding: 0 0 96px; }
+  .glossary-page > .container-sm { padding-top: 60px; }
   .glossary-list { display: flex; flex-direction: column; gap: 16px; }
   .glossary-item {
     background: var(--surface); border: 1px solid var(--border);

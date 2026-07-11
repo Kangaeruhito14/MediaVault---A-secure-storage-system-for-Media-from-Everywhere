@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
 const jsonLd = [
@@ -20,13 +21,8 @@ const jsonLd = [
   jsonLd={jsonLd}
 >
   <section class="legal-page">
+    <PageHero eyebrow="Legal Document" title="Terms & Conditions.">Last updated: June 20, 2026</PageHero>
     <div class="container-sm">
-      <header class="legal-header">
-        <span class="page-eyebrow">Legal Document</span>
-        <h1 class="page-title">Terms & Conditions.</h1>
-        <p class="last-updated">Last updated: June 20, 2026</p>
-      </header>
-
       <div class="legal-content">
         <section class="legal-section">
           <h2>1. Agreement to Terms</h2>
@@ -101,39 +97,10 @@ const jsonLd = [
   }
 
   .legal-page {
-    padding: 96px 0;
+    padding: 0 0 96px;
   }
-
-  .legal-header {
-    text-align: left;
-    margin-bottom: 48px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 24px;
-  }
-
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: clamp(32px, 5vw, 40px);
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
-    line-height: 1.1;
-    margin-bottom: 8px;
-  }
-
-  .last-updated {
-    font-size: 12px;
-    color: var(--text-muted);
+  .legal-page > .container-sm {
+    padding-top: 60px;
   }
 
   .legal-content {
