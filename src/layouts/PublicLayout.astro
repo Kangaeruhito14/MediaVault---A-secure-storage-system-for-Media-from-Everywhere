@@ -11,11 +11,11 @@ interface Props {
   noindex?: boolean;
   keywords?: string[];
   jsonLd?: Record<string, unknown>[];
-  /** Marketing pages are built around dark cosmic imagery — pinned dark for a
-      cohesive premium look. Set false to allow a page to follow the theme toggle. */
+  /** Optional: pin a page to dark (kept for pages that need it). Default off —
+      the marketing site now supports both light and dark via the theme toggle. */
   forceDark?: boolean;
 }
-const { title, description, image, noindex, keywords, jsonLd, forceDark = true } = Astro.props;
+const { title, description, image, noindex, keywords, jsonLd, forceDark = false } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} image={image} noindex={noindex} keywords={keywords} jsonLd={jsonLd} forceDark={forceDark}>

@@ -80,14 +80,16 @@
 /* html[data-theme="dark"] = type(0,0,1) + attr(0,1,0) = (0,1,1) > :root(0,0,1) */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg:          #0a0a0a;
-  --bg-inset:    #111111;
-  --surface:     #111111;
-  --card:        #1a1a1a;
-  --card-hover:  #222222;
-  --border:      rgba(255,255,255,0.07);
-  --border-med:  rgba(255,255,255,0.10);
-  --border-strong: rgba(255,255,255,0.16);
+  /* Deep, cool near-black (a hint of indigo) with elevated, blue-tinted
+     surfaces — richer and less "flat black" than pure greys. */
+  --bg:          #090a0f;
+  --bg-inset:    #0e1017;
+  --surface:     #13151f;
+  --card:        #191c28;
+  --card-hover:  #212536;
+  --border:      rgba(150,162,214,0.10);
+  --border-med:  rgba(150,162,214,0.15);
+  --border-strong: rgba(150,162,214,0.24);
 
   --text-primary:  #ededed;
   --text-body:     #a1a1a1;
@@ -112,8 +114,8 @@ html[data-theme="dark"] {
     0px 4px 12px rgba(0,0,0,0.4),
     0px 1px 2px rgba(0,0,0,0.5);
 
-  --nav-bg:     rgba(10,10,10,0.88);
-  --nav-border: rgba(255,255,255,0.06);
+  --nav-bg:     rgba(9,10,15,0.88);
+  --nav-border: rgba(150,162,214,0.08);
 
   --mesh-1: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.22) 0%, transparent 60%);
   --mesh-2: radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.15) 0%, transparent 60%);
