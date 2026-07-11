@@ -300,6 +300,23 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     </div>
   </div>
 
+  <!-- General-purpose confirm/prompt dialog (replaces browser confirm()/prompt()) -->
+  <div id="dialog-modal" class="modal" hidden>
+    <div class="modal-card confirm-card">
+      <h2 class="card-h" id="dialog-title">Are you sure?</h2>
+      <p class="muted" id="dialog-text" hidden></p>
+      <label id="dialog-field" class="dialog-field" hidden>
+        <span id="dialog-label" class="dialog-label"></span>
+        <input id="dialog-input" class="inp" type="text" autocomplete="off" />
+      </label>
+      <p class="error" id="dialog-error" hidden></p>
+      <div class="confirm-actions">
+        <button id="dialog-cancel" type="button" class="btn-outline">Cancel</button>
+        <button id="dialog-ok" type="button" class="btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Trash modal -->
   <div id="trash-modal" class="modal" hidden>
     <div class="modal-card">
@@ -453,6 +470,64 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     $('appbar-actions').hidden = view !== 'vault-view';
     $('storage-label').hidden = view !== 'vault-view';
   }
+
+  // In-app dialog replacing browser confirm()/prompt(). Returns a Promise:
+  // confirm -> boolean; prompt -> string | null (null = cancelled).
+  interface DialogOpts { title: string; text?: string; okLabel?: string; danger?: boolean;
+    input?: { label?: string; value?: string; placeholder?: string; required?: boolean }; }
+  function showDialog(opts: DialogOpts): Promise<boolean | string | null> {
+    return new Promise((resolve) => {
+      const modal = $('dialog-modal');
+      const input = $<HTMLInputElement>('dialog-input');
+      const err = $('dialog-error');
+      const ok = $('dialog-ok'), cancel = $('dialog-cancel');
+      $('dialog-title').textContent = opts.title;
+      $('dialog-text').textContent = opts.text || '';
+      $('dialog-text').hidden = !opts.text;
+      err.hidden = true;
+      ok.textContent = opts.okLabel || 'OK';
+      ok.className = 'btn-' + (opts.danger ? 'danger' : 'primary');
+      const isPrompt = !!opts.input;
+      $('dialog-field').hidden = !isPrompt;
+      if (isPrompt) {
+        $('dialog-label').textContent = opts.input!.label || '';
+        $('dialog-label').hidden = !opts.input!.label;
+        input.value = opts.input!.value || '';
+        input.placeholder = opts.input!.placeholder || '';
+      }
+      modal.hidden = false;
+      if (isPrompt) setTimeout(() => { input.focus(); input.select(); }, 20);
+      const done = (val: boolean | string | null) => {
+        modal.hidden = true;
+        ok.removeEventListener('click', onOk);
+        cancel.removeEventListener('click', onCancel);
+        modal.removeEventListener('mousedown', onBackdrop);
+        document.removeEventListener('keydown', onKey);
+        resolve(val);
+      };
+      const onOk = () => {
+        if (isPrompt) {
+          const v = input.value.trim();
+          if (opts.input!.required !== false && !v) { err.textContent = 'Please enter a value.'; err.hidden = false; return; }
+          done(v);
+        } else done(true);
+      };
+      const onCancel = () => done(isPrompt ? null : false);
+      const onBackdrop = (e: MouseEvent) => { if (e.target === modal) onCancel(); };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onCancel();
+        else if (e.key === 'Enter' && isPrompt) { e.preventDefault(); onOk(); }
+      };
+      ok.addEventListener('click', onOk);
+      cancel.addEventListener('click', onCancel);
+      modal.addEventListener('mousedown', onBackdrop);
+      document.addEventListener('keydown', onKey);
+    });
+  }
+  const askConfirm = (title: string, text?: string, o: { okLabel?: string; danger?: boolean } = {}) =>
+    showDialog({ title, text, okLabel: o.okLabel || 'Confirm', danger: o.danger }) as Promise<boolean>;
+  const askPrompt = (title: string, o: { label?: string; value?: string; placeholder?: string; okLabel?: string } = {}) =>
+    showDialog({ title, okLabel: o.okLabel || 'OK', input: { label: o.label, value: o.value, placeholder: o.placeholder } }) as Promise<string | null>;
 
   // Theme toggle (the marketing header's engine isn't loaded here). Saved theme
   // is already applied pre-paint by BaseLayout's inline script.
@@ -878,7 +953,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     }
   }
   $('sessions-revoke-others').addEventListener('click', async () => {
-    if (!confirm('Sign out of all other devices? They will need to log in again.')) return;
+    if (!await askConfirm('Sign out other devices?', 'Every other signed-in device will need to log in again.', { okLabel: 'Sign out others', danger: true })) return;
     try { await client.revokeOtherSessions(); toast('success', 'Signed out other devices'); refreshSessions(); }
     catch (err) { showErr('sessions-msg', err); }
   });
@@ -886,8 +961,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('account-close').addEventListener('click', () => { $('account-modal').hidden = true; });
   $('account-modal').addEventListener('click', (e) => { if (e.target === $('account-modal')) $('account-modal').hidden = true; });
   $('account-delete').addEventListener('click', async () => {
-    if (!confirm('Permanently delete your Media Reservoir account and index?\n\nYour files in your own storage are NOT deleted. This cannot be undone.')) return;
-    if (!confirm('Are you absolutely sure? There is no recovery.')) return;
+    if (!await askConfirm('Delete your account?', 'This permanently removes your account and encrypted index. Your files in your own storage are NOT deleted. This cannot be undone.', { okLabel: 'Delete account', danger: true })) return;
+    if (!await askConfirm('Absolutely sure?', 'There is no recovery once your account and index are deleted.', { okLabel: 'Yes, delete forever', danger: true })) return;
     $('account-error').hidden = true;
     try {
       await client.deleteAccount();
@@ -954,7 +1029,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       });
       const delBtn = document.createElement('button'); delBtn.className = 'btn-sm trash-del'; delBtn.textContent = 'Delete forever';
       delBtn.addEventListener('click', async () => {
-        if (!confirm(`Permanently delete "${item.metadata.name}"? This removes it from your storage too and cannot be undone.`)) return;
+        if (!await askConfirm('Delete forever?', `Permanently delete "${item.metadata.name}"? This removes it from your storage too and cannot be undone.`, { okLabel: 'Delete forever', danger: true })) return;
         delBtn.disabled = true;
         try {
           await client.remove(item, connFor(item)); // purge bucket object + index row
@@ -971,7 +1046,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
   $('trash-empty').addEventListener('click', async () => {
     if (!trashList.length) return;
-    if (!confirm(`Permanently delete all ${trashList.length} file(s) in the trash? This removes them from your storage and cannot be undone.`)) return;
+    if (!await askConfirm('Empty trash?', `Permanently delete all ${trashList.length} file(s) in the trash? This removes them from your storage and cannot be undone.`, { okLabel: 'Delete all', danger: true })) return;
     const btn = $('trash-empty') as HTMLButtonElement; btn.disabled = true;
     let failed = 0;
     for (const item of [...trashList]) {
@@ -1022,7 +1097,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     render();
   });
   $('folder-new').addEventListener('click', async () => {
-    const name = prompt('New folder name:')?.trim();
+    const name = (await askPrompt('New folder', { label: 'Folder name', placeholder: 'e.g. Vacation 2026' }))?.trim();
     if (!name) return;
     try {
       const f = await client.createFolder(name);
@@ -1036,7 +1111,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('folder-rename').addEventListener('click', async () => {
     if (folderFilter === '__all' || folderFilter === '__unfiled') return;
     const cur = folderName(folderFilter);
-    const name = prompt('Rename folder:', cur)?.trim();
+    const name = (await askPrompt('Rename folder', { label: 'Folder name', value: cur }))?.trim();
     if (!name || name === cur) return;
     try {
       await client.renameFolder(folderFilter, name);
@@ -1049,7 +1124,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     if (folderFilter === '__all' || folderFilter === '__unfiled') return;
     const id = folderFilter;
     const inThis = items.filter((i) => folderOf(i) === id);
-    if (!confirm(`Delete folder “${folderName(id)}”? Its ${inThis.length} file${inThis.length === 1 ? '' : 's'} will move to All files (not deleted).`)) return;
+    if (!await askConfirm('Delete folder?', `Delete folder “${folderName(id)}”? Its ${inThis.length} file${inThis.length === 1 ? '' : 's'} will move to All files (not deleted).`, { okLabel: 'Delete folder', danger: true })) return;
     try {
       for (const item of inThis) await client.moveToFolder(item, null); // re-file to root first
       await client.deleteFolder(id);
@@ -1588,7 +1663,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     sel.addEventListener('change', async () => {
       let target = sel.value;
       if (target === '__new') {
-        const name = prompt('New folder name:')?.trim();
+        const name = (await askPrompt('New folder', { label: 'Folder name', placeholder: 'e.g. Vacation 2026' }))?.trim();
         if (!name) return renderCaption(item);
         try { const f = await client.createFolder(name); folders.push(f); target = f.id; }
         catch (err) { toast('error', (err as Error).message || 'Could not create folder'); return renderCaption(item); }
@@ -1893,6 +1968,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .confirm-card .card-h { margin-bottom: 8px; }
   .confirm-card .muted { margin-bottom: 22px; }
   .confirm-actions { display: flex; gap: 10px; }
+  .dialog-field { display: block; margin: 6px 0 14px; }
+  .dialog-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  #dialog-modal .confirm-actions button { flex: 1; }
   .confirm-actions .btn-outline, .confirm-actions .btn-danger { flex: 1; justify-content: center; }
   .profile-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 4px; font-size: 13px; }
   .profile-grid dt { color: var(--text-muted); }
