@@ -30,14 +30,14 @@ const hasLead = Astro.slots.has('default');
     /* Light: pastel aurora fading into the page, with a light scrim for legibility. */
     background:
       linear-gradient(180deg, rgba(247,248,252,0.55) 0%, rgba(247,248,252,0.24) 46%, var(--bg) 100%),
-      url('/ornament-light.webp') center top / cover no-repeat;
+      url('/ornament-light.png') center top / cover no-repeat;
   }
   :global(html[data-theme='dark']) .page-hero {
     /* Dark: cosmic aurora + a faint indigo glow, fading into the cool near-black. */
     background:
       linear-gradient(180deg, rgba(9,10,15,0.58) 0%, rgba(9,10,15,0.42) 42%, var(--bg) 100%),
       radial-gradient(ellipse 82% 62% at 50% 0%, rgba(99,102,241,0.16), transparent 70%),
-      url('/ornament.webp') center top / cover no-repeat;
+      url('/ornament.png') center top / cover no-repeat;
   }
 
   .page-hero-inner { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; }
