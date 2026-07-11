@@ -292,19 +292,19 @@ const jsonLd = [
     <div class="section-container aka-inner" data-reveal>
       <span class="eyebrow-mono">Call it what you like</span>
       <h2 class="aka-title">One vault. Every name you searched for.</h2>
-      <div class="aka-cloud">
-        <span class="aka-chip is-accent">Encrypted photo vault</span>
-        <span class="aka-chip">Private media library</span>
-        <span class="aka-chip">Zero-knowledge asset locker</span>
-        <span class="aka-chip is-accent">Secure media store</span>
-        <span class="aka-chip">Media Vault</span>
-        <span class="aka-chip">Photo Locker</span>
-        <span class="aka-chip">Media Archive</span>
-        <span class="aka-chip is-accent">Google Photos alternative</span>
-        <span class="aka-chip">Encrypted cloud storage</span>
-        <span class="aka-chip">Digital asset vault</span>
-        <span class="aka-chip">Private cloud storage</span>
-        <span class="aka-chip">Media Trove</span>
+      <div class="aka-cloud" id="aka-cloud" role="group" aria-label="Names people call Media Reservoir">
+        <button type="button" class="aka-chip is-accent" aria-pressed="true">Encrypted photo vault</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Private media library</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Zero-knowledge asset locker</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Secure media store</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Media Vault</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Photo Locker</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Media Archive</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Google Photos alternative</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Encrypted cloud storage</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Digital asset vault</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Private cloud storage</button>
+        <button type="button" class="aka-chip" aria-pressed="false">Media Trove</button>
       </div>
       <p class="aka-foot">However you found it — that's <strong>Media Reservoir</strong>.</p>
     </div>
@@ -348,7 +348,25 @@ const jsonLd = [
     io.observe(el);
     (window as any).__cipherCleanup = () => { if (timer) clearInterval(timer); io.disconnect(); };
   }
-  document.addEventListener('astro:page-load', initCipherScramble);
+
+  // "Call it what you like" chips — a playful single-select (no real output);
+  // clicking a name highlights it and clears the others.
+  function initAkaChips() {
+    const cloud = document.getElementById('aka-cloud');
+    if (!cloud) return;
+    cloud.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest('.aka-chip');
+      if (!chip) return;
+      cloud.querySelectorAll('.aka-chip').forEach((c) => {
+        const on = c === chip;
+        c.classList.toggle('is-accent', on);
+        c.setAttribute('aria-pressed', String(on));
+      });
+    });
+  }
+
+  function initHome() { initCipherScramble(); initAkaChips(); }
+  document.addEventListener('astro:page-load', initHome);
 </script>
 
 <style>
@@ -651,10 +669,11 @@ const jsonLd = [
   }
   .aka-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 720px; margin: 0 auto 30px; }
   .aka-chip {
+    font-family: inherit; cursor: pointer;
     font-size: 14px; font-weight: 500; color: var(--text-body);
     padding: 9px 16px; border-radius: 100px;
     border: 1px solid var(--border-med); background: var(--surface);
-    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
   .aka-chip:hover { transform: translateY(-2px); border-color: var(--border-strong); color: var(--text-primary); }
   .aka-chip.is-accent {

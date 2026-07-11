@@ -3,7 +3,7 @@
   "short_name": "Reservoir",
   "description": "Free, end-to-end encrypted media vault. Your photos, videos, and audio — sealed with AES-256 in your browser and stored in cloud you own.",
   "id": "/",
-  "start_url": "/vault",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -16,7 +16,7 @@
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "Open Vault", "url": "/vault" },
+    { "name": "Open Vault", "url": "/app" },
     { "name": "Security & Proof", "url": "/security" }
   ]
 }
