@@ -466,9 +466,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     };
     $('app-theme-toggle').addEventListener('click', () => {
       const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('mv-theme', next);
-      syncIcon();
+      const apply = () => { html.setAttribute('data-theme', next); localStorage.setItem('mv-theme', next); syncIcon(); };
+      if ((document as any).startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        (document as any).startViewTransition(apply);
+      } else { apply(); }
     });
     syncIcon();
   })();

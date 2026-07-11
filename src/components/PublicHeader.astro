@@ -427,9 +427,11 @@ const ctaPath = '/app';
 
       if (target.closest('#header-theme-toggle')) {
         const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('mv-theme', next);
-        syncThemeIcon();
+        const apply = () => { html.setAttribute('data-theme', next); localStorage.setItem('mv-theme', next); syncThemeIcon(); };
+        // Smooth cross-fade between themes (same engine as page navigation).
+        if ((document as any).startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          (document as any).startViewTransition(apply);
+        } else { apply(); }
         return;
       }
 

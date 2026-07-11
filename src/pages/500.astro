@@ -1,173 +1,83 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
-
-const ts = new Date().toISOString();
 ---
 
 <PublicLayout title="Server Error" description="An unexpected error occurred on Media Reservoir." noindex={true}>
-  <!-- ── Error body ── -->
-  <main id="main-content" style="
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 24px 120px;
-    background: var(--bg);
-    text-align: center;
-    flex-grow: 1;
-  ">
-    <div style="
-      max-width: 580px; width: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 28px;
-    ">
-
-      <!-- Error pill badge — amber for 500 -->
-      <span style="
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 11px; font-weight: 400;
-        color: #f5a623;
-        background: rgba(245,166,35,0.1);
-        border: 1px solid rgba(245,166,35,0.3);
-        padding: 4px 12px;
-        border-radius: 100px;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      ">500 · Internal Server Error</span>
-
-      <!-- Headline -->
-      <h1 style="
-        font-size: clamp(30px, 5vw, 42px);
-        font-weight: 600;
-        color: var(--text-primary);
-        letter-spacing: -0.04em;
-        line-height: 1.1;
-        margin: 0;
-        text-wrap: balance;
-      ">
-        Something went wrong.
-      </h1>
-
-      <!-- Sub-copy -->
-      <p style="
-        font-size: 15px;
-        color: var(--text-body);
-        line-height: 1.65;
-        margin: 0;
-        max-width: 440px;
-        text-wrap: pretty;
-      ">
-        The server encountered an unexpected error and couldn&rsquo;t complete
-        your request. This is on our end&nbsp;&mdash; try refreshing or
-        heading back to your vault.
+  <main id="main-content" class="err-page">
+    <div class="err-inner">
+      <div class="err-badge"><span class="err-dot"></span>500 · Server error</div>
+      <div class="err-code" aria-hidden="true">500</div>
+      <h1 class="err-title">Something went sideways.</h1>
+      <p class="err-lead">
+        An unexpected error occurred on our end. Your files and encryption keys are
+        untouched — nothing here can read them. Try again in a moment.
       </p>
-
-      <!-- Dark terminal mockup (amber accent for 500) -->
-      <div style="
-        width: 100%;
-        background: #0c0c0e;
-        border: 1px solid #1e1e22;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow:
-          0 2px 2px rgba(0,0,0,0.06),
-          0 8px 24px rgba(0,0,0,0.22),
-          0 32px 64px rgba(0,0,0,0.16);
-        text-align: left;
-      ">
-        <!-- Title bar -->
-        <div style="
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 10px 16px;
-          border-bottom: 1px solid #1e1e22;
-          background: #0f0f12;
-        ">
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#f5a623;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;"></div>
-          </div>
-          <span style="
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px; color: #444;
-            letter-spacing: 0.02em;
-          ">error_response.json</span>
-          <span style="width: 42px;"></span>
-        </div>
-
-        <!-- Code content -->
-        <pre style="
-          margin: 0;
-          padding: 20px 24px;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 13px;
-          line-height: 1.6;
-          overflow-x: auto;
-          white-space: pre-wrap;
-          word-break: break-all;
-        " set:html={`<code style="color:#a7f3d0;">`
-  + `<span style="color:#888;">&#123;</span>\n`
-  + `  <span style="color:#f87171;">&quot;status&quot;</span>:    <span style="color:#fb923c;">500</span>,\n`
-  + `  <span style="color:#f87171;">&quot;error&quot;</span>:     <span style="color:#fbbf24;">&quot;Internal Server Error&quot;</span>,\n`
-  + `  <span style="color:#f87171;">&quot;message&quot;</span>:   <span style="color:#34d399;">&quot;An unexpected error occurred on the server.&quot;</span>,\n`
-  + `  <span style="color:#f87171;">&quot;path&quot;</span>:      <span style="color:#38bdf8;" id="path-display">&quot;…&quot;</span>,\n`
-  + `  <span style="color:#f87171;">&quot;timestamp&quot;</span>: <span style="color:#c084fc;">&quot;${ts}&quot;</span>\n`
-  + `<span style="color:#888;">&#125;</span>`
-  + `</code>`}
-        />
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 4px;">
-        <button
-          id="reload-btn"
-          style="
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            height: 40px; padding: 0 20px;
-            border-radius: 100px;
-            font-size: 14px; font-weight: 500; font-family: inherit;
-            background: #171717; color: #fff;
-            border: none; cursor: pointer;
-            transition: background 0.15s;
-          "
-          onmouseenter="this.style.background='#333'"
-          onmouseleave="this.style.background='#171717'"
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-            <path d="M11 2.5A5.5 5.5 0 1 0 12.5 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M9 1l2.5 1.5L10 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Try again
-        </button>
-        <a href="/app" style="
-          text-decoration: none;
-          display: inline-flex; align-items: center; justify-content: center;
-          height: 40px; padding: 0 18px;
-          border-radius: 100px;
-          font-size: 14px; font-weight: 500;
-          color: var(--text-body);
-          background: var(--card);
-          border: 1px solid var(--border-med);
-          transition: border-color 0.15s;
-        "
-          onmouseenter="this.style.borderColor='var(--border-strong)'"
-          onmouseleave="this.style.borderColor='var(--border-med)'"
-        >
-          Back to Vault
+      <div class="err-actions">
+        <a href="/" class="err-btn err-btn-primary">
+          Back to home
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
+        <button type="button" class="err-btn err-btn-ghost" onclick="location.reload()">Try again</button>
       </div>
-
     </div>
   </main>
 </PublicLayout>
 
-<script>
-// Show the real path
-const pathEl = document.getElementById('path-display');
-if (pathEl) pathEl.textContent = `"${window.location.pathname}"`;
+<style>
+  .err-page {
+    position: relative; flex-grow: 1; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    padding: 96px 24px 120px; text-align: center;
+    min-height: calc(100vh - 64px);
+    background:
+      linear-gradient(180deg, rgba(247,248,252,0.45) 0%, rgba(247,248,252,0.15) 40%, var(--bg) 85%),
+      url('/ornament-light.png') center top / cover no-repeat;
+  }
+  :global(html[data-theme='dark']) .err-page {
+    background:
+      linear-gradient(180deg, rgba(9,10,15,0.58) 0%, rgba(9,10,15,0.4) 42%, var(--bg) 85%),
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18), transparent 70%),
+      url('/ornament.png') center top / cover no-repeat;
+  }
 
-// Reload button handling
-document.getElementById('reload-btn')?.addEventListener('click', () => {
-  window.location.reload();
-});
-</script>
+  .err-inner { position: relative; z-index: 2; max-width: 560px; display: flex; flex-direction: column; align-items: center; }
+
+  .err-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-body);
+    background: var(--surface); border: 1px solid var(--border-med);
+    padding: 6px 14px; border-radius: 100px; box-shadow: var(--shadow-sm);
+  }
+  :global(html[data-theme='dark']) .err-badge { background: rgba(255,255,255,0.04); box-shadow: none; }
+  .err-dot { width: 7px; height: 7px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+
+  .err-code {
+    font-size: clamp(96px, 22vw, 168px); font-weight: 700; line-height: 0.9;
+    letter-spacing: -0.06em; margin: 22px 0 6px;
+    background: linear-gradient(135deg, #6366f1, #a855f7 60%, #7c3aed);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .err-title { font-size: clamp(26px, 3.6vw, 34px); font-weight: 600; letter-spacing: -0.035em; color: var(--text-primary); margin: 0 0 14px; }
+  .err-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); max-width: 440px; margin: 0 0 30px; }
+
+  .err-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .err-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 46px; padding: 0 24px; border-radius: 100px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  .err-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #7c3aed); color: #fff; border: none;
+    box-shadow: 0 10px 30px -8px rgba(109,74,232,0.6), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .err-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px rgba(109,74,232,0.75); color: #fff; }
+  .err-btn-ghost {
+    background: var(--surface); color: var(--text-primary);
+    border: 1px solid var(--border-med); box-shadow: var(--shadow-sm);
+  }
+  .err-btn-ghost:hover { border-color: var(--border-strong); background: var(--bg-inset); transform: translateY(-1px); }
+  :global(html[data-theme='dark']) .err-btn-ghost { background: rgba(255,255,255,0.05); box-shadow: none; }
+</style>
