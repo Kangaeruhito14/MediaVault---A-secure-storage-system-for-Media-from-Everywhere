@@ -259,6 +259,34 @@ const jsonLd = [
     </div>
   </section>
 
+  <!-- ══ SHOWCASE / COMMERCIAL BAND (image left, copy right) ══ -->
+  <section class="showcase">
+    <div class="section-container showcase-inner">
+      <div class="showcase-visual" data-reveal role="img" aria-label="The Media Reservoir vault holding encrypted photos, videos, and audio inside storage you own."></div>
+      <div class="showcase-copy" data-reveal data-reveal-delay="80">
+        <span class="eyebrow-mono">One vault, everything</span>
+        <h2 class="section-title showcase-title">Everything you own, sealed in one place.</h2>
+        <p class="showcase-lead">
+          Photos, 4K video, voice memos, PDFs, and documents — encrypted in your browser and locked
+          inside storage you control. Browse, stream, and search your whole library from any device,
+          while the vault stays sealed to everyone but you.
+        </p>
+        <ul class="showcase-points">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Encrypted before it ever leaves your device</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Stored in a cloud bucket you own</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Streamed and searched from every device</li>
+        </ul>
+        <a href={primaryCtaPath} class="btn-hero-primary">
+          {primaryCtaText}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ "CALL IT WHAT YOU LIKE" (readable synonym coverage for search) ══ -->
   <section class="aka">
     <div class="section-container aka-inner" data-reveal>
@@ -494,26 +522,43 @@ const jsonLd = [
   /* Feature icons sliced from the owner's illustrations.png (3 cols × 2 rows).
      The 2:3-aspect window keeps a 300%×200% background square (no distortion);
      mix-blend-mode: screen drops the image's black backdrop over the card. */
+  /* Feature icons — the owner's illustration set on a brand tile, theme-swapped:
+     LIGHT mode uses the light (white-icon) set on a vivid indigo tile; DARK mode
+     uses the neon set on a near-black tile. screen-blend drops each image's dark
+     backdrop. The ::before is a 2:3 window (keeps the 300%×200% slice
+     undistorted) and each icon is centred with a per-cell background-position. */
   .fi {
-    position: relative; display: block; width: 60px; height: 60px; margin-bottom: 18px;
-    border-radius: 15px; overflow: hidden;
+    position: relative; display: block; width: 62px; height: 62px; margin-bottom: 18px;
+    border-radius: 16px; overflow: hidden;
+    background: linear-gradient(150deg, #6366f1 0%, #4f46e5 100%);
+    border: 1px solid rgba(99,102,241,0.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -8px rgba(79,70,229,0.45);
+  }
+  :global(html[data-theme='dark']) .fi {
     background: linear-gradient(150deg, #1c2138 0%, #0f111b 100%);
-    border: 1px solid rgba(150,162,214,0.18);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 16px -8px rgba(30,26,80,0.5);
+    border-color: rgba(150,162,214,0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 20px -8px rgba(30,26,80,0.55);
   }
   .fi::before {
-    content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
-    width: 40px; transform: translateX(-50%);
-    background-image: url('/illustrations.png');
-    background-repeat: no-repeat; background-size: 300% 200%;
-    mix-blend-mode: screen;
+    content: ''; position: absolute; inset: 7px;
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+    mix-blend-mode: lighten; /* drops the light set's grey backdrop cleanly on the indigo tile */
   }
-  .fi-shield::before  { background-position: 0%   0%;   }
-  .fi-cloud::before   { background-position: 50%  0%;   }
-  .fi-stream::before  { background-position: 100% 0%;   }
-  .fi-photo::before   { background-position: 0%   100%; }
-  .fi-key::before     { background-position: 50%  100%; }
-  .fi-devices::before { background-position: 100% 100%; }
+  :global(html[data-theme='dark']) .fi::before { mix-blend-mode: screen; }
+  /* Light set (white icons) — default. */
+  .fi-shield::before  { background-image: url('/icons/shield-light.png'); }
+  .fi-cloud::before   { background-image: url('/icons/cloud-light.png'); }
+  .fi-stream::before  { background-image: url('/icons/stream-light.png'); }
+  .fi-photo::before   { background-image: url('/icons/photo-light.png'); }
+  .fi-key::before     { background-image: url('/icons/key-light.png'); }
+  .fi-devices::before { background-image: url('/icons/devices-light.png'); }
+  /* Dark set (neon icons). */
+  :global(html[data-theme='dark']) .fi-shield::before  { background-image: url('/icons/shield.png'); }
+  :global(html[data-theme='dark']) .fi-cloud::before   { background-image: url('/icons/cloud.png'); }
+  :global(html[data-theme='dark']) .fi-stream::before  { background-image: url('/icons/stream.png'); }
+  :global(html[data-theme='dark']) .fi-photo::before   { background-image: url('/icons/photo.png'); }
+  :global(html[data-theme='dark']) .fi-key::before     { background-image: url('/icons/key.png'); }
+  :global(html[data-theme='dark']) .fi-devices::before { background-image: url('/icons/devices.png'); }
 
   /* ══ ENCRYPTION FLOW ══ */
   .flow { padding: 100px 0; background: var(--bg-inset); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -600,17 +645,46 @@ const jsonLd = [
   .aka-text { font-size: clamp(19px, 2.4vw, 26px); line-height: 1.55; color: var(--text-body); letter-spacing: -0.01em; margin: 6px 0 0; }
   .aka-text strong { color: var(--text-primary); font-weight: 600; }
 
+  /* ══ SHOWCASE / COMMERCIAL BAND ══ */
+  .showcase { padding: 96px 0; }
+  .showcase-inner { display: grid; grid-template-columns: 1.02fr 1fr; gap: 52px; align-items: center; }
+  @media (max-width: 860px) { .showcase-inner { grid-template-columns: 1fr; gap: 34px; } }
+  .showcase-visual {
+    aspect-ratio: 16 / 10; border-radius: 20px; overflow: hidden;
+    background: url('/og-image-light.png') left center / cover no-repeat;
+    border: 1px solid var(--border-med);
+    box-shadow: 0 30px 70px -34px rgba(60,50,140,0.35), var(--shadow-md);
+  }
+  :global(html[data-theme='dark']) .showcase-visual {
+    background-image: url('/og-image.png');
+    box-shadow: 0 30px 70px -34px rgba(30,26,90,0.7);
+  }
+  .showcase-title { text-align: left; }
+  .showcase-lead { font-size: 15.5px; line-height: 1.7; color: var(--text-body); margin: 16px 0 22px; }
+  .showcase-points { list-style: none; margin: 0 0 28px; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+  .showcase-points li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-body); }
+  .showcase-points svg { width: 16px; height: 16px; color: #34d399; flex: none; }
+
   /* ══ CTA BANNER ══ */
   .cta-banner {
     position: relative; padding: 116px 24px; text-align: center; overflow: hidden;
+    /* Light: pastel aurora + light scrim (dark text). */
+    background:
+      linear-gradient(180deg, rgba(238,240,248,0.72), rgba(238,240,248,0.82)),
+      radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.12), transparent 70%),
+      url('/ornament-light.png') center / cover no-repeat;
+    border-top: 1px solid var(--border);
+  }
+  :global(html[data-theme='dark']) .cta-banner {
     background:
       linear-gradient(180deg, rgba(9,10,15,0.76), rgba(9,10,15,0.84)),
       radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.30), transparent 70%),
       url('/ornament.png') center / cover no-repeat;
-    border-top: 1px solid var(--border);
   }
   .cta-banner-inner { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
-  .cta-banner-title { font-size: clamp(28px, 5vw, 46px); font-weight: 600; color: #fff; letter-spacing: -0.04em; margin: 0 0 16px; line-height: 1.08; }
-  .cta-banner-desc { font-size: 16px; line-height: 1.6; color: rgba(237,237,237,0.72); margin: 0 0 30px; }
+  .cta-banner-title { font-size: clamp(28px, 5vw, 46px); font-weight: 600; color: var(--text-primary); letter-spacing: -0.04em; margin: 0 0 16px; line-height: 1.08; }
+  .cta-banner-desc { font-size: 16px; line-height: 1.6; color: var(--text-body); margin: 0 0 30px; }
+  :global(html[data-theme='dark']) .cta-banner-title { color: #fff; }
+  :global(html[data-theme='dark']) .cta-banner-desc { color: rgba(237,237,237,0.72); }
   .btn-cta { height: 52px; }
 </style>
