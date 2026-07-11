@@ -119,16 +119,16 @@ const jsonLd = [
           aria-label="A glowing encrypted vault holding photos, video, and audio — sealed with a lock and key, floating in cloud storage you own."
         ></div>
         <span class="hero-badge hb-lock" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="9.5" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>
-          AES-256 sealed
+          <span class="hb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="9.5" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></span>
+          <span class="hb-tx"><b>AES-256</b><i>sealed in-browser</i></span>
         </span>
         <span class="hero-badge hb-cloud" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/></svg>
-          Your cloud
+          <span class="hb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/></svg></span>
+          <span class="hb-tx"><b>Your cloud</b><i>you own it</i></span>
         </span>
         <span class="hero-badge hb-key" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="m10.4 12.6 8.1-8.1 2 2-1.8 1.8-1.7-1.7"/></svg>
-          Only your key
+          <span class="hb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="m10.4 12.6 8.1-8.1 2 2-1.8 1.8-1.7-1.7"/></svg></span>
+          <span class="hb-tx"><b>Only your key</b><i>decrypts it</i></span>
         </span>
       </div>
     </div>
@@ -431,7 +431,10 @@ const jsonLd = [
   /* ══ HERO ══ */
   .hero {
     position: relative;
-    padding: 116px 0 90px;
+    min-height: calc(100vh - 64px); /* fill the screen below the sticky 64px header */
+    display: flex;
+    align-items: center;
+    padding: 40px 0 64px;
     overflow: hidden;
     /* Light (default): the pastel aurora (owner's ornament-light.png) fades into
        the page, with a light scrim so dark text stays legible. */
@@ -439,6 +442,8 @@ const jsonLd = [
       linear-gradient(180deg, rgba(247,248,252,0.42) 0%, rgba(247,248,252,0.12) 34%, rgba(247,248,252,0.86) 80%, var(--bg) 100%),
       url('/ornament-light.png') center top / cover no-repeat;
   }
+  .hero > .section-container { width: 100%; }
+  @media (max-width: 940px) { .hero { min-height: auto; padding: 72px 0 64px; } }
   /* Dark: the aurora ornament backdrop (owner's ornament.png) fades into the page,
      with a dark scrim so text stays legible. */
   :global(html[data-theme='dark']) .hero {
@@ -448,7 +453,7 @@ const jsonLd = [
       url('/ornament.png') center top / cover no-repeat;
   }
 
-  .hero-grid { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 48px; align-items: center; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1.05fr; gap: 40px; align-items: center; }
   @media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 12px; text-align: center; } }
 
   .hero-copy { display: flex; flex-direction: column; align-items: flex-start; }
@@ -528,24 +533,35 @@ const jsonLd = [
      glow behind the floating vault, with drifting encrypted-status badges. The
      vault image is theme-swapped and edge-masked so its background dissolves. */
   .hero-stage {
-    position: relative; width: 100%; max-width: 560px; margin: 0 auto;
+    position: relative; width: 100%; max-width: 640px; margin: 0 auto;
     aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
   }
-  @media (max-width: 940px) { .hero-stage { margin-top: 20px; max-width: 460px; } }
+  @media (max-width: 940px) { .hero-stage { margin-top: 16px; max-width: 500px; } }
+  /* Soft aurora glow behind the vault. */
   .hero-stage::before {
-    content: ''; position: absolute; inset: 12%; border-radius: 50%;
-    background: radial-gradient(circle at 50% 50%, rgba(96,132,255,0.32), rgba(124,58,237,0.14) 52%, transparent 72%);
-    filter: blur(58px); z-index: 0; pointer-events: none;
+    content: ''; position: absolute; inset: 14%; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, rgba(96,132,255,0.34), rgba(124,58,237,0.15) 52%, transparent 72%);
+    filter: blur(56px); z-index: 0; pointer-events: none;
   }
   :global(html[data-theme='dark']) .hero-stage::before {
-    background: radial-gradient(circle at 50% 50%, rgba(96,132,255,0.46), rgba(124,58,237,0.22) 52%, transparent 72%);
+    background: radial-gradient(circle at 50% 50%, rgba(96,132,255,0.5), rgba(124,58,237,0.24) 52%, transparent 72%);
   }
+  /* A clean orbit ring with a glowing dot that circles the vault. */
   .hero-ring {
-    position: absolute; inset: 6%; border-radius: 50%; z-index: 0; pointer-events: none;
-    background: conic-gradient(from 0deg, transparent 0%, rgba(99,102,241,0.16) 18%, transparent 40%, rgba(124,58,237,0.14) 66%, transparent 88%);
-    -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%, #000 74%, transparent 76%);
-            mask: radial-gradient(circle, transparent 58%, #000 60%, #000 74%, transparent 76%);
-    animation: heroSpin 26s linear infinite;
+    position: absolute; inset: 7%; border-radius: 50%; z-index: 0; pointer-events: none;
+    border: 1px solid rgba(124,58,237,0.16);
+    animation: heroSpin 16s linear infinite;
+  }
+  :global(html[data-theme='dark']) .hero-ring { border-color: rgba(160,150,255,0.18); }
+  .hero-ring::before {
+    content: ''; position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle, #c4b5fd, #7c3aed);
+    box-shadow: 0 0 16px 4px rgba(124,58,237,0.55);
+  }
+  .hero-ring::after {
+    content: ''; position: absolute; inset: 13%; border-radius: 50%;
+    border: 1px dashed rgba(124,58,237,0.10);
   }
   .hero-img {
     position: relative; z-index: 1; width: 100%; aspect-ratio: 3 / 2; display: block;
@@ -556,19 +572,32 @@ const jsonLd = [
   }
   :global(html[data-theme='dark']) .hero-img { background-image: url('/hero.png'); }
 
+  /* Floating status cards — a small gradient icon tile + a two-line label. */
   .hero-badge {
-    position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 7px;
-    padding: 8px 13px; border-radius: 100px; white-space: nowrap;
-    font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+    position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 10px;
+    padding: 9px 14px 9px 10px; border-radius: 14px; white-space: nowrap;
     background: var(--surface); border: 1px solid var(--border-med);
-    box-shadow: var(--shadow-lg); backdrop-filter: blur(8px);
+    box-shadow: 0 16px 40px -16px rgba(40,30,110,0.4), var(--shadow-md);
+    backdrop-filter: blur(10px);
   }
-  :global(html[data-theme='dark']) .hero-badge { background: rgba(21,24,34,0.82); }
-  .hero-badge svg { width: 15px; height: 15px; color: #7c6cff; flex: none; }
-  .hb-lock  { top: 5%;  left: 2%;  animation: floatA 6s ease-in-out infinite; }
-  .hb-cloud { top: 42%; right: 0%; animation: floatB 7s ease-in-out infinite; }
-  .hb-key   { bottom: 8%; left: 8%; animation: floatA 6.6s ease-in-out infinite reverse; }
-  @media (max-width: 380px) { .hero-badge { font-size: 11px; padding: 6px 10px; } }
+  :global(html[data-theme='dark']) .hero-badge { background: rgba(23,26,38,0.78); border-color: rgba(150,162,214,0.16); }
+  .hero-badge .hb-ic {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 9px; color: #fff; flex: none;
+    background: linear-gradient(140deg, #6366f1, #7c3aed);
+    box-shadow: 0 4px 12px -4px rgba(99,102,241,0.7);
+  }
+  .hero-badge .hb-ic svg { width: 16px; height: 16px; }
+  .hero-badge .hb-tx { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
+  .hero-badge .hb-tx b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .hero-badge .hb-tx i { font-size: 11px; font-style: normal; color: var(--text-muted); }
+  .hb-lock  { top: 4%;   left: -3%;  animation: floatA 6s ease-in-out infinite; }
+  .hb-cloud { top: 44%;  right: -6%; animation: floatB 7s ease-in-out infinite; }
+  .hb-key   { bottom: 6%; left: 4%;  animation: floatA 6.6s ease-in-out infinite reverse; }
+  @media (max-width: 480px) {
+    .hb-lock { left: 0; } .hb-cloud { right: 0; } .hb-key { left: 2%; }
+    .hero-badge { padding: 7px 12px 7px 8px; }
+  }
 
   @keyframes heroSpin { to { transform: rotate(360deg); } }
   @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
