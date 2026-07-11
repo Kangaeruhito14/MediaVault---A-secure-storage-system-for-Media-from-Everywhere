@@ -51,16 +51,31 @@ const jsonLd = [
 
         <div class="info-card-list">
           <div class="info-card">
-            <h4>🔒 Encrypted in your browser</h4>
-            <p>Every file is encrypted with AES-256 on your device before it's uploaded. Your encryption key is derived from your password with Argon2id and never leaves the browser, so we only ever handle ciphertext we can't read.</p>
+            <span class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="9.5" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/><circle cx="12" cy="15.5" r="1.4"/></svg>
+            </span>
+            <div class="info-body">
+              <h4>Encrypted in your browser</h4>
+              <p>Every file is encrypted with AES-256 on your device before it's uploaded. Your encryption key is derived from your password with Argon2id and never leaves the browser, so we only ever handle ciphertext we can't read.</p>
+            </div>
           </div>
           <div class="info-card">
-            <h4>☁️ Your own storage</h4>
-            <p>You connect your own cloud bucket — Cloudflare R2, Backblaze B2, Wasabi, or any S3-compatible storage. Files move directly between your browser and your bucket; they never pass through our servers.</p>
+            <span class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/></svg>
+            </span>
+            <div class="info-body">
+              <h4>Your own storage</h4>
+              <p>You connect your own cloud bucket — Cloudflare R2, Backblaze B2, Wasabi, or any S3-compatible storage. Files move directly between your browser and your bucket; they never pass through our servers.</p>
+            </div>
           </div>
           <div class="info-card">
-            <h4>⚡ Seekable encrypted streaming</h4>
-            <p>A Service Worker decrypts only the byte ranges you're watching, so you can jump anywhere in a large video instantly — even though the file is encrypted end-to-end.</p>
+            <span class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
+            </span>
+            <div class="info-body">
+              <h4>Seekable encrypted streaming</h4>
+              <p>A Service Worker decrypts only the byte ranges you're watching, so you can jump anywhere in a large video instantly — even though the file is encrypted end-to-end.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -154,18 +169,46 @@ const jsonLd = [
   }
 
   .info-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
     background: var(--surface);
     border: 1px solid var(--border);
-    padding: 24px;
-    border-radius: 12px;
+    padding: 22px 24px;
+    border-radius: 14px;
     box-shadow: var(--shadow-sm);
+    transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .info-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .info-icon {
+    flex: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(140deg, #6366f1, #7c3aed);
+    box-shadow: 0 6px 16px -8px rgba(99, 102, 241, 0.6);
+  }
+
+  .info-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .info-card h4 {
     font-size: 15px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .info-card p {
