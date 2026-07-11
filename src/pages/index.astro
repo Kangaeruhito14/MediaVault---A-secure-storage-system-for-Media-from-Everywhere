@@ -134,6 +134,9 @@ const jsonLd = [
     </div>
   </section>
 
+  <!-- decorative divider between hero and the rest -->
+  <div class="section-divider" aria-hidden="true"><span class="divider-node"></span></div>
+
   <!-- ══ STATS BAND ══ -->
   <section class="stats">
     <div class="section-container stats-grid">
@@ -393,6 +396,23 @@ const jsonLd = [
     z-index: 2;
   }
 
+  /* Decorative divider between the hero and the rest of the page. */
+  .section-divider {
+    position: relative; height: 1px; max-width: 1112px; margin: 4px auto 0;
+    background: linear-gradient(90deg, transparent, var(--border-strong) 22%, rgba(124,58,237,0.55) 50%, var(--border-strong) 78%, transparent);
+  }
+  .divider-node {
+    position: absolute; top: 50%; left: 50%; width: 9px; height: 9px;
+    transform: translate(-50%, -50%) rotate(45deg); border-radius: 2px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    animation: dividerPulse 3.2s ease-in-out infinite;
+  }
+  @keyframes dividerPulse {
+    0%, 100% { box-shadow: 0 0 12px 1px rgba(124,58,237,0.45); }
+    50% { box-shadow: 0 0 22px 4px rgba(124,58,237,0.75); }
+  }
+  @media (prefers-reduced-motion: reduce) { .divider-node { animation: none; } }
+
   /* Shared section headers */
   .section-head { text-align: center; max-width: 680px; margin: 0 auto 60px; }
   .eyebrow-mono {
@@ -558,7 +578,7 @@ const jsonLd = [
 
   /* ══ STATS ══ */
   .stats {
-    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     background: var(--bg-inset); padding: 46px 0;
   }
   .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; text-align: center; }
