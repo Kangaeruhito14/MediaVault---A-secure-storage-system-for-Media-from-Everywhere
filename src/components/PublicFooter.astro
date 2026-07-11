@@ -8,13 +8,7 @@ const currentYear = new Date().getFullYear();
       <!-- Brand column -->
       <div class="footer-brand-col">
         <a href="/" class="footer-logo" aria-label="Media Reservoir Home">
-          <div class="footer-logo-icon">
-            <svg width="12" height="12" viewBox="0 0 28 28" fill="none">
-              <rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
-              <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-              <circle cx="14" cy="18" r="1.5" fill="currentColor"/>
-            </svg>
-          </div>
+          <img src="/logo.png" alt="" width="26" height="26" class="footer-logo-mark" />
           <span>Media Reservoir</span>
         </a>
         <p class="footer-tagline">
@@ -122,15 +116,12 @@ const currentYear = new Date().getFullYear();
     letter-spacing: -0.03em;
   }
 
-  .footer-logo-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    background: var(--text-primary);
-    color: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .footer-logo-mark {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 6px rgba(124, 58, 237, 0.3));
   }
 
   .footer-tagline {

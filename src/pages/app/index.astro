@@ -19,9 +19,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
   <div class="appbar">
     <a href="/" class="appbar-logo" aria-label="Media Reservoir home">
-      <span class="logo-mark">
-        <svg width="16" height="16" viewBox="0 0 28 28" fill="none"><rect x="7" y="13" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="18" r="1.5" fill="currentColor"/></svg>
-      </span>
+      <img src="/logo.png" alt="" width="28" height="28" class="logo-mark" />
       Media Reservoir
     </a>
     <div class="appbar-right">
@@ -1801,7 +1799,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
 
   .appbar { position: sticky; top: 0; z-index: 10; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   .appbar-logo { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em; }
-  .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--text-primary); color: var(--bg); display: flex; align-items: center; justify-content: center; }
+  .logo-mark { width: 28px; height: 28px; object-fit: contain; display: block; filter: drop-shadow(0 2px 7px rgba(124, 58, 237, 0.32)); }
   .appbar-right { display: flex; align-items: center; gap: 10px; }
   .appbar-actions { display: flex; align-items: center; gap: 10px; }
   .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-med); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s ease, border-color .15s ease; }

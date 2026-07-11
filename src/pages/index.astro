@@ -276,8 +276,8 @@ const jsonLd = [
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Stored in a cloud bucket you own</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Streamed and searched from every device</li>
         </ul>
-        <a href={primaryCtaPath} class="btn-hero-primary">
-          {primaryCtaText}
+        <a href={secondaryCtaPath} class="btn-hero-primary">
+          See how it works
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
@@ -291,12 +291,22 @@ const jsonLd = [
   <section class="aka">
     <div class="section-container aka-inner" data-reveal>
       <span class="eyebrow-mono">Call it what you like</span>
-      <p class="aka-text">
-        An <strong>encrypted photo vault</strong>. A <strong>private media library</strong>. A
-        <strong>zero-knowledge asset locker</strong>. A <strong>secure media store</strong> on cloud
-        you own. A <strong>Google Photos alternative</strong> that genuinely can't read your files.
-        However you found it — that's <strong>Media Reservoir</strong>.
-      </p>
+      <h2 class="aka-title">One vault. Every name you searched for.</h2>
+      <div class="aka-cloud">
+        <span class="aka-chip is-accent">Encrypted photo vault</span>
+        <span class="aka-chip">Private media library</span>
+        <span class="aka-chip">Zero-knowledge asset locker</span>
+        <span class="aka-chip is-accent">Secure media store</span>
+        <span class="aka-chip">Media Vault</span>
+        <span class="aka-chip">Photo Locker</span>
+        <span class="aka-chip">Media Archive</span>
+        <span class="aka-chip is-accent">Google Photos alternative</span>
+        <span class="aka-chip">Encrypted cloud storage</span>
+        <span class="aka-chip">Digital asset vault</span>
+        <span class="aka-chip">Private cloud storage</span>
+        <span class="aka-chip">Media Trove</span>
+      </div>
+      <p class="aka-foot">However you found it — that's <strong>Media Reservoir</strong>.</p>
     </div>
   </section>
 
@@ -519,46 +529,39 @@ const jsonLd = [
   .feature h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px; }
   .feature p { font-size: 13.5px; line-height: 1.55; color: var(--text-body); margin: 0; }
 
-  /* Feature icons sliced from the owner's illustrations.png (3 cols × 2 rows).
-     The 2:3-aspect window keeps a 300%×200% background square (no distortion);
-     mix-blend-mode: screen drops the image's black backdrop over the card. */
-  /* Feature icons — the owner's illustration set on a brand tile, theme-swapped:
-     LIGHT mode uses the light (white-icon) set on a vivid indigo tile; DARK mode
-     uses the neon set on a near-black tile. screen-blend drops each image's dark
-     backdrop. The ::before is a 2:3 window (keeps the 300%×200% slice
-     undistorted) and each icon is centred with a per-cell background-position. */
+  /* Feature icons — the owner's transparent icon set, theme-swapped: the light
+     variant (0X light) on a soft light tile, the dark/neon variant (0X dark) on a
+     near-black tile. Transparent PNGs → shown as-is (no blend), centred, contained. */
   .fi {
     position: relative; display: block; width: 62px; height: 62px; margin-bottom: 18px;
     border-radius: 16px; overflow: hidden;
-    background: linear-gradient(150deg, #6366f1 0%, #4f46e5 100%);
-    border: 1px solid rgba(99,102,241,0.35);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -8px rgba(79,70,229,0.45);
+    background: linear-gradient(150deg, #f2f4fd 0%, #e6ebfa 100%);
+    border: 1px solid rgba(99,102,241,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 16px -10px rgba(79,70,229,0.4);
   }
   :global(html[data-theme='dark']) .fi {
-    background: linear-gradient(150deg, #1c2138 0%, #0f111b 100%);
-    border-color: rgba(150,162,214,0.18);
+    background: linear-gradient(150deg, #1a1e2e 0%, #0f111b 100%);
+    border-color: rgba(150,162,214,0.16);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 20px -8px rgba(30,26,80,0.55);
   }
   .fi::before {
-    content: ''; position: absolute; inset: 7px;
+    content: ''; position: absolute; inset: 6px;
     background-repeat: no-repeat; background-position: center; background-size: contain;
-    mix-blend-mode: lighten; /* drops the light set's grey backdrop cleanly on the indigo tile */
   }
-  :global(html[data-theme='dark']) .fi::before { mix-blend-mode: screen; }
-  /* Light set (white icons) — default. */
+  /* Light variant — default. */
   .fi-shield::before  { background-image: url('/icons/shield-light.png'); }
   .fi-cloud::before   { background-image: url('/icons/cloud-light.png'); }
   .fi-stream::before  { background-image: url('/icons/stream-light.png'); }
   .fi-photo::before   { background-image: url('/icons/photo-light.png'); }
   .fi-key::before     { background-image: url('/icons/key-light.png'); }
   .fi-devices::before { background-image: url('/icons/devices-light.png'); }
-  /* Dark set (neon icons). */
-  :global(html[data-theme='dark']) .fi-shield::before  { background-image: url('/icons/shield.png'); }
-  :global(html[data-theme='dark']) .fi-cloud::before   { background-image: url('/icons/cloud.png'); }
-  :global(html[data-theme='dark']) .fi-stream::before  { background-image: url('/icons/stream.png'); }
-  :global(html[data-theme='dark']) .fi-photo::before   { background-image: url('/icons/photo.png'); }
-  :global(html[data-theme='dark']) .fi-key::before     { background-image: url('/icons/key.png'); }
-  :global(html[data-theme='dark']) .fi-devices::before { background-image: url('/icons/devices.png'); }
+  /* Dark variant. */
+  :global(html[data-theme='dark']) .fi-shield::before  { background-image: url('/icons/shield-dark.png'); }
+  :global(html[data-theme='dark']) .fi-cloud::before   { background-image: url('/icons/cloud-dark.png'); }
+  :global(html[data-theme='dark']) .fi-stream::before  { background-image: url('/icons/stream-dark.png'); }
+  :global(html[data-theme='dark']) .fi-photo::before   { background-image: url('/icons/photo-dark.png'); }
+  :global(html[data-theme='dark']) .fi-key::before     { background-image: url('/icons/key-dark.png'); }
+  :global(html[data-theme='dark']) .fi-devices::before { background-image: url('/icons/devices-dark.png'); }
 
   /* ══ ENCRYPTION FLOW ══ */
   .flow { padding: 100px 0; background: var(--bg-inset); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -641,9 +644,27 @@ const jsonLd = [
 
   /* ══ AKA ══ */
   .aka { padding: 96px 0; }
-  .aka-inner { max-width: 760px; margin: 0 auto; text-align: center; }
-  .aka-text { font-size: clamp(19px, 2.4vw, 26px); line-height: 1.55; color: var(--text-body); letter-spacing: -0.01em; margin: 6px 0 0; }
-  .aka-text strong { color: var(--text-primary); font-weight: 600; }
+  .aka-inner { max-width: 820px; margin: 0 auto; text-align: center; }
+  .aka-title {
+    font-size: clamp(26px, 3.4vw, 36px); font-weight: 600; letter-spacing: -0.035em;
+    color: var(--text-primary); line-height: 1.12; margin: 10px 0 30px;
+  }
+  .aka-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 720px; margin: 0 auto 30px; }
+  .aka-chip {
+    font-size: 14px; font-weight: 500; color: var(--text-body);
+    padding: 9px 16px; border-radius: 100px;
+    border: 1px solid var(--border-med); background: var(--surface);
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .aka-chip:hover { transform: translateY(-2px); border-color: var(--border-strong); color: var(--text-primary); }
+  .aka-chip.is-accent {
+    color: #fff; border-color: transparent;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    box-shadow: 0 6px 16px -8px rgba(99,102,241,0.55);
+  }
+  .aka-chip.is-accent:hover { color: #fff; transform: translateY(-2px); }
+  .aka-foot { font-size: clamp(16px, 2vw, 19px); line-height: 1.5; color: var(--text-body); margin: 0; }
+  .aka-foot strong { color: var(--text-primary); font-weight: 600; }
 
   /* ══ SHOWCASE / COMMERCIAL BAND ══ */
   .showcase { padding: 96px 0; }
