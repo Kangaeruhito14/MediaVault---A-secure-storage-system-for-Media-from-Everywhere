@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 /**
  * FAQ content doubles as the FAQPage JSON-LD source, so the structured data
@@ -149,16 +150,10 @@ const jsonLd = [
   jsonLd={jsonLd}
 >
   <section class="faq-page">
+    <PageHero eyebrow="FAQ Help" title="Frequently Asked Questions.">
+      Everything people ask about end-to-end encrypted media storage — security, recovery keys, where your files live, devices, and more. If you don't find what you need, <a href="/contact" class="lead-link">contact us</a>.
+    </PageHero>
     <div class="container-sm">
-      <!-- Header -->
-      <header class="faq-header">
-        <span class="page-eyebrow">FAQ Help</span>
-        <h1 class="page-title">Frequently Asked Questions.</h1>
-        <p class="page-lead">
-          Everything people ask about end-to-end encrypted media storage — security, recovery keys, where your files live, devices, and more. If you don't find what you need, <a href="/contact" class="lead-link">contact us</a>.
-        </p>
-      </header>
-
       <!-- Accordion, grouped by category -->
       {faqSections.map((section) => (
         <div class="faq-section">
@@ -192,38 +187,10 @@ const jsonLd = [
   }
 
   .faq-page {
-    padding: 96px 0;
+    padding: 0 0 96px;
   }
-
-  .faq-header {
-    text-align: center;
-    margin-bottom: 64px;
-  }
-
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: clamp(32px, 5vw, 48px);
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
-    line-height: 1.1;
-    margin-bottom: 24px;
-  }
-
-  .page-lead {
-    font-size: 16px;
-    line-height: 1.65;
-    color: var(--text-body);
+  .faq-page > .container-sm {
+    padding-top: 60px;
   }
 
   .lead-link {

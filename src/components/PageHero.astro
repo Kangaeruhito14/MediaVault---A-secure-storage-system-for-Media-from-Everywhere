@@ -1,0 +1,59 @@
+---
+/**
+ * Shared premium hero for public content pages (About, Security, Compare, FAQ,
+ * Contact). Full-width, theme-aware aurora backdrop (owner's ornament images)
+ * so every page opens with the same restrained-premium feel as the homepage.
+ * The lead paragraph is passed as the default slot (supports inline markup).
+ */
+interface Props {
+  eyebrow: string;
+  title: string;
+}
+const { eyebrow, title } = Astro.props;
+---
+<header class="page-hero">
+  <div class="page-hero-inner" data-reveal>
+    <span class="page-hero-eyebrow">{eyebrow}</span>
+    <h1 class="page-hero-title">{title}</h1>
+    <p class="page-hero-lead"><slot /></p>
+  </div>
+</header>
+
+<style>
+  .page-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 118px 24px 66px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    /* Light: pastel aurora fading into the page, with a light scrim for legibility. */
+    background:
+      linear-gradient(180deg, rgba(247,248,252,0.55) 0%, rgba(247,248,252,0.24) 46%, var(--bg) 100%),
+      url('/ornament-light.png') center top / cover no-repeat;
+  }
+  :global(html[data-theme='dark']) .page-hero {
+    /* Dark: cosmic aurora + a faint indigo glow, fading into the cool near-black. */
+    background:
+      linear-gradient(180deg, rgba(9,10,15,0.58) 0%, rgba(9,10,15,0.42) 42%, var(--bg) 100%),
+      radial-gradient(ellipse 82% 62% at 50% 0%, rgba(99,102,241,0.16), transparent 70%),
+      url('/ornament.png') center top / cover no-repeat;
+  }
+
+  .page-hero-inner { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; }
+
+  .page-hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--accent);
+    display: block; margin-bottom: 14px;
+  }
+  .page-hero-title {
+    font-size: clamp(32px, 5vw, 50px); font-weight: 600; letter-spacing: -0.04em;
+    color: var(--text-primary); line-height: 1.08; margin: 0 0 20px;
+  }
+  .page-hero-lead {
+    font-size: 16.5px; line-height: 1.65; color: var(--text-body);
+    max-width: 620px; margin: 0 auto;
+  }
+  .page-hero-lead :global(strong) { color: var(--text-primary); font-weight: 600; }
+</style>

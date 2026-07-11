@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 /**
  * Comparison page — "X vs Y" is one of the highest-volume query shapes for
@@ -62,14 +63,10 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
   jsonLd={jsonLd}
 >
   <section class="compare-page">
+    <PageHero eyebrow="Comparison" title="How Media Reservoir compares.">
+      An honest look at Media Reservoir next to the popular options. No tool is best for everyone — here is where Media Reservoir wins, and where something else might suit you better.
+    </PageHero>
     <div class="container-md">
-      <header class="compare-header">
-        <span class="page-eyebrow">Comparison</span>
-        <h1 class="page-title">How Media Reservoir compares.</h1>
-        <p class="page-lead">
-          An honest look at Media Reservoir next to the popular options. No tool is best for everyone — here is where Media Reservoir wins, and where something else might suit you better.
-        </p>
-      </header>
 
       <div class="table-scroll">
         <table class="compare-table">
@@ -117,18 +114,8 @@ const cell = (v: string) => v === 'Yes' || v.startsWith('Yes') || v === 'Low';
 
 <style>
   .container-md { max-width: 920px; margin: 0 auto; padding: 0 24px; }
-  .compare-page { padding: 96px 0; }
-  .compare-header { text-align: center; margin-bottom: 48px; }
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
-    text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em;
-    display: block; margin-bottom: 12px;
-  }
-  .page-title {
-    font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.04em;
-    color: var(--text-primary); line-height: 1.1; margin-bottom: 24px;
-  }
-  .page-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); max-width: 640px; margin: 0 auto; }
+  .compare-page { padding: 0 0 96px; }
+  .compare-page > .container-md { padding-top: 60px; }
 
   .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
   .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }

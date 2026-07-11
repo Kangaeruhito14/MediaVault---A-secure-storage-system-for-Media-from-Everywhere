@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 /**
  * /security — the "verify it yourself" transparency page. A live, in-browser
@@ -47,15 +48,10 @@ const threats = [
   jsonLd={jsonLd}
 >
   <section class="sec-page">
+    <PageHero eyebrow="Security · Transparency" title="Don't trust us. Verify it.">
+      Most "secure" apps ask you to take their word for it. Media Reservoir lets you watch the encryption happen in your own browser — right here, with nothing sent to any server.
+    </PageHero>
     <div class="container-md">
-      <header class="sec-header">
-        <span class="page-eyebrow">Security · Transparency</span>
-        <h1 class="page-title">Don't trust us. Verify it.</h1>
-        <p class="page-lead">
-          Most "secure" apps ask you to take their word for it. Media Reservoir lets you watch the encryption happen in your own browser — right here, with nothing sent to any server.
-        </p>
-      </header>
-
       <!-- Live demo -->
       <div class="demo-card">
         <div class="demo-badge"><span class="demo-dot"></span> Live · runs entirely in your browser</div>
@@ -214,18 +210,8 @@ const threats = [
 
 <style>
   .container-md { max-width: 880px; margin: 0 auto; padding: 0 24px; }
-  .sec-page { padding: 96px 0; }
-  .sec-header { text-align: center; margin-bottom: 48px; }
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
-    text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em;
-    display: block; margin-bottom: 12px;
-  }
-  .page-title {
-    font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.04em;
-    color: var(--text-primary); line-height: 1.1; margin-bottom: 24px;
-  }
-  .page-lead { font-size: 16px; line-height: 1.65; color: var(--text-body); max-width: 620px; margin: 0 auto; }
+  .sec-page { padding: 0 0 96px; }
+  .sec-page > .container-md { padding-top: 60px; }
 
   .demo-card {
     background: var(--surface); border: 1px solid var(--border);

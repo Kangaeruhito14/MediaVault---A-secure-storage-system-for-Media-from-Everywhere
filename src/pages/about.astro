@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
 const jsonLd = [
@@ -34,15 +35,9 @@ const jsonLd = [
 >
   <article class="about-page">
     <!-- Hero Header -->
-    <header class="about-hero">
-      <div class="container-sm">
-        <span class="page-eyebrow">Our Philosophy</span>
-        <h1 class="page-title">Ownership of your digital life.</h1>
-        <p class="page-lead">
-          Media Reservoir is the private layer over the cloud storage you already own. We believe your private photos, videos, voice memos, PDFs, and documents shouldn't live in a corporate cloud that scans them — so we encrypt everything in your browser and keep it in storage only you control.
-        </p>
-      </div>
-    </header>
+    <PageHero eyebrow="Our Philosophy" title="Ownership of your digital life.">
+      Media Reservoir is the private layer over the cloud storage you already own. We believe your private photos, videos, voice memos, PDFs, and documents shouldn't live in a corporate cloud that scans them — so we encrypt everything in your browser and keep it in storage only you control.
+    </PageHero>
 
     <!-- Main Content Grid -->
     <div class="about-content container-sm">
@@ -127,41 +122,6 @@ const jsonLd = [
     max-width: 800px;
     margin: 0 auto;
     padding: 0 24px;
-  }
-
-  .about-hero {
-    padding: 96px 0 64px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-inset);
-  }
-
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: clamp(32px, 5vw, 48px);
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
-    line-height: 1.1;
-    margin-bottom: 24px;
-  }
-
-  .page-lead {
-    font-size: 16px;
-    line-height: 1.65;
-    color: var(--text-body);
-    max-width: 600px;
-    margin: 0 auto;
   }
 
   .about-content {

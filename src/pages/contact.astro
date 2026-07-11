@@ -1,5 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/PageHero.astro';
 
 const origin = import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') || Astro.url.origin;
 const jsonLd = [
@@ -26,14 +27,10 @@ const jsonLd = [
   jsonLd={jsonLd}
 >
   <section class="contact-page">
+    <PageHero eyebrow="Get In Touch" title="Contact Us.">
+      Have a question, feedback, or need help with setting up Media Reservoir? Let us know.
+    </PageHero>
     <div class="container-sm">
-      <header class="contact-header">
-        <span class="page-eyebrow">Get In Touch</span>
-        <h1 class="page-title">Contact Us.</h1>
-        <p class="page-lead">
-          Have a question, feedback, or need help with setting up Media Reservoir? Let us know.
-        </p>
-      </header>
 
       <div class="contact-card">
         <div class="contact-details">
@@ -55,41 +52,10 @@ const jsonLd = [
   }
 
   .contact-page {
-    padding: 120px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0 0 96px;
   }
-
-  .contact-header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  .page-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: clamp(32px, 5vw, 44px);
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-
-  .page-lead {
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--text-body);
+  .contact-page > .container-sm {
+    padding-top: 60px;
   }
 
   .contact-card {
