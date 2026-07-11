@@ -375,7 +375,7 @@ const jsonLd = [
        the page, with a light scrim so dark text stays legible. */
     background:
       linear-gradient(180deg, rgba(247,248,252,0.42) 0%, rgba(247,248,252,0.12) 34%, rgba(247,248,252,0.86) 80%, var(--bg) 100%),
-      url('/ornament-light.png') center top / cover no-repeat;
+      url('/ornament-light.webp') center top / cover no-repeat;
   }
   /* Dark: the aurora ornament backdrop (owner's ornament.png) fades into the page,
      with a dark scrim so text stays legible. */
@@ -383,7 +383,7 @@ const jsonLd = [
     background:
       linear-gradient(180deg, rgba(9,10,15,0.60) 0%, rgba(9,10,15,0.34) 34%, rgba(9,10,15,0.86) 78%, var(--bg) 100%),
       radial-gradient(ellipse 90% 60% at 50% 0%, rgba(99,102,241,0.20), transparent 70%),
-      url('/ornament.png') center top / cover no-repeat;
+      url('/ornament.webp') center top / cover no-repeat;
   }
 
   .hero-inner { display: flex; flex-direction: column; align-items: center; }
@@ -470,12 +470,12 @@ const jsonLd = [
   }
   .hero-img {
     position: relative; z-index: 1; width: 100%; aspect-ratio: 3 / 2; display: block;
-    background: url('/hero-light.png') center / contain no-repeat;
-    -webkit-mask: radial-gradient(ellipse 88% 86% at 50% 48%, #000 58%, transparent 100%);
-            mask: radial-gradient(ellipse 88% 86% at 50% 48%, #000 58%, transparent 100%);
+    background: url('/hero-light.webp') center / contain no-repeat;
+    -webkit-mask: radial-gradient(ellipse 68% 68% at 50% 47%, #000 34%, transparent 78%);
+            mask: radial-gradient(ellipse 68% 68% at 50% 47%, #000 34%, transparent 78%);
     animation: heroFloat 8s ease-in-out infinite;
   }
-  :global(html[data-theme='dark']) .hero-img { background-image: url('/hero.png'); }
+  :global(html[data-theme='dark']) .hero-img { background-image: url('/hero.webp'); }
   @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
   @media (prefers-reduced-motion: reduce) { .hero-img { animation: none; } }
 
@@ -672,14 +672,14 @@ const jsonLd = [
     background:
       linear-gradient(180deg, rgba(238,240,248,0.72), rgba(238,240,248,0.82)),
       radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.12), transparent 70%),
-      url('/ornament-light.png') center / cover no-repeat;
+      url('/ornament-light.webp') center / cover no-repeat;
     border-top: 1px solid var(--border);
   }
   :global(html[data-theme='dark']) .cta-banner {
     background:
       linear-gradient(180deg, rgba(9,10,15,0.76), rgba(9,10,15,0.84)),
       radial-gradient(ellipse 70% 90% at 50% 50%, rgba(124,58,237,0.30), transparent 70%),
-      url('/ornament.png') center / cover no-repeat;
+      url('/ornament.webp') center / cover no-repeat;
   }
   .cta-banner-inner { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
   .cta-banner-title { font-size: clamp(28px, 5vw, 46px); font-weight: 600; color: var(--text-primary); letter-spacing: -0.04em; margin: 0 0 16px; line-height: 1.08; }
