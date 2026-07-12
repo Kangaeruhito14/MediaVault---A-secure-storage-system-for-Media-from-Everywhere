@@ -1540,6 +1540,14 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     if (!batch.length) return;
     await commitPending(); // finish any prior pending batch first
     const ids = new Set(batch.map((i) => i.id));
+    // Fade the affected cards out before re-rendering (premium micro-interaction).
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const cards = [...ids].map((id) => document.querySelector<HTMLElement>(`#grid .tile[data-id="${id}"]`)).filter(Boolean) as HTMLElement[];
+      if (cards.length) {
+        cards.forEach((c) => { c.style.transition = 'opacity .22s ease, transform .22s ease'; c.style.pointerEvents = 'none'; c.style.opacity = '0'; c.style.transform = 'scale(.9)'; });
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    }
     items = items.filter((i) => !ids.has(i.id));
     batch.forEach((i) => selected.delete(i.id));
     render();
