@@ -1655,10 +1655,9 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     name.className = 'v-name';
     name.textContent = item.metadata.name; // textContent — XSS-safe
     const dl = document.createElement('button');
-    dl.className = 'v-icon-btn';
-    dl.title = 'Download';
+    dl.className = 'v-act-btn';
     dl.setAttribute('aria-label', 'Download');
-    dl.innerHTML = ICON_DOWNLOAD;
+    dl.innerHTML = ICON_DOWNLOAD + '<span>Download</span>';
     dl.addEventListener('click', async (e) => {
       e.stopPropagation();
       dl.disabled = true;
@@ -1673,23 +1672,24 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       finally { dl.disabled = false; }
     });
     const mv = document.createElement('button');
-    mv.className = 'v-icon-btn';
-    mv.title = 'Move to folder';
+    mv.className = 'v-act-btn';
     mv.setAttribute('aria-label', 'Move to folder');
-    mv.innerHTML = ICON_MOVE;
+    mv.innerHTML = ICON_MOVE + '<span>Move</span>';
     mv.addEventListener('click', (e) => { e.stopPropagation(); enterMove(item); });
     const edit = document.createElement('button');
-    edit.className = 'v-icon-btn';
-    edit.title = 'Rename';
+    edit.className = 'v-act-btn';
     edit.setAttribute('aria-label', 'Rename');
-    edit.innerHTML = ICON_RENAME;
+    edit.innerHTML = ICON_RENAME + '<span>Rename</span>';
     edit.addEventListener('click', (e) => { e.stopPropagation(); enterRename(item); });
-    row.append(name, mv, dl, edit);
+    row.append(name);
     const k = kind(item.metadata.mime);
     const meta = document.createElement('div');
     meta.className = 'v-meta';
     meta.textContent = `${k === 'file' ? 'FILE' : k.toUpperCase()} · ${fmtBytes(item.metadata.size)} · ${new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`;
-    cap.append(row, meta);
+    const acts = document.createElement('div');
+    acts.className = 'v-actions';
+    acts.append(dl, mv, edit);
+    cap.append(row, meta, acts);
   }
   function enterRename(item: VaultItem) {
     const cap = $('v-caption');
@@ -2214,6 +2214,13 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .v-icon-btn { background: rgba(255,255,255,.12); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   .v-icon-btn:hover { background: rgba(255,255,255,.22); }
   .v-icon-btn:disabled { opacity: .5; cursor: default; }
+  /* Clear labeled action buttons under the viewer caption (JS-created → :global). */
+  :global(.v-actions) { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+  :global(.v-act-btn) { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); color: #fff; padding: 8px 16px; border-radius: 100px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 500; line-height: 1; transition: background .15s ease, border-color .15s ease, transform .1s ease; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  :global(.v-act-btn svg) { width: 15px; height: 15px; }
+  :global(.v-act-btn:hover) { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.42); }
+  :global(.v-act-btn:active) { transform: translateY(1px); }
+  :global(.v-act-btn:disabled) { opacity: .5; cursor: default; }
   .v-name-edit { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
   .v-name-input { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); border-radius: 8px; color: #fff; font: inherit; padding: 6px 10px; min-width: 220px; max-width: 60vw; }
   .v-name-input:focus { outline: none; border-color: rgba(255,255,255,.6); }
