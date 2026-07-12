@@ -287,10 +287,36 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <button class="acct-tab" data-acct-tab="sessions" type="button" role="tab">Sessions</button>
       </div>
 
+      <div class="acct-layout">
+       <div class="acct-main">
       <!-- Profile -->
       <div class="acct-pane" data-pane="profile">
+        <div class="account-block acct-identity">
+          <div class="avatar-wrap">
+            <div id="profile-avatar" class="avatar-lg" aria-hidden="true"></div>
+            <button id="avatar-edit" class="avatar-edit" type="button" aria-label="Change avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+          <div class="identity-fields">
+            <label class="fld" for="username-input"><span class="fld-label">Display name</span></label>
+            <div class="fld-row">
+              <input id="username-input" class="inp" type="text" maxlength="30" placeholder="Choose a display name" autocomplete="off" />
+              <button id="username-save" class="btn-primary btn-sm" type="button">Save</button>
+            </div>
+            <p class="fld-hint">A friendly name shown in the app — an alternative to your email for later.</p>
+            <p id="username-msg" class="fld-ok" hidden>Saved ✓</p>
+          </div>
+        </div>
+
+        <div id="avatar-picker" class="account-block" hidden>
+          <h3 class="account-h">Choose your avatar</h3>
+          <p class="account-p">Media Reservoir characters — pick the one that's you.</p>
+          <div id="avatar-grid" class="avatar-grid"></div>
+        </div>
+
         <div class="account-block">
-          <h3 class="account-h">Profile</h3>
+          <h3 class="account-h">Account details</h3>
           <dl class="profile-grid">
             <dt>Email</dt><dd id="profile-email">—</dd>
             <dt>Member since</dt><dd id="profile-since">—</dd>
@@ -370,6 +396,13 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
           <button id="sessions-revoke-others" class="btn-outline" type="button" hidden>Sign out all other devices</button>
           <p id="sessions-msg" class="error" hidden></p>
         </div>
+      </div>
+       </div>
+       <aside class="acct-aside" aria-hidden="true">
+         <div class="acct-illus" data-illus="profile"></div>
+         <div class="acct-illus" data-illus="security" hidden></div>
+         <div class="acct-illus" data-illus="sessions" hidden></div>
+       </aside>
       </div>
     </section>
   </main>
@@ -812,11 +845,59 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   function setAcctTab(tab: string) {
     document.querySelectorAll<HTMLElement>('.acct-tab').forEach((t) => t.classList.toggle('active', t.dataset.acctTab === tab));
     document.querySelectorAll<HTMLElement>('.acct-pane').forEach((p) => { (p as HTMLElement).hidden = p.dataset.pane !== tab; });
+    document.querySelectorAll<HTMLElement>('.acct-illus').forEach((il) => { (il as HTMLElement).hidden = il.dataset.illus !== tab; });
   }
+
+  // ── Profile identity: avatar (built-in Media Reservoir characters) + display name.
+  // Stored per-device for now (localStorage); moves server-side with the sign-up phase.
+  const AVATARS = [
+    { id: 'shield',  c1: '#6366f1', c2: '#7c3aed', g: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+    { id: 'lock',    c1: '#3b82f6', c2: '#06b6d4', g: '<rect x="4.5" y="11" width="15" height="9.5" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>' },
+    { id: 'key',     c1: '#8b5cf6', c2: '#ec4899', g: '<circle cx="7.5" cy="15.5" r="4"/><path d="m10.4 12.6 8.1-8.1 2 2-1.8 1.8-1.7-1.7"/>' },
+    { id: 'star',    c1: '#fbbf24', c2: '#f97316', g: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z"/>' },
+    { id: 'cloud',   c1: '#38bdf8', c2: '#2563eb', g: '<path d="M17.5 19a4.5 4.5 0 0 0 .8-8.93A6 6 0 0 0 6.6 9.2 4 4 0 0 0 6.5 19z"/>' },
+    { id: 'bolt',    c1: '#14b8a6', c2: '#22c55e', g: '<path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/>' },
+    { id: 'vault',   c1: '#64748b', c2: '#4f46e5', g: '<path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/>' },
+    { id: 'rocket',  c1: '#fb7185', c2: '#7c3aed', g: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.7-.84.69-2.13-.1-2.91a2.18 2.18 0 0 0-2.9-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.9 12.9 0 0 1 22 2c0 2.72-.78 7.5-6 11a22 22 0 0 1-4 2z"/>' },
+  ];
+  function avatarUrl(a: { c1: string; c2: string; g: string }) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a.c1}'/><stop offset='1' stop-color='${a.c2}'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><g transform='translate(20 20)' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>${a.g}</g></svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  }
+  const currentAvatar = () => AVATARS.find((x) => x.id === (localStorage.getItem('mv_avatar') || 'shield')) || AVATARS[0];
+  function renderProfileAvatar() { $('profile-avatar').style.backgroundImage = avatarUrl(currentAvatar()); }
+  function buildAvatarGrid() {
+    const grid = $('avatar-grid'); grid.innerHTML = '';
+    const sel = currentAvatar().id;
+    for (const a of AVATARS) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'avatar-opt' + (a.id === sel ? ' sel' : ''); b.setAttribute('aria-label', a.id);
+      b.style.backgroundImage = avatarUrl(a);
+      b.addEventListener('click', () => {
+        localStorage.setItem('mv_avatar', a.id); renderProfileAvatar(); buildAvatarGrid();
+        $('avatar-picker').hidden = true; toast('success', 'Avatar updated');
+      });
+      grid.appendChild(b);
+    }
+  }
+  $('avatar-edit').addEventListener('click', () => { const p = $('avatar-picker'); p.hidden = !p.hidden; if (!p.hidden) buildAvatarGrid(); });
+  $('username-save').addEventListener('click', () => {
+    const v = ($('username-input') as HTMLInputElement).value.trim();
+    localStorage.setItem('mv_username', v);
+    const msg = $('username-msg'); msg.hidden = false; setTimeout(() => (msg.hidden = true), 1800);
+    toast('success', v ? `Display name set to “${v}”` : 'Display name cleared');
+  });
+  function loadProfileIdentity() {
+    renderProfileAvatar();
+    ($('username-input') as HTMLInputElement).value = localStorage.getItem('mv_username') || '';
+    $('avatar-picker').hidden = true;
+  }
+  renderProfileAvatar();
   async function openAccount(tab = 'profile') {
     closeAccountMenu();
     setAcctTab(tab);
     show('account-view');
+    loadProfileIdentity();
     $('account-error').hidden = true;
     $('profile-email').textContent = localStorage.getItem('mv_email') ?? '—';
     $('profile-since').textContent = '…';
@@ -2053,6 +2134,43 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .acct-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
   .acct-pane { max-width: 620px; }
   .acct-pane .account-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+  /* Two-column account layout: content left, illustration right. */
+  .acct-layout { display: grid; grid-template-columns: 1fr; gap: 34px; }
+  @media (min-width: 900px) { .acct-layout { grid-template-columns: minmax(0, 1fr) 330px; align-items: start; } }
+  .acct-main { min-width: 0; }
+  .acct-aside { position: sticky; top: 84px; }
+  @media (max-width: 899px) { .acct-aside { display: none; } }
+  .acct-illus {
+    aspect-ratio: 4 / 5; border-radius: 22px; border: 1px solid var(--border);
+    background-repeat: no-repeat; background-size: cover; background-position: center;
+    box-shadow: var(--shadow-lg);
+  }
+  /* Owner-supplied illustrations (dropped in later); a brand gradient shows until then. */
+  .acct-illus[data-illus="profile"]  { background-image: url('/account-profile-light.png'),  linear-gradient(160deg, rgba(99,102,241,.18), rgba(124,58,237,.06)); }
+  .acct-illus[data-illus="security"] { background-image: url('/account-security-light.png'), linear-gradient(160deg, rgba(59,130,246,.18), rgba(6,182,212,.06)); }
+  .acct-illus[data-illus="sessions"] { background-image: url('/account-sessions-light.png'), linear-gradient(160deg, rgba(139,92,246,.18), rgba(236,72,153,.06)); }
+  :global(html[data-theme='dark']) .acct-illus[data-illus="profile"]  { background-image: url('/account-profile-dark.png'),  linear-gradient(160deg, rgba(99,102,241,.24), rgba(124,58,237,.08)); }
+  :global(html[data-theme='dark']) .acct-illus[data-illus="security"] { background-image: url('/account-security-dark.png'), linear-gradient(160deg, rgba(59,130,246,.24), rgba(6,182,212,.08)); }
+  :global(html[data-theme='dark']) .acct-illus[data-illus="sessions"] { background-image: url('/account-sessions-dark.png'), linear-gradient(160deg, rgba(139,92,246,.24), rgba(236,72,153,.08)); }
+
+  /* Identity: avatar + display name */
+  .acct-identity { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .avatar-wrap { position: relative; flex: none; }
+  .avatar-lg { width: 78px; height: 78px; border-radius: 20px; background-size: cover; background-position: center; box-shadow: 0 8px 20px -8px rgba(99,102,241,.55); }
+  .avatar-edit { position: absolute; right: -7px; bottom: -7px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--surface); background: var(--accent); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: transform .12s ease; }
+  .avatar-edit:hover { transform: scale(1.08); }
+  .avatar-edit svg { width: 13px; height: 13px; }
+  .identity-fields { flex: 1; min-width: 220px; }
+  .fld-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+  .fld-row { display: flex; gap: 8px; }
+  .fld-row .inp { flex: 1; }
+  .fld-hint { font-size: 11.5px; color: var(--text-muted); margin: 8px 0 0; }
+  .fld-ok { font-size: 12px; color: var(--success, #34d399); margin: 6px 0 0; font-weight: 600; }
+  .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; margin-top: 12px; }
+  :global(.avatar-opt) { aspect-ratio: 1; border-radius: 15px; border: 2px solid transparent; background-size: cover; background-position: center; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; padding: 0; }
+  :global(.avatar-opt:hover) { transform: translateY(-3px); }
+  :global(.avatar-opt.sel) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
 
   .sessions-count { font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0 0 12px; font-family: 'JetBrains Mono', monospace; }
   .sessions-count.at-limit { color: var(--accent); }
