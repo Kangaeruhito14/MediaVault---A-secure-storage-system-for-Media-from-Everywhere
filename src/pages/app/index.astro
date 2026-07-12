@@ -29,9 +29,27 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <svg id="app-icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><path d="M13.5 9a6 6 0 0 1-7.5-7.5A6 6 0 1 0 13.5 9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
       </button>
       <div id="appbar-actions" class="appbar-actions" hidden>
-        <button id="trash-btn" class="btn-ghost" title="Trash">Trash</button>
-        <button id="account-btn" class="btn-ghost">Account</button>
-        <button id="lock-btn" class="btn-ghost">Lock</button>
+        <button id="dashboard-btn" class="btn-ghost nav-btn" title="Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span class="nav-btn-tx">Dashboard</span>
+        </button>
+        <button id="trash-btn" class="btn-ghost nav-btn" title="Trash">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span class="nav-btn-tx">Trash</span>
+        </button>
+        <div class="account-menu">
+          <button id="account-btn" class="btn-ghost nav-btn" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span class="nav-btn-tx">Account</span>
+            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div id="account-dropdown" class="account-dropdown" role="menu" hidden>
+            <button type="button" role="menuitem" data-acct="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</button>
+            <button type="button" role="menuitem" data-acct="security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security</button>
+            <button type="button" role="menuitem" data-acct="sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="2"/><path d="M2 18h14"/><rect x="18" y="8" width="4" height="12" rx="1.5"/></svg>Sessions</button>
+          </div>
+        </div>
+        <button id="lock-btn" class="btn-ghost nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="9.5" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg><span class="nav-btn-tx">Lock</span></button>
       </div>
     </div>
   </div>
@@ -242,6 +260,118 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         <div class="drop-inner">Drop to encrypt &amp; upload</div>
       </div>
     </section>
+
+    <!-- ══ TRASH (page) ══ -->
+    <section id="trash-view" class="page-view" hidden>
+      <div class="page-head">
+        <div>
+          <h1 class="page-view-h">Trash</h1>
+          <p class="page-view-sub">Deleted files stay here — fully recoverable — until you delete them for good. They still take up space in your own storage until then.</p>
+        </div>
+        <button id="trash-empty" class="btn-danger" type="button" hidden>Empty trash</button>
+      </div>
+      <div id="trash-grid" class="grid"></div>
+      <div id="trash-empty-note" class="empty-note" hidden>
+        <span class="empty-note-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+        <p>Your trash is empty.</p>
+      </div>
+      <p id="trash-msg" class="error" hidden></p>
+    </section>
+
+    <!-- ══ ACCOUNT (page with tabs) ══ -->
+    <section id="account-view" class="page-view" hidden>
+      <div class="page-head"><h1 class="page-view-h">Account</h1></div>
+      <div class="acct-tabs" role="tablist">
+        <button class="acct-tab active" data-acct-tab="profile" type="button" role="tab">Profile</button>
+        <button class="acct-tab" data-acct-tab="security" type="button" role="tab">Security</button>
+        <button class="acct-tab" data-acct-tab="sessions" type="button" role="tab">Sessions</button>
+      </div>
+
+      <!-- Profile -->
+      <div class="acct-pane" data-pane="profile">
+        <div class="account-block">
+          <h3 class="account-h">Profile</h3>
+          <dl class="profile-grid">
+            <dt>Email</dt><dd id="profile-email">—</dd>
+            <dt>Member since</dt><dd id="profile-since">—</dd>
+            <dt>Files</dt><dd id="profile-items">—</dd>
+            <dt>Used</dt><dd id="profile-used">—</dd>
+            <dt>Storage</dt><dd id="profile-conns">—</dd>
+          </dl>
+        </div>
+        <div class="account-block danger">
+          <h3 class="account-h">Delete account</h3>
+          <p class="account-p">Permanently removes your account and index from Media Reservoir. <strong>Your files in your own storage are not deleted</strong> — remove them there if you want them gone. This cannot be undone.</p>
+          <button id="account-delete" class="btn-danger" type="button">Delete my account</button>
+          <p id="account-error" class="error" hidden></p>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="acct-pane" data-pane="security" hidden>
+        <div class="account-block">
+          <h3 class="account-h">Change password</h3>
+          <p class="account-p">You'll get a new recovery key after changing it — save it.</p>
+          <form id="changepw-form" class="stack">
+            <input id="cp-current" class="inp" type="password" placeholder="Current password" autocomplete="current-password" required />
+            <input id="cp-new" class="inp" type="password" placeholder="New password" autocomplete="new-password" required minlength="8" />
+            <input id="cp-new2" class="inp" type="password" placeholder="Confirm new password" autocomplete="new-password" required minlength="8" />
+            <button class="btn-primary btn-block" type="submit">Change password</button>
+          </form>
+        </div>
+
+        <div class="account-block">
+          <h3 class="account-h">Two-factor authentication</h3>
+          <p class="account-p">Add a second step at sign-in using an authenticator app (Google Authenticator, Authy, 1Password…). This protects access to your account; your files stay end-to-end encrypted either way.</p>
+          <p id="twofa-state" class="twofa-state">Checking…</p>
+          <button id="twofa-enable-start" class="btn-primary" type="button" hidden>Enable two-factor</button>
+          <div id="twofa-setup" class="twofa-setup" hidden>
+            <p class="account-p">Scan this with your authenticator app, then enter the 6-digit code it shows to turn 2FA on.</p>
+            <div id="twofa-qr" class="twofa-qr" aria-hidden="true"></div>
+            <p class="twofa-secret">Can't scan? Enter this key: <code id="twofa-secret-text">—</code></p>
+            <form id="twofa-enable-form" class="stack">
+              <input id="twofa-enable-pw" class="inp" type="password" placeholder="Your password" autocomplete="current-password" required />
+              <input id="twofa-enable-code" class="inp" inputmode="numeric" placeholder="6-digit code" required />
+              <div class="row">
+                <button class="btn-primary" type="submit">Turn on 2FA</button>
+                <button id="twofa-setup-cancel" class="btn-outline" type="button">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div id="twofa-backup" class="twofa-backup" hidden>
+            <p class="account-p"><strong>Save your backup codes.</strong> Each works once if you lose your authenticator. They won't be shown again.</p>
+            <ul id="twofa-backup-list" class="backup-list"></ul>
+            <div class="row">
+              <button id="twofa-backup-copy" class="btn-outline" type="button">Copy codes</button>
+              <button id="twofa-backup-done" class="btn-primary" type="button">Done</button>
+            </div>
+          </div>
+          <form id="twofa-disable-form" class="stack" hidden>
+            <input id="twofa-disable-pw" class="inp" type="password" placeholder="Your password" autocomplete="current-password" required />
+            <button class="btn-danger" type="submit">Turn off two-factor</button>
+          </form>
+          <p id="twofa-msg" class="error" hidden></p>
+        </div>
+
+        <div class="account-block">
+          <h3 class="account-h">Export your data</h3>
+          <p class="account-p">Download everything we hold for you — your encrypted index, storage settings, and key envelopes — as a single JSON file. It's encrypted; useless without your password.</p>
+          <a id="account-export" class="btn-ghost" href="/api/account/export">Download my data (JSON)</a>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="acct-pane" data-pane="sessions" hidden>
+        <div class="account-block">
+          <h3 class="account-h">Active sessions</h3>
+          <p class="account-p">Devices currently signed in to your account. For your security, Media Reservoir keeps at most <strong>5 devices</strong> signed in at once — signing in on a 6th automatically signs out the oldest.</p>
+          <p id="sessions-count" class="sessions-count" hidden></p>
+          <ul id="sessions-list" class="sessions-list"><li class="muted">Loading…</li></ul>
+          <button id="sessions-revoke-others" class="btn-outline" type="button" hidden>Sign out all other devices</button>
+          <p id="sessions-msg" class="error" hidden></p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="app-footer">
@@ -317,109 +447,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     </div>
   </div>
 
-  <!-- Trash modal -->
-  <div id="trash-modal" class="modal" hidden>
-    <div class="modal-card">
-      <button id="trash-close" class="modal-close" aria-label="Close">✕</button>
-      <h2 class="card-h">Trash</h2>
-      <p class="account-p">Deleted files stay here — recoverable — until you delete them for good. They still occupy space in your own storage until then.</p>
-      <ul id="trash-list" class="sessions-list"><li class="muted">Loading…</li></ul>
-      <div class="row" id="trash-actions" hidden>
-        <button id="trash-empty" class="btn-danger" type="button">Empty trash</button>
-      </div>
-      <p id="trash-msg" class="error" hidden></p>
-    </div>
-  </div>
-
-  <!-- Account modal -->
-  <div id="account-modal" class="modal" hidden>
-    <div class="modal-card">
-      <button id="account-close" class="modal-close" aria-label="Close">✕</button>
-      <h2 class="card-h">Your account</h2>
-
-      <dl class="profile-grid">
-        <dt>Email</dt><dd id="profile-email">—</dd>
-        <dt>Member since</dt><dd id="profile-since">—</dd>
-        <dt>Files</dt><dd id="profile-items">—</dd>
-        <dt>Used</dt><dd id="profile-used">—</dd>
-        <dt>Storage</dt><dd id="profile-conns">—</dd>
-      </dl>
-
-      <div class="account-block">
-        <h3 class="account-h">Change password</h3>
-        <p class="account-p">You'll get a new recovery key after changing it — save it.</p>
-        <form id="changepw-form" class="stack">
-          <input id="cp-current" class="inp" type="password" placeholder="Current password" autocomplete="current-password" required />
-          <input id="cp-new" class="inp" type="password" placeholder="New password" autocomplete="new-password" required minlength="8" />
-          <input id="cp-new2" class="inp" type="password" placeholder="Confirm new password" autocomplete="new-password" required minlength="8" />
-          <button class="btn-primary btn-block" type="submit">Change password</button>
-        </form>
-      </div>
-
-      <div class="account-block">
-        <h3 class="account-h">Two-factor authentication</h3>
-        <p class="account-p">Add a second step at sign-in using an authenticator app (Google Authenticator, Authy, 1Password…). This protects access to your account; your files stay end-to-end encrypted either way.</p>
-        <p id="twofa-state" class="twofa-state">Checking…</p>
-
-        <!-- OFF → enable -->
-        <button id="twofa-enable-start" class="btn-primary" type="button" hidden>Enable two-factor</button>
-
-        <!-- Enrolment (QR + confirm) -->
-        <div id="twofa-setup" class="twofa-setup" hidden>
-          <p class="account-p">Scan this with your authenticator app, then enter the 6-digit code it shows to turn 2FA on.</p>
-          <div id="twofa-qr" class="twofa-qr" aria-hidden="true"></div>
-          <p class="twofa-secret">Can't scan? Enter this key: <code id="twofa-secret-text">—</code></p>
-          <form id="twofa-enable-form" class="stack">
-            <input id="twofa-enable-pw" class="inp" type="password" placeholder="Your password" autocomplete="current-password" required />
-            <input id="twofa-enable-code" class="inp" inputmode="numeric" placeholder="6-digit code" required />
-            <div class="row">
-              <button class="btn-primary" type="submit">Turn on 2FA</button>
-              <button id="twofa-setup-cancel" class="btn-outline" type="button">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Backup codes (shown once after enabling) -->
-        <div id="twofa-backup" class="twofa-backup" hidden>
-          <p class="account-p"><strong>Save your backup codes.</strong> Each works once if you lose your authenticator. They won't be shown again.</p>
-          <ul id="twofa-backup-list" class="backup-list"></ul>
-          <div class="row">
-            <button id="twofa-backup-copy" class="btn-outline" type="button">Copy codes</button>
-            <button id="twofa-backup-done" class="btn-primary" type="button">Done</button>
-          </div>
-        </div>
-
-        <!-- ON → disable -->
-        <form id="twofa-disable-form" class="stack" hidden>
-          <input id="twofa-disable-pw" class="inp" type="password" placeholder="Your password" autocomplete="current-password" required />
-          <button class="btn-danger" type="submit">Turn off two-factor</button>
-        </form>
-        <p id="twofa-msg" class="error" hidden></p>
-      </div>
-
-      <div class="account-block">
-        <h3 class="account-h">Active sessions</h3>
-        <p class="account-p">Devices currently signed in to your account. Revoke any you don't recognize.</p>
-        <ul id="sessions-list" class="sessions-list"><li class="muted">Loading…</li></ul>
-        <button id="sessions-revoke-others" class="btn-outline" type="button" hidden>Sign out all other devices</button>
-        <p id="sessions-msg" class="error" hidden></p>
-      </div>
-
-      <div class="account-block">
-        <h3 class="account-h">Export your data</h3>
-        <p class="account-p">Download everything we hold for you — your encrypted index, storage settings, and key envelopes — as a single JSON file. It's encrypted; useless without your password.</p>
-        <a id="account-export" class="btn-ghost" href="/api/account/export">Download my data (JSON)</a>
-      </div>
-
-      <div class="account-block danger">
-        <h3 class="account-h">Delete account</h3>
-        <p class="account-p">Permanently removes your account and index from Media Reservoir. <strong>Your files in your own storage are not deleted</strong> — remove them there if you want them gone. This cannot be undone.</p>
-        <button id="account-delete" class="btn-danger" type="button">Delete my account</button>
-      </div>
-      <p id="account-error" class="error" hidden></p>
-    </div>
-  </div>
-
   <Toast />
 </BaseLayout>
 
@@ -464,11 +491,21 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     });
   })();
 
-  const VIEWS = ['auth-view', 'reset-view', 'recovery-view', 'unlock-view', 'twofa-view', 'connect-view', 'vault-view'];
-  function show(view: string) {
+  const VIEWS = ['auth-view', 'reset-view', 'recovery-view', 'unlock-view', 'twofa-view', 'connect-view', 'vault-view', 'trash-view', 'account-view'];
+  const APP_PAGES = ['vault-view', 'trash-view', 'account-view']; // logged-in pages that keep the app-bar nav
+  function applyView(view: string) {
     for (const v of VIEWS) $(v).hidden = v !== view;
-    $('appbar-actions').hidden = view !== 'vault-view';
+    $('appbar-actions').hidden = !APP_PAGES.includes(view);
     $('storage-label').hidden = view !== 'vault-view';
+    const dash = $('dashboard-btn') as HTMLButtonElement;
+    if (dash) { dash.disabled = view === 'vault-view'; }
+    if (APP_PAGES.includes(view)) window.scrollTo({ top: 0 });
+  }
+  function show(view: string) {
+    // Smooth cross-fade between pages (same engine as the marketing site nav).
+    if ((document as any).startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      (document as any).startViewTransition(() => applyView(view));
+    } else { applyView(view); }
   }
 
   // In-app dialog replacing browser confirm()/prompt(). Returns a Promise:
@@ -770,14 +807,21 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   $('unlock-logout').addEventListener('click', async () => { await commitPending(); clearKeptKey(); await client.logout(); show('auth-view'); });
   $('lock-btn').addEventListener('click', async () => { await commitPending(); clearKeptKey(); revokeThumbs(); await client.logout(); show('auth-view'); });
 
-  // ── Account modal (profile / change password / export / delete) ─────────────
-  $('account-btn').addEventListener('click', async () => {
+  // ── App-bar navigation (Dashboard / Trash / Account dropdown) ───────────────
+  function closeAccountMenu() { $('account-dropdown').hidden = true; $('account-btn').setAttribute('aria-expanded', 'false'); }
+  function setAcctTab(tab: string) {
+    document.querySelectorAll<HTMLElement>('.acct-tab').forEach((t) => t.classList.toggle('active', t.dataset.acctTab === tab));
+    document.querySelectorAll<HTMLElement>('.acct-pane').forEach((p) => { (p as HTMLElement).hidden = p.dataset.pane !== tab; });
+  }
+  async function openAccount(tab = 'profile') {
+    closeAccountMenu();
+    setAcctTab(tab);
+    show('account-view');
     $('account-error').hidden = true;
     $('profile-email').textContent = localStorage.getItem('mv_email') ?? '—';
     $('profile-since').textContent = '…';
     $('profile-items').textContent = '…';
     $('profile-conns').textContent = '…';
-    $('account-modal').hidden = false;
     // Storage used = sum of ciphertext sizes across the fully-loaded index (client-side).
     $('profile-used').textContent = fmtBytes(items.reduce((n, i) => n + (i.size || 0), 0));
     refreshTwofa();
@@ -791,7 +835,17 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     } catch {
       $('profile-since').textContent = '—'; $('profile-items').textContent = '—'; $('profile-conns').textContent = '—';
     }
+  }
+  $('dashboard-btn').addEventListener('click', () => show('vault-view'));
+  $('account-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = $('account-dropdown').hidden;
+    $('account-dropdown').hidden = !willOpen;
+    $('account-btn').setAttribute('aria-expanded', String(willOpen));
   });
+  document.querySelectorAll<HTMLElement>('#account-dropdown [data-acct]').forEach((b) => b.addEventListener('click', () => openAccount(b.dataset.acct!)));
+  document.querySelectorAll<HTMLElement>('.acct-tab').forEach((t) => t.addEventListener('click', () => setAcctTab(t.dataset.acctTab!)));
+  document.addEventListener('click', () => closeAccountMenu());
 
   $('changepw-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -803,7 +857,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     try {
       const { recoveryKey } = await client.changePassword(email, cur, nw);
       (e.target as HTMLFormElement).reset();
-      $('account-modal').hidden = true;
       $('recovery-key').textContent = recoveryKey;
       toast('success', 'Password changed — here is your new recovery key');
       show('recovery-view');
@@ -916,6 +969,10 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     try {
       const sessions = await client.listSessions();
       list.innerHTML = '';
+      const cnt = $('sessions-count');
+      cnt.hidden = false;
+      cnt.textContent = `${sessions.length} of 5 devices signed in`;
+      cnt.classList.toggle('at-limit', sessions.length >= 5);
       for (const s of sessions) {
         const li = document.createElement('li');
         li.className = 'session-row';
@@ -958,8 +1015,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     catch (err) { showErr('sessions-msg', err); }
   });
 
-  $('account-close').addEventListener('click', () => { $('account-modal').hidden = true; });
-  $('account-modal').addEventListener('click', (e) => { if (e.target === $('account-modal')) $('account-modal').hidden = true; });
   $('account-delete').addEventListener('click', async () => {
     if (!await askConfirm('Delete your account?', 'This permanently removes your account and encrypted index. Your files in your own storage are NOT deleted. This cannot be undone.', { okLabel: 'Delete account', danger: true })) return;
     if (!await askConfirm('Absolutely sure?', 'There is no recovery once your account and index are deleted.', { okLabel: 'Yes, delete forever', danger: true })) return;
@@ -968,7 +1023,6 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
       await client.deleteAccount();
       clearKeptKey();
       revokeThumbs();
-      $('account-modal').hidden = true;
       localStorage.removeItem('mv_email');
       toast('success', 'Your account has been deleted');
       show('auth-view');
@@ -977,17 +1031,16 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
     }
   });
 
-  // ── Trash (soft-deleted files: restore or delete forever) ───────────────────
+  // ── Trash page (soft-deleted files: restore or delete forever) ──────────────
   let trashList: VaultItem[] = [];
   $('trash-btn').addEventListener('click', () => openTrash());
-  $('trash-close').addEventListener('click', () => { $('trash-modal').hidden = true; });
-  $('trash-modal').addEventListener('click', (e) => { if (e.target === $('trash-modal')) $('trash-modal').hidden = true; });
 
   async function openTrash() {
     await commitPending(); // make sure any in-flight "moving to trash" has landed
-    $('trash-modal').hidden = false;
+    show('trash-view');
     $('trash-msg').hidden = true;
-    $('trash-list').innerHTML = '<li class="muted">Loading…</li>';
+    $('trash-empty-note').hidden = true;
+    $('trash-grid').innerHTML = '<p class="muted trash-loading">Loading…</p>';
     try {
       trashList = [];
       let cursor: string | null = null;
@@ -997,25 +1050,51 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         cursor = page.nextCursor;
       } while (cursor);
       renderTrash();
-    } catch (err) { $('trash-list').innerHTML = ''; showErr('trash-msg', err); }
+    } catch (err) { $('trash-grid').innerHTML = ''; showErr('trash-msg', err); }
+  }
+
+  // Fade/scale a card out before removing it (skipped for reduced-motion).
+  function animateOut(el: HTMLElement, done: () => void) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { done(); return; }
+    el.style.transition = 'opacity .24s ease, transform .24s ease';
+    el.style.pointerEvents = 'none';
+    requestAnimationFrame(() => { el.style.opacity = '0'; el.style.transform = 'scale(.92)'; });
+    setTimeout(done, 230);
   }
 
   function renderTrash() {
-    const list = $('trash-list');
-    list.innerHTML = '';
-    $('trash-actions').hidden = trashList.length === 0;
-    if (trashList.length === 0) { list.innerHTML = '<li class="muted">Trash is empty.</li>'; return; }
+    const grid = $('trash-grid');
+    grid.className = 'grid';
+    grid.innerHTML = '';
+    $('trash-empty').hidden = trashList.length === 0;
+    $('trash-empty-note').hidden = trashList.length !== 0;
+    if (trashList.length === 0) return;
     for (const item of trashList) {
-      const li = document.createElement('li');
-      li.className = 'session-row';
-      const info = document.createElement('div');
-      const name = document.createElement('div'); name.className = 'session-device'; name.textContent = item.metadata.name;
       const k = kind(item.metadata.mime);
-      const meta = document.createElement('div'); meta.className = 'session-meta';
-      meta.textContent = `${k === 'file' ? 'FILE' : k.toUpperCase()} · ${fmtBytes(item.metadata.size)}`;
-      info.append(name, meta);
-      li.appendChild(info);
-      const actions = document.createElement('div'); actions.className = 'trash-row-actions';
+      const card = document.createElement('div');
+      card.className = 'tile trash-tile';
+      card.dataset.id = item.id;
+
+      const media = document.createElement('div');
+      media.className = `tile-media kind-${k}`;
+      if (thumbUrls.has(item.id)) media.style.backgroundImage = `url(${thumbUrls.get(item.id)})`;
+      const type = document.createElement('span');
+      type.className = 'tile-type';
+      type.textContent = (k === 'doc' || k === 'file') ? 'DOC' : k.toUpperCase();
+      media.appendChild(type);
+      if (k === 'video') { const ind = document.createElement('span'); ind.className = 'tile-play'; media.appendChild(ind); }
+      else if (k === 'audio') { const ind = document.createElement('span'); ind.className = 'tile-note'; media.appendChild(ind); }
+      else if (k === 'doc' || k === 'file') { const ind = document.createElement('span'); ind.className = 'tile-doc'; media.appendChild(ind); }
+      card.appendChild(media);
+
+      const foot = document.createElement('div');
+      foot.className = 'tile-foot';
+      const name = document.createElement('div'); name.className = 'tile-name'; name.textContent = item.metadata.name; name.title = item.metadata.name;
+      const sub = document.createElement('div'); sub.className = 'tile-sub'; sub.textContent = `${k === 'file' ? 'document' : k} · ${fmtBytes(item.metadata.size)}`;
+      foot.append(name, sub);
+      card.appendChild(foot);
+
+      const actions = document.createElement('div'); actions.className = 'trash-actions-row';
       const restoreBtn = document.createElement('button'); restoreBtn.className = 'btn-outline btn-sm'; restoreBtn.textContent = 'Restore';
       restoreBtn.addEventListener('click', async () => {
         restoreBtn.disabled = true;
@@ -1023,8 +1102,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
           await client.restore(item);
           trashList = trashList.filter((i) => i.id !== item.id);
           items = items.concat(item); // back into the live gallery
-          renderTrash(); render();
-          toast('success', 'Restored');
+          animateOut(card, () => { renderTrash(); render(); });
+          toast('success', 'Restored to your library');
         } catch (err) { showErr('trash-msg', err); restoreBtn.disabled = false; }
       });
       const delBtn = document.createElement('button'); delBtn.className = 'btn-sm trash-del'; delBtn.textContent = 'Delete forever';
@@ -1034,13 +1113,13 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         try {
           await client.remove(item, connFor(item)); // purge bucket object + index row
           trashList = trashList.filter((i) => i.id !== item.id);
-          renderTrash();
+          animateOut(card, () => renderTrash());
           toast('success', 'Deleted permanently');
         } catch (err) { showErr('trash-msg', err); delBtn.disabled = false; }
       });
       actions.append(restoreBtn, delBtn);
-      li.appendChild(actions);
-      list.appendChild(li);
+      card.appendChild(actions);
+      grid.appendChild(card);
     }
   }
 
@@ -1904,10 +1983,69 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .appbar-logo { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em; }
   .logo-mark { width: 28px; height: 28px; object-fit: contain; display: block; filter: drop-shadow(0 2px 7px rgba(124, 58, 237, 0.32)); }
   .appbar-right { display: flex; align-items: center; gap: 10px; }
-  .appbar-actions { display: flex; align-items: center; gap: 10px; }
+  .appbar-actions { display: flex; align-items: center; gap: 6px; }
   .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-med); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s ease, border-color .15s ease; }
   .icon-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
   .storage-label { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* App-bar nav buttons (icon + label) */
+  .nav-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; background: transparent; color: var(--text-body); border-radius: 9px; padding: 8px 12px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease; }
+  .nav-btn svg { width: 15px; height: 15px; flex: none; }
+  .nav-btn:hover:not(:disabled) { background: var(--bg-inset); color: var(--text-primary); }
+  .nav-btn:active:not(:disabled) { transform: translateY(1px); }
+  .nav-btn:disabled { color: var(--accent); background: var(--accent-subtle); cursor: default; opacity: 1; }
+  .nav-caret { width: 12px !important; height: 12px !important; opacity: .6; }
+  @media (max-width: 720px) { .nav-btn-tx { display: none; } .nav-btn { padding: 8px; } }
+
+  .account-menu { position: relative; }
+  .account-dropdown {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 180px;
+    background: var(--surface); border: 1px solid var(--border-med); border-radius: 12px;
+    box-shadow: var(--shadow-lg); padding: 6px; display: flex; flex-direction: column;
+    animation: ddIn .16s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes ddIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+  .account-dropdown button {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: transparent; border: none; border-radius: 8px; padding: 9px 12px;
+    font-size: 13.5px; font-weight: 500; color: var(--text-body); cursor: pointer; font-family: inherit;
+    transition: background .12s ease, color .12s ease;
+  }
+  .account-dropdown button svg { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
+  .account-dropdown button:hover { background: var(--bg-inset); color: var(--text-primary); }
+  .account-dropdown button:hover svg { color: var(--accent); }
+
+  /* Full-page views (Trash / Account) */
+  .page-view { animation: pageIn .3s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .page-view, .account-dropdown { animation: none; } }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .page-view-h { font-size: clamp(24px, 3vw, 30px); font-weight: 600; letter-spacing: -0.03em; color: var(--text-primary); margin: 0; }
+  .page-view-sub { font-size: 13.5px; line-height: 1.55; color: var(--text-body); margin: 8px 0 0; max-width: 620px; }
+
+  .empty-note { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 72px 20px; color: var(--text-muted); text-align: center; }
+  .empty-note-ic { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 16px; background: var(--bg-inset); border: 1px solid var(--border); }
+  .empty-note-ic svg { width: 26px; height: 26px; }
+  .empty-note p { margin: 0; font-size: 14px; }
+  :global(.trash-loading) { padding: 60px 0; text-align: center; }
+
+  /* Trash cards (created in JS → :global so scoped CSS still reaches them). */
+  :global(.trash-tile) { display: flex; flex-direction: column; }
+  :global(.trash-actions-row) { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); margin-top: auto; }
+  :global(.trash-actions-row button) { flex: 1; }
+  :global(.trash-del) { background: transparent; color: var(--destructive); border: 1px solid var(--border-strong, var(--border)); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s ease, border-color .15s ease; }
+  :global(.trash-del:hover) { background: var(--destructive-bg); border-color: var(--destructive); }
+
+  /* Account tabs */
+  .acct-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; }
+  .acct-tab { background: transparent; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13.5px; font-weight: 500; color: var(--text-body); cursor: pointer; font-family: inherit; transition: background .15s ease, color .15s ease; }
+  .acct-tab:hover { color: var(--text-primary); }
+  .acct-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+  .acct-pane { max-width: 620px; }
+  .acct-pane .account-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+  .sessions-count { font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0 0 12px; font-family: 'JetBrains Mono', monospace; }
+  .sessions-count.at-limit { color: var(--accent); }
 
   .app-main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; min-height: calc(100dvh - 60px - 58px); }
   .app-footer { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 18px 24px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-body); }
@@ -1938,8 +2076,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; }
   /* Recovery-key actions: two equal outline buttons, then a full-width primary. */
   .reckey-actions { display: flex; gap: 10px; margin-bottom: 12px; }
-  .btn-outline { flex: 1; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; transition: border-color .15s ease, background .15s ease; }
-  .btn-outline:hover { border-color: var(--accent); }
+  :global(.btn-outline) { flex: 1; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text-primary); border: 1px solid var(--border-strong, var(--border)); border-radius: 9px; padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; transition: border-color .15s ease, background .15s ease; }
+  :global(.btn-outline:hover) { border-color: var(--accent); }
   .link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; margin-top: 14px; }
   .keep-row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text-body); cursor: pointer; user-select: none; padding: 2px 0; }
   .keep-row input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
@@ -1992,18 +2130,15 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   .backup-list { list-style: none; padding: 14px; margin: 0 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; background: var(--surface-2, rgba(127,127,127,.1)); border: 1px solid var(--border); border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-primary); }
   /* Sessions */
   .sessions-list { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
-  .session-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; }
-  .session-device { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-  .session-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
-  .session-current { font-size: 11px; font-weight: 600; color: var(--accent); }
-  .btn-sm { padding: 6px 12px; font-size: 12px; flex: none; }
+  :global(.session-row) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  :global(.session-device) { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  :global(.session-meta) { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  :global(.session-current) { font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 3px 9px; border-radius: 100px; flex: none; }
+  :global(.btn-sm) { padding: 7px 13px; font-size: 12px; flex: none; }
   .folder-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .folder-ico { display: inline-flex; color: var(--text-muted); }
   .folder-bar .sort-select { min-width: 180px; }
-  .trash-row-actions { display: flex; gap: 8px; flex: none; }
-  .trash-del { background: transparent; border: 1px solid rgba(239,68,68,.5); color: #ef4444; border-radius: 9px; cursor: pointer; font: inherit; }
-  .trash-del:hover { background: #ef4444; color: #fff; }
-  .trash-del:disabled { opacity: .5; cursor: default; }
+  :global(.trash-del:disabled) { opacity: .5; cursor: default; }
 
   .provider-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
   .provider-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; color: var(--text-muted); font-size: 11.5px; }
@@ -2079,7 +2214,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
      scoped styles never reach them. Class names are app-specific (no leakage). -->
 <style is:global>
   /* ── Gallery grid ─────────────────────────────────────────────────────────── */
-  #grid.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
 
   /* List view: reflow the same tiles into compact rows. Making .tile-media
      `position: static` re-anchors its absolute action buttons to the row. */
@@ -2096,53 +2231,53 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   #grid.list .tile-fav { top: 50%; right: 46px; bottom: auto; transform: translateY(-50%); }
   #grid.list .tile-del { top: 50%; right: 10px; bottom: auto; transform: translateY(-50%); }
 
-  #grid .tile {
+  .grid .tile {
     position: relative; background: var(--surface); border: 1px solid var(--border);
     border-radius: 14px; overflow: hidden; cursor: pointer;
     transition: transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s ease, border-color .18s ease;
   }
-  #grid .tile:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: var(--shadow-lg); }
-  #grid .tile.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .grid .tile:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: var(--shadow-lg); }
+  .grid .tile.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 
-  #grid .tile-media {
+  .grid .tile-media {
     position: relative; aspect-ratio: 1 / 1; background-size: cover; background-position: center;
     display: flex; align-items: center; justify-content: center;
   }
-  #grid .tile-media.kind-image { background: var(--bg-inset); }
-  #grid .tile-media.kind-video { background: linear-gradient(135deg, #1e293b, #0f172a); }
-  #grid .tile-media.kind-audio { background: linear-gradient(135deg, #6d28d9, #4c1d95); }
-  #grid .tile-media.kind-doc   { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
-  #grid .tile-media.kind-file  { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
-  #grid .tile-doc::after { content: '📄'; font-size: 40px; }
+  .grid .tile-media.kind-image { background: var(--bg-inset); }
+  .grid .tile-media.kind-video { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  .grid .tile-media.kind-audio { background: linear-gradient(135deg, #6d28d9, #4c1d95); }
+  .grid .tile-media.kind-doc   { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+  .grid .tile-media.kind-file  { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+  .grid .tile-doc::after { content: '📄'; font-size: 40px; }
 
   /* Video play badge + audio note (centered) */
-  #grid .tile-play { width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; }
-  #grid .tile-play::after { content: ''; width: 0; height: 0; border-left: 15px solid #fff; border-top: 9px solid transparent; border-bottom: 9px solid transparent; margin-left: 3px; }
-  #grid .tile-note::after { content: '♪'; font-size: 42px; color: rgba(255,255,255,.92); }
+  .grid .tile-play { width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; }
+  .grid .tile-play::after { content: ''; width: 0; height: 0; border-left: 15px solid #fff; border-top: 9px solid transparent; border-bottom: 9px solid transparent; margin-left: 3px; }
+  .grid .tile-note::after { content: '♪'; font-size: 42px; color: rgba(255,255,255,.92); }
 
   /* Type chip (bottom-left) */
-  #grid .tile-type { position: absolute; bottom: 8px; left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: .06em; color: #fff; background: rgba(0,0,0,.55); padding: 3px 7px; border-radius: 6px; backdrop-filter: blur(2px); }
+  .grid .tile-type { position: absolute; bottom: 8px; left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: .06em; color: #fff; background: rgba(0,0,0,.55); padding: 3px 7px; border-radius: 6px; backdrop-filter: blur(2px); }
 
   /* Favorite (top-right) */
-  #grid .tile-fav { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.4); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
-  #grid .tile:hover .tile-fav { opacity: 1; }
-  #grid .tile-fav.on { opacity: 1; color: #fbbf24; }
-  #grid .tile-fav:hover { background: rgba(0,0,0,.65); }
+  .grid .tile-fav { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.4); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
+  .grid .tile:hover .tile-fav { opacity: 1; }
+  .grid .tile-fav.on { opacity: 1; color: #fbbf24; }
+  .grid .tile-fav:hover { background: rgba(0,0,0,.65); }
 
   /* Selection checkbox (top-left) */
-  #grid .tile-check { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,.85); background: rgba(0,0,0,.3); cursor: pointer; opacity: 0; transition: opacity .15s ease; padding: 0; }
-  #grid .tile:hover .tile-check { opacity: 1; }
-  #grid .tile.selected .tile-check { opacity: 1; background: var(--accent); border-color: var(--accent); }
-  #grid .tile.selected .tile-check::after { content: '✓'; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; height: 100%; }
+  .grid .tile-check { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,.85); background: rgba(0,0,0,.3); cursor: pointer; opacity: 0; transition: opacity .15s ease; padding: 0; }
+  .grid .tile:hover .tile-check { opacity: 1; }
+  .grid .tile.selected .tile-check { opacity: 1; background: var(--accent); border-color: var(--accent); }
+  .grid .tile.selected .tile-check::after { content: '✓'; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; height: 100%; }
 
   /* Delete (bottom-right, hover) */
-  #grid .tile-del { position: absolute; bottom: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
-  #grid .tile:hover .tile-del { opacity: 1; }
-  #grid .tile-del:hover { background: #ef4444; }
+  .grid .tile-del { position: absolute; bottom: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s ease, background .15s ease; backdrop-filter: blur(2px); }
+  .grid .tile:hover .tile-del { opacity: 1; }
+  .grid .tile-del:hover { background: #ef4444; }
 
-  #grid .tile-foot { padding: 10px 12px; }
-  #grid .tile-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
-  #grid .tile-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; text-transform: capitalize; }
+  .grid .tile-foot { padding: 10px 12px; }
+  .grid .tile-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+  .grid .tile-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; text-transform: capitalize; }
 
   /* ── Upload progress card ─────────────────────────────────────────────────── */
   #upload-status { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow-md); }

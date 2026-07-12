@@ -20,6 +20,7 @@ import { generateBackupCodes, generateTotpSecret, hashBackupCode, otpauthUrl, ve
 const te = new TextEncoder();
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const TOUCH_AFTER_MS = 60 * 60 * 1000; // refresh last_seen at most hourly
+const MAX_SESSIONS_PER_ACCOUNT = 5; // cap concurrent signed-in devices (evict oldest)
 const TWOFA_PENDING_TTL = 300; // seconds a half-finished (password-ok) login may wait for a code
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -224,6 +225,16 @@ export async function startSession(
     ip: meta?.ip ?? null,
     last_seen: now,
   });
+  // Cap concurrent devices: keep at most MAX_SESSIONS_PER_ACCOUNT signed in,
+  // evicting the oldest (like most consumer apps) when a new device logs in.
+  try {
+    const all = await sessions.listForAccount(accountId);
+    if (all.length > MAX_SESSIONS_PER_ACCOUNT) {
+      const oldestFirst = [...all].sort((a, b) => a.created_at - b.created_at);
+      const evict = oldestFirst.slice(0, all.length - MAX_SESSIONS_PER_ACCOUNT);
+      for (const s of evict) await sessions.deleteByIdForAccount(accountId, s.id);
+    }
+  } catch { /* capping is best-effort; never block login on it */ }
   return token;
 }
 
