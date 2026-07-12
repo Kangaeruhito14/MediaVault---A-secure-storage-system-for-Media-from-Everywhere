@@ -365,11 +365,12 @@ export class VaultClient {
   // ── Files ─────────────────────────────────────────────────────────────────
   async upload(
     conn: Connection,
-    file: { bytes: Uint8Array; name: string; mime: string; thumbnail?: Uint8Array | null },
+    file: { bytes: Uint8Array; name: string; mime: string; thumbnail?: Uint8Array | null; folderId?: string | null },
     onProgress?: (loaded: number, total: number) => void,
   ): Promise<{ id: string }> {
     this.requireKey();
     const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.bytes.length };
+    if (file.folderId) meta.folderId = file.folderId; // file into the selected folder at upload time
     const enc = await encryptForUpload(file.bytes, meta, this.accountKey!, file.thumbnail ?? undefined);
     const base = `mv/${globalThis.crypto.randomUUID()}`;
     const store = this.store(conn.config);
@@ -416,7 +417,7 @@ export class VaultClient {
    */
   async uploadFile(
     conn: Connection,
-    file: { file: File; name: string; mime: string; thumbnail?: Uint8Array | null },
+    file: { file: File; name: string; mime: string; thumbnail?: Uint8Array | null; folderId?: string | null },
     onProgress?: (loaded: number, total: number) => void,
   ): Promise<{ id: string }> {
     this.requireKey();
@@ -424,10 +425,11 @@ export class VaultClient {
 
     if (file.file.size < STREAM_THRESHOLD || !store.createWriter) {
       const bytes = new Uint8Array(await file.file.arrayBuffer());
-      return this.upload(conn, { bytes, name: file.name, mime: file.mime, thumbnail: file.thumbnail }, onProgress);
+      return this.upload(conn, { bytes, name: file.name, mime: file.mime, thumbnail: file.thumbnail, folderId: file.folderId }, onProgress);
     }
 
     const meta: FileMetadata = { name: file.name, mime: file.mime, size: file.file.size };
+    if (file.folderId) meta.folderId = file.folderId; // file into the selected folder at upload time
     const prep = await prepareStreamingUpload(file.file, meta, this.accountKey!);
     const base = `mv/${globalThis.crypto.randomUUID()}`;
     const objectKey = `${base}.enc`;

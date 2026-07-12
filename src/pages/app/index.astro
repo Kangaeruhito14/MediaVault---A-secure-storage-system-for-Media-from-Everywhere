@@ -1855,6 +1855,8 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
   // advances to the next file (no stack of N rows for N files).
   async function uploadFiles(files: File[]) {
     if (!files.length || !connections.length) return;
+    // File new uploads into the folder currently being viewed (if any).
+    const targetFolder = (folderFilter !== '__all' && folderFilter !== '__unfiled') ? folderFilter : null;
     // Large files now stream (flat memory); just flag that very large ones take a while.
     const HUGE = 2 * 1024 * 1024 * 1024;
     const huge = files.filter((f) => f.size > HUGE).length;
@@ -1890,7 +1892,7 @@ const dropboxEnabled = !!import.meta.env.PUBLIC_DROPBOX_CLIENT_ID;
         // uploadFile streams large files (slice→encrypt→upload) so memory stays flat.
         await client.uploadFile(
           conn,
-          { file, name: file.name, mime: file.type || 'application/octet-stream', thumbnail },
+          { file, name: file.name, mime: file.type || 'application/octet-stream', thumbnail, folderId: targetFolder },
           (loaded: number, total: number) => {
             stageEl.textContent = `Uploading ${fmtBytes(loaded)} / ${fmtBytes(total)}`;
             fillEl.style.width = `${total ? Math.min(100, (loaded / total) * 100) : 0}%`;
